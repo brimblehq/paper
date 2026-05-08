@@ -112,5 +112,5 @@ After creating the workspace:
 ## Next steps
 
 - [Manage teams](manage-teams.md) — invite people, change roles, transfer ownership.
-- [Plans and pricing](../reference/plans.md) — full pricing breakdown including overages.
+- [Plans and pricing](../billing/plans.md) — full pricing breakdown including overages.
 - [Two-factor authentication](two-factor-authentication.md) — required for ownership transfer.

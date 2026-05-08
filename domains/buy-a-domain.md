@@ -45,7 +45,7 @@ A purchased domain comes with:
 - **WHOIS privacy applied** if you toggled it on.
 - **Auto-renewal flagged** per your selection.
 
-To attach the domain to a project, see [Add a custom domain](../getting-started/custom-domains.md). The flow is the same as bringing a domain you already own — pick a project, optionally set up a redirect.
+To attach the domain to a project, see [Add a custom domain](custom-domains.md). The flow is the same as bringing a domain you already own — pick a project, optionally set up a redirect.
 
 ## Renew a domain
 
@@ -93,6 +93,6 @@ ns2.brimble.io.
 
 ## Next steps
 
-- [Add a custom domain](../getting-started/custom-domains.md) — attach the domain to a project.
+- [Add a custom domain](custom-domains.md) — attach the domain to a project.
 - [Manage DNS records](manage-dns-records.md) — point subdomains at services.
 - [Transfer a domain](transfer-a-domain.md) — bring an existing domain into Brimble or move one out.

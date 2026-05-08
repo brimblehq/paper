@@ -38,4 +38,4 @@ Every push to the connected branch triggers a new build and deployment. Old depl
 ## Next steps
 
 * [Quickstart →](quickstart.md) — deploy your first project
-* [Add a custom domain →](custom-domains.md)
+* [Add a custom domain →](../domains/custom-domains.md)

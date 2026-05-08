@@ -6,63 +6,72 @@
 
 * [What is Brimble](getting-started/introduction.md)
 * [Quickstart](getting-started/quickstart.md)
-* [Add a custom domain](getting-started/custom-domains.md)
 
-## Concepts
+## Projects
 
-* [Projects and services](concepts/projects-and-services.md)
-* [Deployments](concepts/deployments.md)
-* [Environments](concepts/environments.md)
-* [Regions](concepts/regions.md)
-* [Builds](concepts/builds.md)
-* [Networking and the edge](concepts/networking.md)
+* [Overview](projects/overview.md)
+* [Service types](projects/service-types.md)
+* [Frameworks supported](projects/frameworks.md)
+* [Regions](projects/regions.md)
+* [Builds](projects/builds.md)
+* [Deployments](projects/deployments.md)
+* [Deploy a worker](projects/deploy-a-worker.md)
+* [Deploy a database](projects/deploy-a-database.md)
+* [Deploy an MCP server](projects/deploy-an-mcp-server.md)
+* [Deploy from a Docker image](projects/deploy-from-docker-image.md)
+* [Discover MCP servers](projects/discover-mcp-servers.md)
+* [Persistent disk](projects/persistent-disk.md)
+* [Roll back a deployment](projects/rollback-a-deployment.md)
+* [Password-protect a project](projects/password-protect.md)
 
-## Guides
+## Domains
 
-### Deploying
+* [Add a custom domain](domains/custom-domains.md)
+* [Buy a domain](domains/buy-a-domain.md)
+* [Transfer a domain](domains/transfer-a-domain.md)
+* [Manage DNS records](domains/manage-dns-records.md)
+* [Redirect a domain](domains/redirect-a-domain.md)
+* [DNS record types](domains/dns-records.md)
 
-* [Deploy from a Docker image](guides/deploy-from-docker-image.md)
-* [Deploy a worker](guides/deploy-a-worker.md)
-* [Deploy a database](guides/deploy-a-database.md)
-* [Deploy an MCP server](guides/deploy-an-mcp-server.md)
-* [Discover MCP servers](guides/discover-mcp-servers.md)
+## Environments
 
-### Project configuration
+* [Overview](environments/overview.md)
+* [Manage environment variables](environments/environment-variables.md)
+* [Reference shared and cross-project variables](environments/env-references.md)
+* [System environment variables](environments/system-variables.md)
 
-* [Manage environment variables](guides/environment-variables.md)
-* [Persistent disk](guides/persistent-disk.md)
-* [Configure scaling](guides/autoscaling.md)
-* [Roll back a deployment](guides/rollback-a-deployment.md)
-* [Password-protect a deployment](guides/password-protect-a-deployment.md)
-* [Web analytics](guides/web-analytics.md)
+## Networking
 
-### Domains
+* [Overview](networking/overview.md)
+* [Request lifecycle](networking/request-lifecycle.md)
+* [Rate limits](networking/rate-limits.md)
 
-* [Buy a domain](guides/buy-a-domain.md)
-* [Transfer a domain](guides/transfer-a-domain.md)
-* [Manage DNS records](guides/manage-dns-records.md)
-* [Redirect a domain](guides/redirect-a-domain.md)
+## Scaling
 
-### Workspaces and access
+* [Configure scaling](scaling/overview.md)
 
-* [Create a workspace](guides/create-a-workspace.md)
-* [Manage teams](guides/manage-teams.md)
-* [Two-factor authentication](guides/two-factor-authentication.md)
+## Observability
 
-### Integrations
+* [Web analytics](analytics/web-analytics.md)
 
-* [Webhooks](guides/webhooks.md)
+## Workspaces and teams
 
-## Reference
+* [Create a workspace](workspaces-and-teams/create-a-workspace.md)
+* [Manage teams](workspaces-and-teams/manage-teams.md)
 
-* [Service types](reference/service-types.md)
-* [Frameworks supported](reference/frameworks.md)
-* [Regions](reference/regions.md)
-* [System environment variables](reference/system-environment-variables.md)
-* [Webhook events](reference/webhook-events.md)
-* [DNS record types](reference/dns-records.md)
-* [Plans and pricing](reference/plans.md)
-* [Rate limits](reference/rate-limits.md)
+## Security
+
+* [Two-factor authentication](security/two-factor-authentication.md)
+
+## Billing
+
+* [Plans and pricing](billing/plans.md)
+* [Build minutes](billing/build-minutes.md)
+
+## Webhooks
+
+* [Overview](webhooks/overview.md)
+* [Events reference](webhooks/events.md)
 
 ## Troubleshooting
 

@@ -151,5 +151,5 @@ Don't log the value of a secret. Logs are visible to anyone with project access.
 
 ## Next steps
 
-- [Environments concept](../concepts/environments.md) — how environments and inheritance work.
-- [System environment variables](../reference/system-environment-variables.md) — what Brimble injects automatically.
+- [Environments concept](overview.md) — how environments and inheritance work.
+- [System environment variables](system-variables.md) — what Brimble injects automatically.

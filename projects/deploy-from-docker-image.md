@@ -100,6 +100,6 @@ For workers, check the runtime logs to confirm the process is doing what you exp
 
 ## Next steps
 
-- [Service types](../reference/service-types.md) — picking the right type for your image.
+- [Service types](service-types.md) — picking the right type for your image.
 - [Manage environment variables](environment-variables.md) — wiring config into your container.
-- [Builds](../concepts/builds.md) — the alternative path: building from source.
+- [Builds](builds.md) — the alternative path: building from source.

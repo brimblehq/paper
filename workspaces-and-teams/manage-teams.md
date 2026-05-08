@@ -73,7 +73,7 @@ Each team has its own billing. Plans on a team apply to projects under that team
 
 - **Free.** Same limits as a personal free plan, scoped to the team.
 - **Hacker / Pro.** Single-seat plans are typically used on personal accounts; for teams, prefer Team.
-- **Team plan.** Per-member pricing plus per-concurrent-build pricing. See [Plans](../reference/plans.md).
+- **Team plan.** Per-member pricing plus per-concurrent-build pricing. See [Plans](../billing/plans.md).
 
 A user can be in many teams, each with its own plan. Personal projects are billed separately.
 
@@ -101,5 +101,5 @@ If they can see the project list and open one, they're in.
 
 ## Next steps
 
-- [Plans and pricing](../reference/plans.md) — what each plan includes.
+- [Plans and pricing](../billing/plans.md) — what each plan includes.
 - [Two-factor authentication](two-factor-authentication.md) — required for ownership transfer and a few other sensitive actions.

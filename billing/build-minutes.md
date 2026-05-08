@@ -79,7 +79,7 @@ When used minutes equal included minutes plus credits:
 - **Free plan.** New builds queue indefinitely until the next cycle resets your included minutes. There's no overage billing on free.
 - **Paid plans.** Builds **don't fail** mid-flight — running builds finish. New builds start to consume top-up credits if you have any. If credits are exhausted, builds queue until the next reset or the next top-up.
 
-A "Builds disabled" state can also show up if billing failed for an extended period — that's separate from running out of minutes. See [Plans and pricing](../reference/plans.md).
+A "Builds disabled" state can also show up if billing failed for an extended period — that's separate from running out of minutes. See [Plans and pricing](plans.md).
 
 ## Estimating your usage
 
@@ -124,5 +124,5 @@ A push immediately after the top-up uses the new credits if your included minute
 
 ## Next steps
 
-- [Plans and pricing](../reference/plans.md) — what each plan includes.
-- [Builds](../concepts/builds.md) — what runs during a build, and how the cache works.
+- [Plans and pricing](plans.md) — what each plan includes.
+- [Builds](../projects/builds.md) — what runs during a build, and how the cache works.

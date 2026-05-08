@@ -154,4 +154,4 @@ Include the deployment ID and the project name. Brimble's logs include extra con
 
 - [Build failures](build-failures.md) — for deployments that fail with an error.
 - [502 errors](502-errors.md) — for deployments that go active but don't serve traffic.
-- [Deployments](../concepts/deployments.md) — the full lifecycle and what each phase does.
+- [Deployments](../projects/deployments.md) — the full lifecycle and what each phase does.

@@ -146,5 +146,5 @@ Contact support with:
 
 ## Next steps
 
-- [Custom domains](../getting-started/custom-domains.md) — initial setup.
+- [Custom domains](../domains/custom-domains.md) — initial setup.
 - [DNS issues](dns.md) — when DNS itself is wrong.

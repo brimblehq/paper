@@ -16,7 +16,7 @@ A long-running container that handles HTTP traffic.
 
 **Source options:**
 - **Git repository** — Brimble builds from source using Railpack (auto-detected) or a `Dockerfile` if one is at the project root.
-- **Docker image** — pull a pre-built image from Docker Hub, GHCR, or any container registry. See [Deploy from a Docker image](../guides/deploy-from-docker-image.md).
+- **Docker image** — pull a pre-built image from Docker Hub, GHCR, or any container registry. See [Deploy from a Docker image](deploy-from-docker-image.md).
 
 **Required:**
 - The container's start command must listen on `process.env.PORT`.

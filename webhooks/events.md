@@ -1,6 +1,6 @@
 # Webhook events reference
 
-Every event Brimble emits, with the exact payload type your endpoint receives. To configure delivery, see [Webhooks](../guides/webhooks.md).
+Every event Brimble emits, with the exact payload type your endpoint receives. To configure delivery, see [Webhooks](overview.md).
 
 ## Envelope
 

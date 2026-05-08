@@ -38,7 +38,7 @@ A variable set in one environment is **not** visible in another unless you opt i
 | **Environment** | Which environment this value belongs to. |
 | **Inheritable** | Whether child environments can inherit this value. |
 
-System variables Brimble injects automatically (like `PORT`) live in a separate namespace and override nothing. See [System environment variables](../reference/system-environment-variables.md).
+System variables Brimble injects automatically (like `PORT`) live in a separate namespace and override nothing. See [System environment variables](system-variables.md).
 
 ## Inheritance
 
@@ -80,6 +80,6 @@ Don't log the value itself — Brimble's runtime logs are not encrypted at rest 
 
 ## Next steps
 
-- [Environment variables guide](../guides/environment-variables.md) — task-oriented walkthrough.
-- [System environment variables](../reference/system-environment-variables.md) — what Brimble injects automatically.
+- [Environment variables guide](environment-variables.md) — task-oriented walkthrough.
+- [System environment variables](system-variables.md) — what Brimble injects automatically.
 - [Deployments](deployments.md) — how environment variables flow into a deployment.

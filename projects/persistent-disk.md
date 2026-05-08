@@ -112,4 +112,4 @@ Where your service exposes a quick stat of the mount.
 ## Next steps
 
 - [Deploy a database](deploy-a-database.md) — for state that needs scale-out, backups, and queryability.
-- [Builds](../concepts/builds.md) — how the runtime container is built and started.
+- [Builds](builds.md) — how the runtime container is built and started.

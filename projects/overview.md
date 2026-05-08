@@ -46,7 +46,7 @@ A managed data service. Brimble provisions the engine you choose, runs it, and g
 
 Supported engines: PostgreSQL, MySQL, MariaDB, MongoDB, Redis, Valkey, RabbitMQ, Neo4j, ClickHouse.
 
-See [Deploy a database](../guides/deploy-a-database.md) for the full list of versions and sizing options.
+See [Deploy a database](deploy-a-database.md) for the full list of versions and sizing options.
 
 ### MCP server
 
@@ -75,11 +75,11 @@ A team can hold many projects. A project can hold many environments. Each enviro
 ## Naming and limits
 
 - Project names must be unique within your account or team. They appear in URLs, so use lowercase, dashes, and digits.
-- Plan limits cap the number of projects per account. The free plan allows 5; paid plans go higher. See [Plans and pricing](../reference/plans.md).
+- Plan limits cap the number of projects per account. The free plan allows 5; paid plans go higher. See [Plans and pricing](../billing/plans.md).
 - Region availability depends on plan tier. Some regions are paid-only.
 
 ## Next steps
 
 - [Deployments](deployments.md) — how a build becomes a running service.
 - [Environments](environments.md) — Production, Preview, and how env vars flow.
-- [Service types reference](../reference/service-types.md) — every service type, side-by-side.
+- [Service types reference](service-types.md) — every service type, side-by-side.

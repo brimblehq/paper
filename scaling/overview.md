@@ -107,5 +107,5 @@ wrk -t4 -c200 -d2m https://<project-name>.brimble.app/
 
 ## Next steps
 
-- [Deployments](../concepts/deployments.md) — how new containers come online and pass health checks.
-- [Plans and pricing](../reference/plans.md) — billing for additional containers.
+- [Deployments](../projects/deployments.md) — how new containers come online and pass health checks.
+- [Plans and pricing](../billing/plans.md) — billing for additional containers.

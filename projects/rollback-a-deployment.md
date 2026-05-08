@@ -57,5 +57,5 @@ If a deployment is hanging in `pending` or `in progress` and you want to roll ba
 
 ## Next steps
 
-- [Deployments](../concepts/deployments.md) — full lifecycle and what each state means.
+- [Deployments](deployments.md) — full lifecycle and what each state means.
 - [Build failures](../troubleshooting/build-failures.md) — diagnose why the new deployment broke.

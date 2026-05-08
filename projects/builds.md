@@ -133,7 +133,7 @@ Each plan grants:
 Build minutes are clock time from the start of clone to the end of push. If you exhaust your monthly allowance:
 
 - **Free plan:** new builds queue indefinitely until the cycle resets.
-- **Paid plans:** overage bills at the per-minute rate from [Plans](../reference/plans.md) and rolls into the next invoice.
+- **Paid plans:** overage bills at the per-minute rate from [Plans](../billing/plans.md) and rolls into the next invoice.
 
 Concurrent slots determine how many builds can run at the same time. Above your slot count, builds queue (status: `pending`) until a slot frees up. Cancel a queued or in-progress build to free a slot from **Deployments**.
 
@@ -167,4 +167,4 @@ The build pipeline has well-defined failure modes — see [Build failures](../tr
 
 - [Deployments](deployments.md) — how a build's output becomes a running service.
 - [Build failures](../troubleshooting/build-failures.md) — common errors during a build.
-- [Frameworks supported](../reference/frameworks.md) — the full list of detected stacks.
+- [Frameworks supported](frameworks.md) — the full list of detected stacks.

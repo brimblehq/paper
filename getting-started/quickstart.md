@@ -70,5 +70,5 @@ You should see an `HTTP/2 200` response (or whatever status your app returns for
 
 ## Next steps
 
-* [Add a custom domain](custom-domains.md) — point `app.example.com` at your project.
+* [Add a custom domain](../domains/custom-domains.md) — point `app.example.com` at your project.
 * Push a new commit to the tracked branch. Brimble will build and deploy it automatically.

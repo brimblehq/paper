@@ -77,7 +77,7 @@ You can cancel a deployment at any time during the build or deploy phases. After
 Three places show deployment status:
 
 - **Dashboard.** Status badge on the project, plus a live logs drawer.
-- **Webhooks.** Brimble emits `deployment.started`, `deployment.success`, and `deployment.failed` events. See [Webhook events](../reference/webhook-events.md).
+- **Webhooks.** Brimble emits `deployment.started`, `deployment.success`, and `deployment.failed` events. See [Webhook events](../webhooks/events.md).
 - **Deployment history** in the project — every previous build, with status, commit, and timing.
 
 ## Failed deployments

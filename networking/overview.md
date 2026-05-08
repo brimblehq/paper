@@ -117,7 +117,7 @@ If a deployment fails its health check repeatedly, it's marked **degraded**. Tra
 
 By default a project runs as a single container, and the edge sends all of its traffic to that one. A single connection-level retry happens automatically if the container is briefly unavailable (between health-check passes during a deploy, for example). Application-level errors — a 5xx response your code returned — go straight to the client; the edge doesn't retry those.
 
-If you've configured an [autoscaling group](../guides/autoscaling.md) and the project is running multiple containers, the edge distributes traffic across them and retries connection-level failures against another container before failing the request.
+If you've configured an [autoscaling group](../scaling/overview.md) and the project is running multiple containers, the edge distributes traffic across them and retries connection-level failures against another container before failing the request.
 
 ## Outbound traffic
 
@@ -127,6 +127,6 @@ Outbound traffic from a Brimble service appears to come from a region-specific I
 
 ## Next steps
 
-- [Custom domains](../getting-started/custom-domains.md) — pointing your own domain at a project.
+- [Custom domains](../domains/custom-domains.md) — pointing your own domain at a project.
 - [502 errors](../troubleshooting/502-errors.md) — what to check when the edge can't reach your service.
-- [Rate limits](../reference/rate-limits.md) — full set of edge limits.
+- [Rate limits](rate-limits.md) — full set of edge limits.

@@ -78,7 +78,7 @@ X-Brimble-Test: true         ← only on test events
 }
 ```
 
-Full payload schema for every event is in [Webhook events reference](../reference/webhook-events.md).
+Full payload schema for every event is in [Webhook events reference](events.md).
 
 ## Verifying signatures
 
@@ -255,5 +255,5 @@ If you don't see them:
 
 ## Next steps
 
-- [Webhook events reference](../reference/webhook-events.md) — every event with full payload schema.
-- [Deployments](../concepts/deployments.md) — what triggers each `deployment.*` event.
+- [Webhook events reference](events.md) — every event with full payload schema.
+- [Deployments](../projects/deployments.md) — what triggers each `deployment.*` event.

@@ -109,5 +109,5 @@ window.brimble?.track("signup", { plan: "pro" });
 
 ## Next steps
 
-- [Logs](../concepts/deployments.md) — runtime logs and request logs are separate from web analytics.
-- [Custom domains](../getting-started/custom-domains.md) — analytics work the same on default and custom domains.
+- [Logs](../projects/deployments.md) — runtime logs and request logs are separate from web analytics.
+- [Custom domains](../domains/custom-domains.md) — analytics work the same on default and custom domains.

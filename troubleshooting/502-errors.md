@@ -154,5 +154,5 @@ If all six are clean and you still see 502, open a ticket with the project name 
 
 ## Next steps
 
-- [Networking](../concepts/networking.md) — how the edge routes to your service.
+- [Networking](../networking/overview.md) — how the edge routes to your service.
 - [Build failures](build-failures.md) — if the deployment never reaches **Active**.

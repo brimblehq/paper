@@ -118,4 +118,4 @@ After a transfer-out, the registrar field changes once the new registrar finaliz
 
 - [Buy a domain](buy-a-domain.md) — register a new domain in Brimble.
 - [Manage DNS records](manage-dns-records.md) — set up records for the transferred domain.
-- [Custom domains](../getting-started/custom-domains.md) — attach the transferred domain to a project.
+- [Custom domains](custom-domains.md) — attach the transferred domain to a project.

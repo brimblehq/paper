@@ -83,4 +83,4 @@ Without credentials, you should get `HTTP/2 401` and a `WWW-Authenticate: Basic`
 ## Next steps
 
 - [Manage environment variables](environment-variables.md) — credentials your app uses internally.
-- [Networking](../concepts/networking.md) — how the edge enforces auth.
+- [Networking](../networking/overview.md) — how the edge enforces auth.

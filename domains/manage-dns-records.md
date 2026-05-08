@@ -1,6 +1,6 @@
 # Manage DNS records
 
-Add, edit, and delete DNS records for a domain managed by Brimble. This guide covers the dashboard UI; for the supported record types and field shapes, see [DNS record types](../reference/dns-records.md).
+Add, edit, and delete DNS records for a domain managed by Brimble. This guide covers the dashboard UI; for the supported record types and field shapes, see [DNS record types](dns-records.md).
 
 ## Prerequisites
 
@@ -126,6 +126,6 @@ If those return the new value, you're done — local caches will refresh once th
 
 ## Next steps
 
-- [DNS record types](../reference/dns-records.md) — every record type and its fields.
+- [DNS record types](dns-records.md) — every record type and its fields.
 - [DNS troubleshooting](../troubleshooting/dns.md) — when records aren't behaving.
-- [Add a custom domain](../getting-started/custom-domains.md) — point a Brimble-managed domain at a project.
+- [Add a custom domain](custom-domains.md) — point a Brimble-managed domain at a project.

@@ -105,5 +105,5 @@ process.on("uncaughtException", (err) => console.error("uncaught:", err));
 
 ## Next steps
 
-- [Deployments](../concepts/deployments.md) — how restarts and health checks work.
+- [Deployments](deployments.md) — how restarts and health checks work.
 - [Deploy a database](deploy-a-database.md) — provision the queue or DB the worker reads from.

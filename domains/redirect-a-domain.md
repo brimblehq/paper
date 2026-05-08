@@ -86,5 +86,5 @@ Expected: an A record pointing to Brimble's edge or a CNAME to `gateway.brimble.
 
 ## Next steps
 
-- [Custom domains](../getting-started/custom-domains.md) — attach a domain to a project (the alternative to redirecting).
+- [Custom domains](custom-domains.md) — attach a domain to a project (the alternative to redirecting).
 - [DNS troubleshooting](../troubleshooting/dns.md) — when DNS itself is the problem.

@@ -126,5 +126,5 @@ If your server's logging is verbose, log selectively — runtime logs accumulate
 ## Next steps
 
 - [Discover MCP servers](discover-mcp-servers.md) — deploy a ready-made MCP server from Brimble's marketplace.
-- [Custom domains](../getting-started/custom-domains.md) — give your MCP server a stable URL.
-- [Networking](../concepts/networking.md) — how the edge handles HTTP, headers, and WebSockets.
+- [Custom domains](../domains/custom-domains.md) — give your MCP server a stable URL.
+- [Networking](../networking/overview.md) — how the edge handles HTTP, headers, and WebSockets.

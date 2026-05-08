@@ -109,4 +109,4 @@ The big wins:
 ## Next steps
 
 - [Manage environment variables](environment-variables.md) — adding, editing, and inheriting variables.
-- [Environments](../concepts/environments.md) — the inheritance model.
+- [Environments](overview.md) — the inheritance model.

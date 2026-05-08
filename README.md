@@ -8,7 +8,7 @@ This site is for developers using Brimble. If you're new, start with the quickst
 
 * [What is Brimble](getting-started/introduction.md) — the product in two minutes
 * [Quickstart](getting-started/quickstart.md) — deploy your first project in under 10 minutes
-* [Add a custom domain](getting-started/custom-domains.md) — point your own domain at a deployed project
+* [Add a custom domain](domains/custom-domains.md) — point your own domain at a deployed project
 
 ## Where things live
 

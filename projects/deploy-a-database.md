@@ -127,4 +127,4 @@ psql "$DATABASE_URL" -c "SELECT version();"
 ## Next steps
 
 - [Manage environment variables](environment-variables.md) — wiring the connection string into a service.
-- [Service types reference](../reference/service-types.md) — full database options.
+- [Service types reference](service-types.md) — full database options.

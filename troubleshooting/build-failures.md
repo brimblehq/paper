@@ -132,5 +132,5 @@ If the logs don't make the cause obvious:
 
 ## Next steps
 
-- [Deployments](../concepts/deployments.md) — full deployment lifecycle.
-- [Builds](../concepts/builds.md) — what happens during each build phase.
+- [Deployments](../projects/deployments.md) — full deployment lifecycle.
+- [Builds](../projects/builds.md) — what happens during each build phase.

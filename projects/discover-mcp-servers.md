@@ -124,4 +124,4 @@ If you didn't enable authentication, drop the `x-brimble-key` header and the req
 ## Next steps
 
 - [Deploy an MCP server](deploy-an-mcp-server.md) — deploy your own custom MCP code.
-- [Service types](../reference/service-types.md) — what MCP servers run as on Brimble.
+- [Service types](service-types.md) — what MCP servers run as on Brimble.

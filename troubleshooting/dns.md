@@ -101,7 +101,7 @@ You added `app.example.com` and it works, but `www.example.com` doesn't.
 
 DNS providers reject CNAME at the apex with errors like "CNAME at zone apex." This is a hard rule of the DNS spec.
 
-**Fix:** Use the A record value from the dashboard, or your provider's ALIAS / CNAME flattening feature. See [DNS records reference](../reference/dns-records.md).
+**Fix:** Use the A record value from the dashboard, or your provider's ALIAS / CNAME flattening feature. See [DNS records reference](../domains/dns-records.md).
 
 ## DNS records I added in Brimble's dashboard aren't taking effect
 
@@ -154,6 +154,6 @@ A 200 (or any response with a valid certificate) means TLS is working. A connect
 
 ## Next steps
 
-- [Custom domains](../getting-started/custom-domains.md) — full setup guide.
-- [DNS records](../reference/dns-records.md) — the supported record types and their fields.
+- [Custom domains](../domains/custom-domains.md) — full setup guide.
+- [DNS records](../domains/dns-records.md) — the supported record types and their fields.
 - [TLS issues](tls.md) — when DNS is right but the certificate is the problem.
