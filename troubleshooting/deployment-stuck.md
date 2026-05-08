@@ -1,0 +1,162 @@
+# Deployment is stuck
+
+A deployment that doesn't start or doesn't finish. Different from a deployment that **fails** (those produce an error and a logs page) — these stay in `pending` or `in progress` indefinitely.
+
+## Stuck in "pending"
+
+The deployment was created but never starts. Logs show only the queue entry, not a clone or build.
+
+### Cause 1: No build slot available
+
+Each plan grants a fixed number of concurrent builds. If yours are all busy, new deployments queue.
+
+**Confirm:** Open **Deployments** for the project. If other deployments (in this project or other projects under the same plan) are in `in progress`, they're holding the slot.
+
+**Fix:**
+
+- Wait for an in-progress deployment to finish.
+- Cancel an in-progress deployment if you don't need it: **⋯ → Cancel** in the dashboard, or `POST /v1/projects/cancel/<project-id>/<deployment-id>`.
+- Upgrade your plan for more concurrent builds.
+
+### Cause 2: Build minutes exhausted (free plan)
+
+On the free plan, when monthly build minutes are gone, new builds queue indefinitely instead of overage-billing.
+
+**Confirm:** Open **Billing → Usage**. If build-minute usage is at 100%, you're capped.
+
+**Fix:** Upgrade the plan, or wait for the cycle to roll over.
+
+### Cause 3: Region in maintenance
+
+If the region is temporarily not accepting deployments, builds queue until it's back.
+
+**Confirm:** Open the region status under **Settings → Region**, or check [status.brimble.io](https://status.brimble.io).
+
+**Fix:** Wait for the region to come back, or move the project to a different region.
+
+### Cause 4: Project disabled (payment past due)
+
+If the account's billing has been failing for over 7 days, builds are disabled. The deployment is created but won't run.
+
+**Confirm:** A banner in the dashboard says "billing issue" or similar. Status: `inactive`.
+
+**Fix:** Update the payment method under **Billing → Payment methods**, then click **Redeploy**.
+
+## Stuck in "in progress" — clone phase
+
+Logs show a clone-attempt line and stop.
+
+### Cause 1: Repository unreachable
+
+Your Git provider is down or your token expired.
+
+**Confirm:** Check the Git provider's status page.
+
+**Fix:** Re-authorize Brimble's Git provider connection under **Account settings → Git providers**.
+
+### Cause 2: Submodule clone hanging
+
+Your repo has submodules that point to URLs Brimble can't reach (private hosts, broken URLs).
+
+**Confirm:** Logs show "cloning submodule" with no progress.
+
+**Fix:** Either remove the submodule, or change its URL to one Brimble can authenticate against (HTTPS with the same credentials).
+
+## Stuck in "in progress" — install or build phase
+
+Logs are silent, or a single command is running indefinitely.
+
+### Cause 1: Network-bound install
+
+A package manager is fetching a large dependency over a slow link, or hanging on a registry that's not responding.
+
+**Confirm:** The last log line is something like "fetching", "downloading", or "resolving". No progress for 5+ minutes.
+
+**Fix:** Click **Cancel** and **Redeploy**. If it hangs again on the same package, the issue is upstream — try a different version, vendor the dependency, or pin to a registry mirror.
+
+### Cause 2: Build script with no output
+
+Your build command runs but writes nothing to stdout for a long time. Brimble doesn't kill silent builds.
+
+**Confirm:** No log output for several minutes. The build is "running" but nothing's visible.
+
+**Fix:** Add periodic progress logging in your build:
+
+```javascript
+console.log(`[${new Date().toISOString()}] step X complete`);
+```
+
+This both helps you diagnose hangs and keeps the build runner active.
+
+### Cause 3: Out-of-memory thrashing
+
+Your build is using too much memory and the runner is paging or thrashing instead of OOMing.
+
+**Confirm:** Build slows to a crawl after a fast start.
+
+**Fix:** Reduce memory pressure (smaller bundle, build flags like `NODE_OPTIONS=--max-old-space-size=2048`), or bump the project's compute size temporarily for the build.
+
+## Stuck in "in progress" — health check phase
+
+Build succeeded, container started, but Brimble never marks it active.
+
+### Cause 1: App not listening on `$PORT`
+
+Your code listens on a hardcoded port; the edge can't reach it.
+
+**Fix:** Read `process.env.PORT` and bind to `0.0.0.0`. See [502 errors](502-errors.md).
+
+### Cause 2: Health check path returns non-2xx
+
+The default health check is `GET /`. If your `/` returns 404, 500, or anything outside 2xx/3xx, the check fails.
+
+**Fix:** Either add a `/` route, or set the health check path to a working endpoint under **Settings → Configuration**:
+
+```
+healthCheckPath: /healthz
+```
+
+A common pattern:
+
+```javascript
+app.get("/healthz", (req, res) => res.json({ ok: true }));
+```
+
+### Cause 3: App takes too long to start
+
+Brimble's health check has a startup timeout. If your app takes 60+ seconds before listening, the check times out.
+
+**Fix:** Reduce startup time. Common culprits: heavy DB queries on boot, downloading large model files at startup, JIT warming. Move the slow work to a background task that runs after the app is listening, or pre-bake the data at build time.
+
+## Cancel a stuck deployment
+
+```bash
+curl -X POST https://api.brimble.io/v1/projects/cancel/<project-id>/<deployment-id> \
+  -H "Authorization: Bearer <token>"
+```
+
+Or click **Cancel** on the deployment in the dashboard. Cancelling moves the deployment to `cancelled`. The previous active deployment stays in place.
+
+## Force a fresh deployment
+
+If a stuck deployment seems caused by a transient issue:
+
+1. Cancel it.
+2. Click **Redeploy** on the latest successful deployment to confirm the project still works.
+3. Push a new commit, or click **Redeploy** with the latest commit, to retry.
+
+## When to contact support
+
+Open a ticket if:
+
+- A deployment has been in `in progress` for more than 30 minutes with no log progress.
+- Cancelling doesn't move the deployment out of `in progress` within a few minutes.
+- Repeated deployments hang at the same phase, even after cache clearing and redeploys.
+
+Include the deployment ID and the project name. Brimble's logs include extra context not shown in the dashboard.
+
+## Next steps
+
+- [Build failures](build-failures.md) — for deployments that fail with an error.
+- [502 errors](502-errors.md) — for deployments that go active but don't serve traffic.
+- [Deployments](../concepts/deployments.md) — the full lifecycle and what each phase does.
