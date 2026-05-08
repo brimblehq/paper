@@ -15,6 +15,10 @@ Use this for staging deployments, internal tools, or any project that shouldn't 
 3. Toggle **Password protection** on.
 4. Set a username and password. Save.
 
+![TODO: screenshot of the Access settings panel showing the Password protection toggle on, with username and password inputs, and a "Generate strong password" affordance](./images/PLACEHOLDER.png)
+
+*Password protection on a project — basic auth enforced at the edge.*
+
 The next request to the project URL will see a `401 Unauthorized` with a `WWW-Authenticate: Basic` challenge. Browsers prompt for credentials; programmatic clients send them in the `Authorization` header.
 
 ## Test it

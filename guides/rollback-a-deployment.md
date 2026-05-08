@@ -15,6 +15,10 @@ If a new deployment breaks production, roll back to a previous one. Rollbacks re
 4. Click **⋯** → **Redeploy this version**.
 5. Confirm. Brimble re-runs that deployment's image and flips traffic to it within ~30 seconds.
 
+![TODO: screenshot of the Deployment history page showing several deployment rows with status chips, commit messages, branches, deployer avatars, timestamps, and the row-level "⋯" menu open with the "Redeploy this version" option highlighted](./images/PLACEHOLDER.png)
+
+*Deployment history with the redeploy action open on a previous deployment.*
+
 The rolled-back deployment becomes the new active one. Your deployment history adds a new row pointing at the same commit SHA.
 
 ## What carries over and what doesn't

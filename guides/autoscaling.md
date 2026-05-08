@@ -1,85 +1,111 @@
-# Configure autoscaling
+# Configure scaling
 
-Run more than one container for a project, with bounds you control. Useful for traffic that varies by time of day or unpredictable spikes.
+Run more than one container for a project, with bounds you control. Brimble's scaling is organized into **scaling groups** — each group can run in fixed or auto-scaling mode.
 
-By default, a Brimble project runs as a single container. Autoscaling groups let you run more than one and bound how high they can scale.
+By default, a Brimble project runs as a single container. Scaling groups let you run more, either at a fixed count or with automatic scaling tied to CPU and memory thresholds.
 
 ## Prerequisites
 
-- A project on a paid plan that includes autoscaling.
-- The project must be a web service or worker. Static sites don't need scaling (they serve from the edge), and databases scale separately.
+- A project on a paid plan that includes scaling.
+- The project must be a web service or worker. Static sites serve from the edge and don't need scaling; databases scale separately.
 
-## How it works
+## Open the scaling page
 
-You attach an **autoscaling group** to a project. The group sets:
+In the sidebar, click **Scaling**. The page lists every scaling group in the workspace. Each card shows:
 
-- **Minimum containers** — the floor. Brimble runs at least this many at all times.
-- **Maximum containers** — the ceiling. Brimble runs at most this many.
-- **Max CPU per container** — the upper bound on CPU each container can use.
-- **Max memory per container** — the upper bound on memory each container can use.
-- **Active** — whether the group is running. Toggle off to freeze scaling without losing the configuration.
+- The group's name.
+- Whether auto-scaling is on or off.
+- The instance range (min → max) for autoscaling, or fixed count.
+- Currently running instances.
+- CPU and memory thresholds (if autoscaling).
+- Active / inactive toggle.
+- Edit and delete actions.
 
-When a group is active, Brimble keeps the running container count between `min_containers` and `max_containers`. Containers are added when load on existing ones is high enough to justify them and removed when there's slack. The current container count is tracked as the group's `replicas` field.
+![TODO: screenshot of the Scaling page showing one or more scaling group cards with name, auto-scaling badge, instance count, CPU/memory threshold bars, and edit/delete controls](./images/PLACEHOLDER.png)
 
-## Create an autoscaling group
+*The scaling groups overview.*
 
-1. Open the project.
-2. Go to **Scaling**.
-3. Click **Add autoscaling group**.
-4. Set:
-   - **Name** — a label so you can identify the group later.
-   - **Minimum containers**.
-   - **Maximum containers**.
-   - **Max CPU per container** (e.g. `1` for one vCPU).
-   - **Max memory per container** in MB.
-5. Save.
+## Create a scaling group
 
-The group activates immediately. Container count adjusts on the next scaling cycle.
+1. Click **Create scaling group** (or **Add scaling group** if groups already exist).
+2. Fill in:
+   - **Group name** — a label so you can identify the group later (e.g. `web-frontend`).
+   - **Auto-scaling** — toggle on or off.
 
-## Recommended starting bounds
+The next set of fields depends on which mode you picked.
+
+### Fixed mode (auto-scaling off)
+
+- **Number of instances** — pick from 1 to 10.
+
+The group runs exactly that many containers, no more, no less.
+
+### Auto-scaling mode (auto-scaling on)
+
+- **Instance range** — minimum and maximum, each between 1 and 5. Maximum must be greater than minimum.
+- **CPU threshold** — between 1% and 100%. When average CPU across running containers crosses this, Brimble adds a container (up to the maximum).
+- **Memory threshold** — between 10% and 100%, in 5% increments. When average memory crosses this, Brimble adds a container.
+
+Save. The group activates immediately. The container count adjusts on the next scaling cycle.
+
+![TODO: screenshot of the create scaling group form in auto-scaling mode with the instance range slider, CPU threshold slider, and memory threshold slider visible](./images/PLACEHOLDER.png)
+
+*The auto-scaling configuration form.*
+
+## Recommended starting values
 
 For a typical web service:
 
-- Minimum: 2 (so a single container failure doesn't take you offline)
-- Maximum: 10
-- Max CPU: matches your project's compute size
-- Max memory: matches your project's compute size
+- Mode: auto-scaling
+- Instance range: 2–5
+- CPU threshold: 70%
+- Memory threshold: 75%
 
-Adjust as you see how your traffic actually behaves. Most teams start narrower than they think they need and widen the cap once they have data.
+Start narrow. Widen the range once you have data on what your traffic actually looks like.
+
+If your service has steady, predictable traffic, fixed mode with 2 or 3 instances is simpler — autoscaling adds complexity that only pays off when traffic varies meaningfully.
 
 ## Workers
 
-For background workers, autoscaling adjusts the number of consumer containers. If you scale to four containers, four copies of your worker run at once — each consuming from the same queue. Make sure your queue protocol distributes work safely across consumers (most do).
+For background workers, scaling adjusts the number of consumer containers. Four containers means four copies of your worker run at once, each consuming from the queue. Make sure your queue protocol distributes work safely (Redis BLPOP, RabbitMQ work queues, BullMQ workers — all of these distribute correctly).
 
-If your worker maintains in-process state that shouldn't be duplicated (a singleton scheduler, for example), don't autoscale — set `min_containers = max_containers = 1`.
+If your worker maintains in-process singleton state, don't scale past one container. Set fixed mode with 1 instance, or auto-scaling with min and max both at 1.
 
 ## Edit a group
 
-In **Scaling**, click the group, edit values, save. Changes take effect on the next scaling cycle.
+Click the edit (pencil) icon on the group's card. The same form opens with current values. Save when done. Changes take effect on the next scaling cycle.
 
 ## Pause or remove a group
 
-Toggle **Active** off on the group to pause without losing the configuration. The current container count freezes; future cycles don't scale.
+Toggle **Active** off on the group's card to pause without losing the configuration. The current container count freezes; future scaling cycles do nothing while paused.
 
-To remove the group entirely, click **Delete**. Containers stay at whatever the count was when you deleted; future scaling stops, and you manage the project as a single-container deployment again.
+To remove the group entirely, click **Delete** and confirm. Containers stop scaling under the group's rules, and the project reverts to whatever the rest of its configuration says (typically a single container).
+
+## Permissions
+
+Viewers cannot create, edit, or delete scaling groups — only see them. Members and Administrators can.
 
 ## Verification
 
-Open **Scaling** and watch the **Replicas** field on the group. Generate some load against the project (with `wrk`, `vegeta`, or just real traffic) and observe whether the count climbs toward your maximum.
+Generate load against the project (with `wrk`, `vegeta`, or real traffic). Watch the **Running instances** count on the group card. In auto-scaling mode it should rise toward the maximum as your CPU/memory crosses thresholds, then drop back toward the minimum after load ends.
 
-Once load drops, the count returns toward your minimum after a stabilization period.
+```bash
+wrk -t4 -c200 -d2m https://<project-name>.brimble.app/
+```
 
 ## Troubleshooting
 
-**Containers never scale up.** Either load isn't actually crossing the scaling threshold, or the group is paused. Check **Active** is on, then look at observability metrics — if CPU/memory never approach the per-container ceilings, scaling won't trigger.
+**Auto-scaling never triggers.** CPU or memory isn't actually crossing the threshold. Open the project's **Observability** tab — if the gauge stays well below your threshold during traffic, lower it (or pick the metric that does spike).
 
-**Containers scale up and down repeatedly (flapping).** Your minimum and maximum are too close, or the per-container ceilings are too tight relative to traffic. Widen the bounds.
+**Containers scale up and stay at the max.** Either traffic genuinely demands the cap, or the metric stays elevated for a downstream reason (a slow database, a stuck queue). Investigate the bottleneck before raising the cap.
 
-**Container count stays at the maximum even when traffic drops.** Some traffic patterns (long-lived WebSocket connections, server-sent events) prevent containers from being safely terminated. Brimble drains connections before stopping a container; long-lived connections delay this. This is intentional — it prevents dropping users.
+**Containers flap up and down rapidly.** Thresholds too tight relative to the per-container ceiling, or traffic is bursty. Widen the instance range, or move to fixed mode if bursts are normal.
 
-**Workers scale up but only one is doing work.** Your consumer protocol isn't distributing across containers. Check that your queue client uses a consumer-group pattern (Redis BLPOP, RabbitMQ work queues, BullMQ workers — these all distribute correctly).
+**"For auto-scaling to work, max instances must be greater than min instances."** The form blocks save. Set the maximum at least one above the minimum.
+
+**Scaling group exists but the project still runs as one container.** The group might be inactive. Toggle **Active** on the group's card.
 
 ## Next steps
 
 - [Deployments](../concepts/deployments.md) — how new containers come online and pass health checks.
-- [Plans and pricing](../reference/plans.md) — billing impact of additional containers.
+- [Plans and pricing](../reference/plans.md) — billing for additional containers.

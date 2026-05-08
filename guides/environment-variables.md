@@ -14,6 +14,10 @@ Set, edit, and delete environment variables for a project. Variables are injecte
 4. Click **Add variable**.
 5. Enter the name and value. Click **Save**.
 
+![TODO: screenshot of the Environment tab on a project showing the variables table with name, value (with eye/eye-slash toggle), environment dropdown, secret/public indicator, and the "Add variable" entry point](./images/PLACEHOLDER.png)
+
+*The Environment tab on a project. Each row shows the variable's name, current value, who last modified it, and whether it's marked secret or public.*
+
 The variable is stored encrypted at rest. The next deployment picks it up.
 
 ## Add many variables at once
@@ -24,6 +28,10 @@ For pasting in a `.env` file:
 2. Click **Bulk import**.
 3. Paste the contents of your `.env` file. Lines starting with `#` are treated as comments.
 4. Click **Import**.
+
+![TODO: screenshot of the Bulk import modal with a textarea showing a few KEY=value lines and a comment line, plus the Import button](./images/PLACEHOLDER.png)
+
+*The bulk import modal accepts standard `.env` syntax.*
 
 Each line of the form `KEY=value` becomes a variable. Quoted values are unquoted. Values containing `=`, `#`, or whitespace should be wrapped in single or double quotes:
 

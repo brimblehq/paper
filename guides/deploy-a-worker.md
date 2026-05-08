@@ -16,6 +16,10 @@ A worker is just a process that runs forever. It doesn't listen on a port, and B
 3. Connect the repository and pick a branch.
 4. Under **Service type**, choose **Worker**.
 
+![TODO: screenshot of the new-project flow with service type set to "Worker" and the Git source selected](./images/PLACEHOLDER.png)
+
+*Creating a worker project from a Git repository.*
+
 ## Step 2: Configure the build
 
 A worker uses the same build pipeline as a web service. Brimble auto-detects the framework. Override the build and start commands if needed.

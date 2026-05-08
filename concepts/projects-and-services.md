@@ -66,6 +66,10 @@ Account or Team
     └── Metrics, logs, webhooks
 ```
 
+![TODO: screenshot of the Projects list view in the dashboard, showing a few project cards with status chips, framework logos, branch labels, last commit message, deployed-by avatar, and tags](./images/PLACEHOLDER.png)
+
+*The Projects list — each card summarizes one project's current state.*
+
 A team can hold many projects. A project can hold many environments. Each environment has its own set of environment variables. Each deployment ships from a specific environment.
 
 ## Naming and limits

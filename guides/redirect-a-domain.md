@@ -1,0 +1,90 @@
+# Redirect a domain
+
+Send all traffic for a domain (or subdomain) to a different URL. Useful for:
+
+- Forwarding `www.example.com` to `example.com` (or vice versa).
+- Redirecting an old domain to a rebranded one.
+- Pointing a vanity domain at a marketing landing page hosted elsewhere.
+
+The redirect happens at Brimble's edge — no application code runs, no project is consulted. Requests for the domain go straight to the destination URL with the status code you choose.
+
+## Prerequisites
+
+- A domain in your Brimble account, attached to your workspace (purchased through Brimble or added as a custom domain).
+
+## Set up a redirect
+
+1. In the dashboard, open the domain.
+2. Click **Edit domain** (or **⋯ → Edit**).
+3. In the **Redirect** section:
+   - **Redirect URL** — where to send traffic. Must include the protocol (`https://` or `http://`).
+   - **Status code** — pick from `301`, `302`, `307`, or `308`. The default is `307`.
+4. Save.
+
+![TODO: screenshot of the Edit Domain dialog showing the redirect URL field, status code selector, and a clear-redirect button](./images/PLACEHOLDER.png)
+
+*The redirect form, with URL and status code.*
+
+The redirect takes effect immediately — no DNS change, no deploy, no propagation delay (other than CDN caches at the destination, which are out of Brimble's control).
+
+## Status codes
+
+| Code | Use when |
+|---|---|
+| **301 Moved Permanently** | The redirect is permanent and cacheable. Search engines transfer ranking signals to the destination. |
+| **302 Found** | A temporary redirect. Browsers may cache; some change the request method on POST. |
+| **307 Temporary Redirect** | Default. A temporary redirect that preserves the HTTP method. Safe for POST, PUT, DELETE. |
+| **308 Permanent Redirect** | Permanent and preserves the HTTP method. Use for permanent redirects of API endpoints. |
+
+For most marketing or domain-rename use cases, **301** is what you want. Use **307** if you need to redirect API traffic and preserve methods.
+
+## Verification
+
+```bash
+curl -I https://your-domain.com
+```
+
+Expected response:
+
+```
+HTTP/2 301
+Location: https://destination.example.com/
+```
+
+The status line should match the code you picked. The `Location` header should be your destination URL.
+
+## Clear a redirect
+
+1. Open the domain.
+2. Click **Edit domain**.
+3. Click **Clear** next to the redirect URL.
+4. Save.
+
+After clearing, the domain falls back to whichever project is attached to it — or returns a 404 if no project is attached.
+
+## What redirects don't do
+
+- **They don't preserve paths automatically.** If the redirect URL is `https://example.com/`, then `your-domain.com/about` redirects to `https://example.com/` — not `https://example.com/about`. Path-preserving redirects must be done in your destination app.
+- **They don't apply to subdomains separately.** Setting a redirect on `example.com` doesn't redirect `app.example.com`. Each hostname has its own redirect setting.
+- **They don't work without DNS.** Your domain still needs to resolve to Brimble's edge for the redirect to fire. If DNS points elsewhere, the redirect never executes.
+
+## Troubleshooting
+
+**Redirect doesn't fire.** Confirm DNS resolves to Brimble:
+
+```bash
+dig your-domain.com +short
+```
+
+Expected: an A record pointing to Brimble's edge or a CNAME to `gateway.brimble.app`. If DNS points elsewhere, traffic never reaches Brimble's edge and the redirect can't run.
+
+**Browser shows the destination but the URL bar shows my domain.** That's a frame, not a redirect. Brimble doesn't do frame-based redirects — only HTTP-status redirects with a `Location` header. If you see the URL stay the same, something else is in front (a browser extension, a proxy, a cached service worker).
+
+**Status code is right but the destination is wrong.** Open the domain in the dashboard and re-check the redirect URL. Trailing slashes matter — `https://example.com` and `https://example.com/` are different targets to most servers.
+
+**TLS warning at destination.** The redirect target needs its own valid certificate. Brimble's certificate is for your domain; the destination handles its own.
+
+## Next steps
+
+- [Custom domains](../getting-started/custom-domains.md) — attach a domain to a project (the alternative to redirecting).
+- [DNS troubleshooting](../troubleshooting/dns.md) — when DNS itself is the problem.

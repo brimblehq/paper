@@ -4,6 +4,10 @@ Brimble is a platform-as-a-service for deploying applications. You connect a Git
 
 If you've used Heroku, Render, or Railway, the model will feel familiar.
 
+![TODO: screenshot of the Brimble dashboard home showing the welcome panel, the projects-this-week stats, recent deployed projects as cards, connected domains count, and the sidebar with Home / Projects / Domains / Scaling / Discover](./images/PLACEHOLDER.png)
+
+*The Brimble dashboard home, after deploying a few projects.*
+
 ## What you can deploy
 
 Each thing you deploy on Brimble is a **project**. A project has a type that determines how it builds and runs:

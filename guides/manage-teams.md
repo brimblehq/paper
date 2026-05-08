@@ -35,6 +35,10 @@ A team always has exactly one Creator. There can be many Administrators, Members
 4. Enter the email address and pick a role.
 5. Click **Send invite**.
 
+![TODO: screenshot of the Members settings page showing existing members with their roles and a highlighted "Invite member" entry point that opens the invite dialog](./images/PLACEHOLDER.png)
+
+*The Members settings page lists current members and pending invites.*
+
 The invitee gets an email with a link. If they don't already have a Brimble account, the link prompts them to sign up; otherwise, they accept and are added to the team.
 
 Pending invites stay listed under **Members** until accepted, expired, or revoked. To revoke, click **⋯** → **Revoke invite**.

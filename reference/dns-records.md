@@ -12,7 +12,8 @@ The record types Brimble's authoritative DNS supports for managed domains. Manag
 | **MX** | Specifies a mail server for the domain. | `10 mail.example.com` |
 | **NS** | Delegates a subdomain to other nameservers. | `ns1.other.com` |
 | **TXT** | Arbitrary text. Used for SPF, DKIM, DMARC, domain verification. | `"v=spf1 include:_spf.google.com ~all"` |
-| **SPF** | Alias for a specific TXT use case. Most providers use TXT instead. | `"v=spf1 -all"` |
+| **SRV** | Service records, used for things like XMPP, SIP, and Matrix. | `10 5 5269 jabber.example.com` (priority weight port target) |
+| **CAA** | Restricts which certificate authorities can issue certs for the domain. | `0 issue "letsencrypt.org"` |
 
 ## Fields per record
 

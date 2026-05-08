@@ -43,6 +43,10 @@ Each in-progress deployment streams logs through these phases:
 
 Logs for each phase stream into the dashboard in real time. You can also view them after the fact under **Deployment history**.
 
+![TODO: screenshot of the live deployment logs drawer streaming output, with phase headers (Clone, Detect, Install, Build, Push, Deploy) collapsible, status chip showing "In progress", and a "Cancel" button visible in the header](./images/PLACEHOLDER.png)
+
+*Live deployment logs stream by phase as the build runs.*
+
 ## Build queue
 
 Deployments don't all run at once. Each plan grants a fixed number of **concurrent builds**:

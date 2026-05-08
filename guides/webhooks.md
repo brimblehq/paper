@@ -27,6 +27,10 @@ A single events list applies to all three destinations — whichever ones are se
 4. Pick the events you want to receive. Use **Select all** to subscribe to every event.
 5. Save.
 
+![TODO: screenshot of the Webhooks settings page showing the three URL input fields (Webhook, Discord, Slack), the events checklist grouped by category (Deployment, Project, Domain, Environment, DNS, Autoscaling, Subscription, Payment), and a Save button](./images/PLACEHOLDER.png)
+
+*The Webhooks settings page with the three destination URLs and the event subscription checklist.*
+
 The next matching event delivers to every configured destination.
 
 From the API:

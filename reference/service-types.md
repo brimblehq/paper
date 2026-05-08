@@ -2,23 +2,27 @@
 
 Every Brimble project has a service type. The type determines build behavior, runtime model, and what's exposed.
 
-| Service type | Build | Runtime | Public URL | Health check | Use for |
+| Service type | Build source | Runtime | Public URL | Health check | Use for |
 |---|---|---|---|---|---|
-| **Web service** | Railpack or `Dockerfile` | Container, listens on `$PORT` | Yes | HTTP GET on `healthCheckPath` | Express, Django, Rails, FastAPI, Spring Boot, Phoenix, any HTTP server |
-| **Static site** | Frontend builder | None — assets served from edge | Yes | None | Next.js (export), Vite, Astro, Hugo, plain HTML/JS |
-| **Worker** | Railpack or `Dockerfile` | Container, no port | No | Process liveness | Queue consumers, schedulers, background jobs |
+| **Web service** | Git repo (Railpack / `Dockerfile`) **or** pre-built Docker image | Container, listens on `$PORT` | Yes | HTTP GET on `healthCheckPath` | Express, Django, Rails, FastAPI, Spring Boot, Phoenix, any HTTP server |
+| **Static site** | Git repo (frontend builder) | None — assets served from edge | Yes | None | Next.js (export), Vite, Astro, Hugo, plain HTML/JS |
+| **Worker** | Git repo (Railpack / `Dockerfile`) **or** pre-built Docker image | Container, no port | No | Process liveness | Queue consumers, schedulers, background jobs |
 | **Database** | Managed image | Engine-specific | No (private endpoint) and Yes (public endpoint) | Engine readiness probe | Postgres, MySQL, MariaDB, MongoDB, Redis, Valkey, RabbitMQ, Neo4j, ClickHouse |
-| **MCP server** | Railpack or `Dockerfile` | Container, listens on `$PORT` | Yes | HTTP GET on `healthCheckPath` | Remote MCP servers for AI clients |
+| **MCP server** | Git repo (Railpack / `Dockerfile`) **or** pre-built Docker image | Container, listens on `$PORT` | Yes | HTTP GET on `healthCheckPath` | Remote MCP servers for AI clients |
 
 ## Web service
 
 A long-running container that handles HTTP traffic.
 
+**Source options:**
+- **Git repository** — Brimble builds from source using Railpack (auto-detected) or a `Dockerfile` if one is at the project root.
+- **Docker image** — pull a pre-built image from Docker Hub, GHCR, or any container registry. See [Deploy from a Docker image](../guides/deploy-from-docker-image.md).
+
 **Required:**
-- A `start` command that listens on `process.env.PORT`.
+- The container's start command must listen on `process.env.PORT`.
 - Listening on `0.0.0.0` (not `localhost` or `127.0.0.1`).
 
-**Auto-detected for:** Node (Express, Fastify, Next.js standalone, NestJS), Python (FastAPI, Django, Flask), Ruby (Rails, Sinatra), Go, Java (Spring Boot), Rust, Elixir (Phoenix), PHP (Laravel).
+**Auto-detected for Git source:** Node (Express, Fastify, Next.js standalone, NestJS), Python (FastAPI, Django, Flask), Ruby (Rails, Sinatra), Go, Java (Spring Boot), Rust, Elixir (Phoenix), PHP (Laravel).
 
 **Configurable:**
 - Install command, build command, start command.
@@ -26,6 +30,9 @@ A long-running container that handles HTTP traffic.
 - Pre-start command (runs once per build, before push).
 - Watch paths (monorepo support).
 - Build cache toggle.
+- Persistent disk (mount path + size from 1, 5, 10, 25, 50, 100 GB).
+- Site password / basic auth.
+- Auto-deploy on push (Git source).
 
 ## Static site
 

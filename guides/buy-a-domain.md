@@ -1,0 +1,98 @@
+# Buy a domain through Brimble
+
+Search for and register a new domain directly from the Brimble dashboard. Purchased domains use Brimble's nameservers by default, so DNS works without additional setup.
+
+## Prerequisites
+
+- A Brimble account.
+- A payment method on file. Add one under **Billing → Payment methods** before starting.
+
+## Search for a domain
+
+1. Open the dashboard.
+2. Go to **Domains → Buy a domain**.
+3. Enter the name you want to register. If you don't include a TLD, Brimble appends `.com` automatically.
+4. The results list shows availability across 30+ TLDs (`.com`, `.io`, `.dev`, `.app`, `.ai`, `.co`, and more) with their first-year prices.
+
+When a TLD is on a discount, the result shows the saving (for example, "save up to 20%").
+
+![TODO: screenshot of the domain search results showing several TLD options with prices and a "save up to 20%" badge on one row](./images/PLACEHOLDER.png)
+
+*Search results show price-per-year by TLD with discounts called out.*
+
+## Buy the domain
+
+Click **Buy** on the result you want. The purchase form asks for:
+
+| Field | What to set |
+|---|---|
+| **Duration** | 1 to 10 years. `.ai` domains are locked to a 2-year minimum. |
+| **Privacy protection** | Toggle to keep your contact details out of the public WHOIS record. Free for `.app` domains; $8/year for most others. |
+| **Auto-renewal** | Toggle to renew automatically before the registration expires. Off by default. |
+| **Registrant email** | Auto-filled from your account email. Override if you want registration messages going elsewhere. |
+| **Payment method** | Pick the card to charge. You can add a new card from inside the form. |
+
+Renewal prices may differ from the first-year price — the form shows both. Confirm the totals, then click **Buy**.
+
+The purchase is processed immediately. The domain shows up under **Domains** with a "Purchased from Brimble" indicator and a **Status: Active** badge once registration confirms.
+
+## After purchase
+
+A purchased domain comes with:
+
+- **Brimble nameservers set automatically.** You can manage DNS records in the dashboard right away.
+- **A default `.brimble.app` redirect not attached.** The domain isn't routed anywhere until you attach it to a project.
+- **WHOIS privacy applied** if you toggled it on.
+- **Auto-renewal flagged** per your selection.
+
+To attach the domain to a project, see [Add a custom domain](../getting-started/custom-domains.md). The flow is the same as bringing a domain you already own — pick a project, optionally set up a redirect.
+
+## Renew a domain
+
+Domains that come up for renewal appear in **Domains** with an expiry banner:
+
+- **Yellow** — expires within 7 days. **Renew soon** button visible.
+- **Red** — already expired. DNS edits are blocked until you renew.
+
+To renew (manually or in advance):
+
+1. Open the domain.
+2. Click **Renew**.
+3. Pick a duration (1–10 years).
+4. Toggle auto-renewal if you want it on for next time.
+5. Confirm.
+
+The card on file is charged immediately. The expiry date moves forward by the selected duration.
+
+If a domain on auto-renewal fails to renew (declined card, expired card), Brimble fires a `domain.renewal_failed` webhook and surfaces a warning on the domain page. Update the payment method and click **Renew** to retry.
+
+## Verification
+
+Open the domain in the dashboard. The status should be **Active**, the registrar should show **Brimble**, and the nameservers should list `ns1.brimble.io` and `ns2.brimble.io`.
+
+From the terminal:
+
+```bash
+dig your-domain.com NS +short
+```
+
+Expected:
+
+```
+ns1.brimble.io.
+ns2.brimble.io.
+```
+
+## Troubleshooting
+
+**Domain shows "Failed" instead of "Active."** Registration failed at the registrar. Common causes: payment didn't clear, name violates registry policy, registrant email blocked. Open the domain to see the failure message; payment failures auto-refund.
+
+**Bought a domain but it's not showing up.** Reload the **Domains** page. New registrations land within seconds; if it's been more than a minute, contact support with the order timestamp.
+
+**Privacy toggle was off when I bought it.** Open the domain and toggle privacy on. Some TLDs don't support privacy at all — the toggle is hidden in that case.
+
+## Next steps
+
+- [Add a custom domain](../getting-started/custom-domains.md) — attach the domain to a project.
+- [Manage DNS records](manage-dns-records.md) — point subdomains at services.
+- [Transfer a domain](transfer-a-domain.md) — bring an existing domain into Brimble or move one out.

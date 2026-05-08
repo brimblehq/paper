@@ -33,7 +33,24 @@ A passkey lets you sign in or step up to a sensitive action with a fingerprint, 
 3. Follow your browser's prompt. On Mac, it'll suggest Touch ID. On Windows, Hello. With a hardware key, plug it in and tap.
 4. Name the passkey (e.g. "MacBook", "YubiKey blue") so you can recognize it later.
 
+![TODO: screenshot of the Security settings panel showing the TOTP toggle on, recovery codes status, and the Passkeys section with one or two registered devices listed and an "Add passkey" button](./images/PLACEHOLDER.png)
+
+*The Security settings panel after enabling TOTP and registering a passkey.*
+
 You can add multiple passkeys. Adding more than one is recommended — if your only passkey is on a device you lose, you'll need a recovery code to get back in.
+
+## Recover access if you lose your passkey
+
+If you only have a passkey set up and lose access to all of your registered devices, use the passkey recovery flow:
+
+1. Go to the login page and enter your email.
+2. Click **Lost your passkey? Use a recovery code**.
+3. Enter your recovery code (saved when you set up TOTP).
+4. Brimble shows your existing passkeys; remove any you no longer have access to.
+5. Add a new passkey on your current device.
+6. Sign in.
+
+This flow only works if you saved the recovery codes from your TOTP setup. If you've lost both your passkey-bearing devices and your recovery codes, contact support — recovery is manual and may take days.
 
 ## Recovery codes
 
