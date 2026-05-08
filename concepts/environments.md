@@ -66,16 +66,7 @@ If you specifically don't want a value present at build time (for example, secre
 
 ## Editing variables
 
-You can add, edit, or delete variables in the dashboard under **Environment** on the project page, or via the API:
-
-```bash
-curl -X POST https://api.brimble.io/v1/envs/<project-id>/Production \
-  -H "Authorization: Bearer <token>" \
-  -H "Content-Type: application/json" \
-  -d '{"name": "DATABASE_URL", "value": "postgres://..."}'
-```
-
-Editing a variable does **not** redeploy automatically. The new value applies on the next deployment. To pick it up immediately, click **Redeploy** on the latest deployment.
+You can add, edit, or delete variables in the dashboard under **Environment** on the project page. Editing a variable does **not** redeploy automatically — the new value applies on the next deployment. To pick it up immediately, click **Redeploy** on the latest deployment.
 
 ## Verification
 

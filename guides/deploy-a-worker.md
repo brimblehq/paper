@@ -76,7 +76,9 @@ For cron-style jobs (run every hour, run at 3 AM nightly), you have two options:
 
 ## Multiple workers
 
-You can scale workers to multiple replicas. Set replica count under **Settings** → **Scaling**. All replicas run the same image with the same env vars; your code is responsible for distributing work (typically by reading from a shared queue).
+By default a worker runs as a single container. To run more than one in parallel, configure an autoscaling group on the project — see [Autoscaling](autoscaling.md). Each container runs the same image with the same env vars; your code is responsible for distributing work safely across them, typically by consuming from a shared queue with a consumer-group pattern.
+
+If your worker keeps singleton state in memory (a scheduler, an in-process lock), don't scale past one container. Set the autoscaling group's minimum and maximum to 1, or skip autoscaling entirely.
 
 ## Logs
 

@@ -43,15 +43,6 @@ Each region is in one of three states:
 
 If a region is in maintenance and you create a project there, the first deployment stays `pending` until the region is back. You can move to a different region instead.
 
-## Listing regions via API
-
-```bash
-curl https://api.brimble.io/v1/servers/regions \
-  -H "Authorization: Bearer <token>"
-```
-
-The response groups regions by provider with a flag for paid-only regions and the default region for your subscription tier.
-
 ## Switching a project's region
 
 Region is set at project creation. To move a project, create a new project in the target region from the same repo, copy environment variables, attach domains, and delete the old project. Database projects need a separate data migration.

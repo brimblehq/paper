@@ -46,18 +46,6 @@ After 5 failed retries, the delivery is dropped. The webhook is not disabled; fu
 
 Each delivery has a **10-second timeout**. Your endpoint must return a response within 10 seconds.
 
-## API limits
-
-Calls to `api.brimble.io` are rate-limited per token:
-
-| Endpoint group | Limit |
-|---|---|
-| Read endpoints (GET) | 600 per minute |
-| Write endpoints (POST, PUT, PATCH, DELETE) | 120 per minute |
-| Logs streaming | One stream per project per token |
-
-Above the limit, the API returns `429 Too Many Requests` with a `Retry-After` header.
-
 ## Sensitive operations
 
 A few operations require step-up 2FA before running:

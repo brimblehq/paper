@@ -1,31 +1,25 @@
 # Configure autoscaling
 
-Scale a project's replica count automatically based on load. Useful for traffic that varies by time of day or unpredictable spikes.
+Run more than one container for a project, with bounds you control. Useful for traffic that varies by time of day or unpredictable spikes.
+
+By default, a Brimble project runs as a single container. Autoscaling groups let you run more than one and bound how high they can scale.
 
 ## Prerequisites
 
-- A project on a paid plan.
-- The project must be a web service or worker (autoscaling is not available for static sites or databases).
+- A project on a paid plan that includes autoscaling.
+- The project must be a web service or worker. Static sites don't need scaling (they serve from the edge), and databases scale separately.
 
 ## How it works
 
-You create an **autoscaling group** for a project. The group has:
+You attach an **autoscaling group** to a project. The group sets:
 
-- A **minimum** and **maximum** replica count.
-- A **scaling strategy** (linear, exponential, or target).
-- A **metric threshold** (CPU%, memory%, or request count).
+- **Minimum containers** — the floor. Brimble runs at least this many at all times.
+- **Maximum containers** — the ceiling. Brimble runs at most this many.
+- **Max CPU per container** — the upper bound on CPU each container can use.
+- **Max memory per container** — the upper bound on memory each container can use.
+- **Active** — whether the group is running. Toggle off to freeze scaling without losing the configuration.
 
-Brimble polls the metric, compares it to the threshold, and adjusts replica count.
-
-## Strategies
-
-| Strategy | Behavior |
-|---|---|
-| **Linear** | Add or remove one replica at a time when the threshold is crossed. Predictable, slow to react to large spikes. |
-| **Exponential** | Double the replicas when scaling up; halve when scaling down. Reacts fast, may overshoot. |
-| **Target** | Add or remove replicas to keep the metric at a target value. Best for steady-state services with known capacity per replica. |
-
-Pick **Target** if you've measured how much traffic one replica can handle. Pick **Linear** otherwise.
+When a group is active, Brimble keeps the running container count between `min_containers` and `max_containers`. Containers are added when load on existing ones is high enough to justify them and removed when there's slack. The current container count is tracked as the group's `replicas` field.
 
 ## Create an autoscaling group
 
@@ -33,68 +27,59 @@ Pick **Target** if you've measured how much traffic one replica can handle. Pick
 2. Go to **Scaling**.
 3. Click **Add autoscaling group**.
 4. Set:
-   - **Minimum replicas** — the floor. Don't go below this even when idle.
-   - **Maximum replicas** — the ceiling. Don't go above this even under heavy load.
-   - **Strategy** — linear, exponential, or target.
-   - **Metric** — CPU%, memory%, or requests per second.
-   - **Scale-up threshold** — when the metric exceeds this, add replicas.
-   - **Scale-down threshold** — when the metric is below this, remove replicas.
-   - **Cooldown** — minimum time between scaling actions, in seconds. Prevents thrashing.
+   - **Name** — a label so you can identify the group later.
+   - **Minimum containers**.
+   - **Maximum containers**.
+   - **Max CPU per container** (e.g. `1` for one vCPU).
+   - **Max memory per container** in MB.
 5. Save.
 
-The group activates immediately. The next metric poll triggers a scaling action if thresholds are met.
+The group activates immediately. Container count adjusts on the next scaling cycle.
 
-## Recommended settings
+## Recommended starting bounds
 
 For a typical web service:
 
-- Min: 2 (so a single replica failure doesn't take you offline)
-- Max: 10
-- Strategy: Linear
-- Metric: CPU%
-- Scale-up: 70%
-- Scale-down: 30%
-- Cooldown: 120 seconds
+- Minimum: 2 (so a single container failure doesn't take you offline)
+- Maximum: 10
+- Max CPU: matches your project's compute size
+- Max memory: matches your project's compute size
 
-Adjust as you learn what your service's CPU profile looks like under real traffic.
+Adjust as you see how your traffic actually behaves. Most teams start narrower than they think they need and widen the cap once they have data.
 
 ## Workers
 
-For workers, the relevant metric is usually queue depth or the work-rate of the queue you're consuming from. Brimble's built-in metrics are infrastructure-level (CPU, memory) — to scale on queue depth, expose a custom metric or use the platform's `requests` proxy with an internal endpoint that reports work backlog.
+For background workers, autoscaling adjusts the number of consumer containers. If you scale to four containers, four copies of your worker run at once — each consuming from the same queue. Make sure your queue protocol distributes work safely across consumers (most do).
+
+If your worker maintains in-process state that shouldn't be duplicated (a singleton scheduler, for example), don't autoscale — set `min_containers = max_containers = 1`.
 
 ## Edit a group
 
-Open **Scaling**, click the group, edit values, save. Changes take effect on the next metric poll.
+In **Scaling**, click the group, edit values, save. Changes take effect on the next scaling cycle.
 
 ## Pause or remove a group
 
-To temporarily pause autoscaling without deleting the configuration, toggle **Active** off on the group. The current replica count freezes; future metric polls don't trigger actions.
+Toggle **Active** off on the group to pause without losing the configuration. The current container count freezes; future cycles don't scale.
 
-To remove the group entirely, click **Delete**. The replica count stays at whatever it was — autoscaling stops, you manage replicas manually.
+To remove the group entirely, click **Delete**. Containers stay at whatever the count was when you deleted; future scaling stops, and you manage the project as a single-container deployment again.
 
 ## Verification
 
-After enabling autoscaling, generate load (with `wrk`, `vegeta`, or similar) above your scale-up threshold and watch:
+Open **Scaling** and watch the **Replicas** field on the group. Generate some load against the project (with `wrk`, `vegeta`, or just real traffic) and observe whether the count climbs toward your maximum.
 
-```bash
-wrk -t4 -c200 -d2m https://<project-name>.brimble.app/
-```
-
-Open **Scaling** in the dashboard. You should see the replica count rise within a poll cycle (typically 30–60 seconds). After load stops, replicas drop back to the minimum after the cooldown.
-
-The **Activity** tab on the autoscaling group logs every scaling action with timestamp, trigger metric value, and replica count before/after.
+Once load drops, the count returns toward your minimum after a stabilization period.
 
 ## Troubleshooting
 
-**Replicas never scale up.** Check the metric is actually crossing your threshold. Open **Observability** for the project — if CPU never crosses 70%, scaling never triggers. Either lower the threshold or pick a different metric.
+**Containers never scale up.** Either load isn't actually crossing the scaling threshold, or the group is paused. Check **Active** is on, then look at observability metrics — if CPU/memory never approach the per-container ceilings, scaling won't trigger.
 
-**Replicas scale up and down repeatedly (flapping).** Your scale-up and scale-down thresholds are too close. Widen the gap. With CPU, try scale-up at 70% and scale-down at 30% rather than 60/40.
+**Containers scale up and down repeatedly (flapping).** Your minimum and maximum are too close, or the per-container ceilings are too tight relative to traffic. Widen the bounds.
 
-**Replicas hit the maximum and stay there.** Either your traffic genuinely exceeds capacity at the cap, or the metric stays elevated even after replicas are added (a downstream bottleneck). Investigate before raising the cap.
+**Container count stays at the maximum even when traffic drops.** Some traffic patterns (long-lived WebSocket connections, server-sent events) prevent containers from being safely terminated. Brimble drains connections before stopping a container; long-lived connections delay this. This is intentional — it prevents dropping users.
 
-**Scale-down happens but old replicas keep serving.** Brimble drains connections from a replica before terminating it. Long-lived connections (WebSockets, server-sent events) keep the replica running until they close. This is intentional.
+**Workers scale up but only one is doing work.** Your consumer protocol isn't distributing across containers. Check that your queue client uses a consumer-group pattern (Redis BLPOP, RabbitMQ work queues, BullMQ workers — these all distribute correctly).
 
 ## Next steps
 
-- [Deployments](../concepts/deployments.md) — how new replicas come online and pass health checks.
-- [Plans and pricing](../reference/plans.md) — billing impact of additional replicas.
+- [Deployments](../concepts/deployments.md) — how new containers come online and pass health checks.
+- [Plans and pricing](../reference/plans.md) — billing impact of additional containers.

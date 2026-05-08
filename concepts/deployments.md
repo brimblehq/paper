@@ -52,7 +52,7 @@ Deployments don't all run at once. Each plan grants a fixed number of **concurre
 - Pro: 2
 - Team: configurable (each extra concurrent build is metered)
 
-If all your slots are busy, new deployments enter `pending` and start as soon as a slot opens. You can cancel a queued deployment with **Cancel** in the dashboard or `POST /v1/projects/cancel/:projectId/:logId`.
+If all your slots are busy, new deployments enter `pending` and start as soon as a slot opens. Cancel a queued deployment by clicking **Cancel** on the deployment in the dashboard.
 
 ## Rollbacks
 
@@ -74,7 +74,7 @@ Three places show deployment status:
 
 - **Dashboard.** Status badge on the project, plus a live logs drawer.
 - **Webhooks.** Brimble emits `deployment.started`, `deployment.success`, and `deployment.failed` events. See [Webhook events](../reference/webhook-events.md).
-- **API.** `GET /v1/logs?project=<id>` returns the deployment list with current statuses.
+- **Deployment history** in the project — every previous build, with status, commit, and timing.
 
 ## Failed deployments
 

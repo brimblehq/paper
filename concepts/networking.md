@@ -113,11 +113,11 @@ You can change the health check path under **Settings → Configuration**. Use a
 
 If a deployment fails its health check repeatedly, it's marked **degraded**. Traffic continues to flow to the previous active deployment.
 
-## Failover and retries
+## Connection retries
 
-For a project with multiple replicas, the edge picks the one with the fewest active connections (least-connection) and falls over to another replica on connection errors. A single connection-level retry happens automatically; application-level errors (5xx response from your code) are returned to the client as-is.
+By default a project runs as a single container, and the edge sends all of its traffic to that one. A single connection-level retry happens automatically if the container is briefly unavailable (between health-check passes during a deploy, for example). Application-level errors — a 5xx response your code returned — go straight to the client; the edge doesn't retry those.
 
-For single-replica projects, there's no failover target — application errors come back to the client.
+If you've configured an [autoscaling group](../guides/autoscaling.md) and the project is running multiple containers, the edge distributes traffic across them and retries connection-level failures against another container before failing the request.
 
 ## Outbound traffic
 

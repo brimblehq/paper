@@ -15,7 +15,7 @@ Each plan grants a fixed number of concurrent builds. If yours are all busy, new
 **Fix:**
 
 - Wait for an in-progress deployment to finish.
-- Cancel an in-progress deployment if you don't need it: **⋯ → Cancel** in the dashboard, or `POST /v1/projects/cancel/<project-id>/<deployment-id>`.
+- Cancel an in-progress deployment if you don't need it: open the deployment in the dashboard and click **Cancel**.
 - Upgrade your plan for more concurrent builds.
 
 ### Cause 2: Build minutes exhausted (free plan)
@@ -130,12 +130,7 @@ Brimble's health check has a startup timeout. If your app takes 60+ seconds befo
 
 ## Cancel a stuck deployment
 
-```bash
-curl -X POST https://api.brimble.io/v1/projects/cancel/<project-id>/<deployment-id> \
-  -H "Authorization: Bearer <token>"
-```
-
-Or click **Cancel** on the deployment in the dashboard. Cancelling moves the deployment to `cancelled`. The previous active deployment stays in place.
+Click **Cancel** on the deployment in the dashboard. Cancelling moves the deployment to `cancelled`. The previous active deployment stays in place.
 
 ## Force a fresh deployment
 

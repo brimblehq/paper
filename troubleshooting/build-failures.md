@@ -103,7 +103,7 @@ Note `0.0.0.0` (not `localhost` and not `127.0.0.1`) — Brimble's edge can't re
 
 **Database connection times out at startup.** Your app boots, tries to connect to the database, and hangs. Verify `DATABASE_URL` is set and the database is in the same region.
 
-**Port collision.** Your code logs "address already in use." That's almost always a leftover from local development. Always read `process.env.PORT` — Brimble assigns the port; if you hardcode `3000`, two replicas will collide.
+**Port collision.** Your code logs "address already in use." Almost always a leftover from local development hardcoding port 3000 or 8080. Read `process.env.PORT` — Brimble assigns the port at deploy time.
 
 ## Diagnostic snippets
 

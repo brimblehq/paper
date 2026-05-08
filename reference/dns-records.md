@@ -102,38 +102,9 @@ This delegates `api.example.com` to a different DNS provider. Useful when one te
 
 Verification records always go on `@` (the apex) unless the provider says otherwise.
 
-## Manage via API
+## Manage records
 
-Add a record:
-
-```bash
-curl -X POST https://api.brimble.io/v1/domains/example.com/records \
-  -H "Authorization: Bearer <token>" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "type": "A",
-    "host": "api",
-    "answer": "1.2.3.4",
-    "ttl": 3600,
-    "isProxied": true
-  }'
-```
-
-Update:
-
-```bash
-curl -X PATCH https://api.brimble.io/v1/domains/example.com/records/<record-id> \
-  -H "Authorization: Bearer <token>" \
-  -H "Content-Type: application/json" \
-  -d '{"answer": "5.6.7.8"}'
-```
-
-Delete:
-
-```bash
-curl -X DELETE https://api.brimble.io/v1/domains/example.com/records/<record-id> \
-  -H "Authorization: Bearer <token>"
-```
+In the dashboard, open the domain (under **Domains** in your account or under **Domains** on a project) and use the **DNS** tab to add, edit, or delete records. Each row shows type, host, value, TTL, and whether the record is proxied through Brimble's edge.
 
 ## Verify a record
 
