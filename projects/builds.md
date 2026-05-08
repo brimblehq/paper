@@ -117,16 +117,6 @@ You don't have:
 - The ability to spawn long-running processes that outlive the build.
 - Access to other tenants' builds or runtimes — every build runs in an isolated runner.
 
-`BRIMBLE_BUILD=1` is set during the build phase only. Use it to gate code that should only run during a build (prerendering, static config generation):
-
-```javascript
-if (process.env.BRIMBLE_BUILD === "1") {
-  // build-time only
-}
-```
-
-At runtime, `BRIMBLE_BUILD` is unset.
-
 ## Watch paths
 
 For monorepos, configure **Watch paths** under **Settings → Build** to scope which file changes trigger a build. For example, `apps/web/**` means pushes that only modify other apps in the monorepo don't redeploy this project.
@@ -157,12 +147,6 @@ If you put a `Dockerfile` at the project root, Brimble uses it directly:
 - The image runs as the user defined in the Dockerfile (use a non-root user where possible).
 
 Your Dockerfile has full control — anything Docker can do, you can do. Brimble doesn't inspect or modify the Dockerfile.
-
-## docker-compose
-
-For projects that need multiple coordinated containers (a service plus a sidecar, for example), Brimble understands `docker-compose.yml` files. The compose file is parsed and each service in it is built and deployed as part of the same project.
-
-Compose-style `deploy.replicas` and `deploy.mode` are honored when set — the parser respects `replicated`, `replicated-job`, and `global` modes.
 
 ## Status updates back to the dashboard
 

@@ -6,32 +6,21 @@ Brimble injects a small set of environment variables into every deployment, on t
 
 | Variable | Set when | Value |
 |---|---|---|
-| `PORT` | Runtime, web service and MCP server | The port your service must listen on. Brimble assigns it; never hardcode. |
-| `BRIMBLE` | Always | `1` — present so your code can detect Brimble. |
-| `BRIMBLE_REGION` | Always | The region code (e.g. `fra1`). |
-| `BRIMBLE_PROJECT` | Always | The project name. |
-| `BRIMBLE_PROJECT_ID` | Always | The numeric project ID. |
-| `BRIMBLE_ENVIRONMENT` | Always | The active environment name (e.g. `Production`). |
-| `BRIMBLE_DEPLOYMENT_ID` | Always | The deployment ID this container was built for. |
-| `BRIMBLE_COMMIT_SHA` | Always | The Git commit SHA being deployed. |
-| `BRIMBLE_BRANCH` | Always | The Git branch the deployment came from. |
-| `NODE_ENV` | Build (Node only) | `production` by default. Override per-environment if needed. |
+| `PORT` | Runtime, web service and MCP server | The port your service must listen on. Brimble assigns it at deploy time; never hardcode. |
+| `NODE_ENV` | Build (Node only) | `production` by default for production deploys. Override per-environment if needed. |
 | `CI` | Build | `true` — many tools use this to suppress interactive prompts. |
-| `BRIMBLE_BUILD` | Build only | `1` — distinguishes build runner from runtime container. |
 
 ## Reading them in code
 
 ```javascript
 // Node
-const port = process.env.PORT;
-const region = process.env.BRIMBLE_REGION;
+const port = Number(process.env.PORT);
 ```
 
 ```python
 # Python
 import os
 port = int(os.environ["PORT"])
-region = os.environ.get("BRIMBLE_REGION")
 ```
 
 ```go
@@ -58,46 +47,10 @@ The `|| 3000` fallback only matters when running locally; in production `PORT` i
 
 ## What you can't override
 
-System variables can't be overridden by your environment configuration. If you set `BRIMBLE_REGION` as a custom env var, the system value still wins.
+`PORT` is controlled by Brimble — you can't set it, and any value you put in your env config is ignored at runtime.
 
-`PORT` is the exception — you cannot set it; Brimble controls it. Setting `PORT` in your env config will be ignored at runtime.
+## Detecting environment
 
-## Distinguishing build from runtime
+If you need to switch behavior between local development and a deployed environment, use a variable you set yourself (for example, an `APP_ENV` you set per-environment in the dashboard). Brimble doesn't inject a generic "running on Brimble" flag.
 
-`BRIMBLE_BUILD=1` is set during the build runner only. Use it to gate code that should only run during a build:
-
-```javascript
-if (process.env.BRIMBLE_BUILD === "1") {
-  // generate static config, prerender pages, etc.
-}
-```
-
-At runtime, `BRIMBLE_BUILD` is unset.
-
-## Detecting Brimble
-
-If your code runs both locally and on Brimble:
-
-```javascript
-const onBrimble = !!process.env.BRIMBLE;
-```
-
-Use this to switch between dev-only behavior (verbose logging, hot reload) and production behavior.
-
-## Per-deployment identifiers
-
-`BRIMBLE_DEPLOYMENT_ID` and `BRIMBLE_COMMIT_SHA` change with every deployment. Useful for:
-
-- Sentry / error reporting `release` field.
-- Log correlation.
-- A `/version` endpoint that exposes which build is running.
-
-```javascript
-app.get("/version", (req, res) => {
-  res.json({
-    deployment: process.env.BRIMBLE_DEPLOYMENT_ID,
-    commit: process.env.BRIMBLE_COMMIT_SHA,
-    region: process.env.BRIMBLE_REGION
-  });
-});
-```
+For framework-specific conventions (`NODE_ENV`, `RAILS_ENV`, etc.), set those in the project's environment under **Environment**.

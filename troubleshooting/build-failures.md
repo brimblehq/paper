@@ -118,15 +118,6 @@ console.log("Listening on port:", port);
 
 These should match.
 
-### Confirm 0.0.0.0 binding
-
-```bash
-# in the deployed container, this would show 0.0.0.0:PORT, not 127.0.0.1
-ss -tnlp
-```
-
-You can't run this in Brimble's runtime, but you can check by logging from your app at startup what host/port you bound to.
-
 ### Pin language version
 
 If the build picks a version different from your local environment, results diverge. Pin explicitly via `engines` (Node), `.python-version` (Python), or `go.mod` (Go).

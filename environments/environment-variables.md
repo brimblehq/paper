@@ -71,6 +71,17 @@ Only variables marked **inheritable** flow through. Toggle the inheritable flag 
 
 If a variable is set on both the child and the parent, the child's value wins.
 
+## Reference shared or cross-project variables
+
+A variable's value can include references to other variables — `{{shared.NAME}}` for a shared environment value, or `{{@project-slug.NAME}}` for a value from another project in the same workspace. Brimble resolves these at deploy time so the running container sees the final string.
+
+```
+API_URL={{shared.BASE_URL}}/v1
+DATABASE_URL={{@acme-pg-prod.CONNECTION_STRING}}
+```
+
+See [Reference shared and cross-project variables](env-references.md) for the full syntax, scoping rules, and chaining behavior.
+
 ## Use variables in your code
 
 Variables show up as standard process environment variables:
