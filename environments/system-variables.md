@@ -4,11 +4,24 @@ Brimble injects a small set of environment variables into every deployment, on t
 
 ## Variables Brimble sets
 
+### On every project
+
 | Variable | Set when | Value |
 |---|---|---|
 | `PORT` | Runtime, web service and MCP server | The port your service must listen on. Brimble assigns it at deploy time; never hardcode. |
 | `NODE_ENV` | Build (Node only) | `production` by default for production deploys. Override per-environment if needed. |
 | `CI` | Build | `true` — many tools use this to suppress interactive prompts. |
+
+### On managed database projects
+
+Database projects automatically expose connection details as system variables. They're scoped to the database project itself; other projects reference them via [`{{@slug.NAME}}`](env-references.md).
+
+| Variable | Value |
+|---|---|
+| `CONNECTION_STRING` | Full URI using the public load-balancer hostname. |
+| `SERVICE_HOST` | The public hostname only. |
+| `SERVICE_PORT` | The engine's port. |
+| `PRIVATE_SERVICE_HOST` | The internal hostname (`<project-slug>.service.brimble.internal`) — fastest path for services in the same workspace and region. See [Internal services](../networking/internal-services.md). |
 
 ## Reading them in code
 

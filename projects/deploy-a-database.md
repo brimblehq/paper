@@ -43,22 +43,37 @@ Provisioning typically takes 60–120 seconds. The dashboard shows the status: `
 
 Once active, the database's overview page shows:
 
-- **Connection string** — a fully-formed URL you can plug into your app.
-- **Host**, **Port** — the public endpoint, plus a private endpoint for in-region traffic.
+- **Connection string** — a fully-formed URL using the public load-balancer hostname. Plug into your app.
+- **Host**, **Port** — the public endpoint and port.
 - **User** and **Password** — credentials.
 - **Database name** — the default database (for engines that have the concept).
 
-Click the eye icon to reveal the password. Copy the connection string into your service's environment as `DATABASE_URL` (or whatever your code expects).
+Click the eye icon to reveal the password.
+
+In addition, Brimble auto-injects four system environment variables into the database project itself:
+
+| Variable | Use it for |
+|---|---|
+| `CONNECTION_STRING` | Full URI using the public hostname. |
+| `SERVICE_HOST` | Public hostname only. |
+| `SERVICE_PORT` | The engine's port. |
+| `PRIVATE_SERVICE_HOST` | The internal hostname (`<db-slug>.service.brimble.internal`) — fastest path for services in the same workspace and region. |
+
+These let you wire up consumers cleanly via env-variable references — see below.
 
 ## Connect from a Brimble service
 
-In the service that needs the database:
+In the service that needs the database, set its `DATABASE_URL` (or whatever your code expects) using [environment-variable references](../environments/env-references.md). The references resolve at deploy time and pick up changes automatically.
 
-1. Go to **Environment**.
-2. Add a variable: `DATABASE_URL` set to the connection string.
-3. Redeploy.
+For the **fastest** path, reference the database's private hostname:
 
-If the service and the database share a region, use the **private** endpoint — it's faster and doesn't count against bandwidth. Otherwise, use the public endpoint.
+```
+DATABASE_URL = postgres://{{@my-postgres.DB_USER}}:{{@my-postgres.DB_PASSWORD}}@{{@my-postgres.PRIVATE_SERVICE_HOST}}:{{@my-postgres.SERVICE_PORT}}/{{@my-postgres.DB_NAME}}
+```
+
+Replace `my-postgres` with your database project's slug. Connections opened to `PRIVATE_SERVICE_HOST` stay on Brimble's internal network — no public hop, no bandwidth charge, lower latency.
+
+The private hostname only works for consumers in the same workspace and region. Cross-region or external consumers should use the public connection string. For full details on the internal network, see [Internal services](../networking/internal-services.md).
 
 ## Restrict who can connect
 

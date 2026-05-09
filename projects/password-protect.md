@@ -1,86 +1,77 @@
-# Password-protect a deployment
+# Site password protection
 
-Put a password in front of a Brimble project. Requests without correct basic auth credentials get a 401 at the edge.
+Brimble can put a single shared password in front of a project. Visitors see a password prompt before any request reaches your service. Useful for staging deployments, internal tools, and anything that shouldn't be publicly readable.
 
-Use this for staging deployments, internal tools, or any project that shouldn't be world-readable. The password check happens at the edge — no requests reach your service without it.
+The password check happens at the edge — no requests reach your container without it.
 
-## Prerequisites
+## How it works
 
-- A project deployed on Brimble.
+- **One password per project.** No username. Anyone with the password can access the site.
+- **Form-based login.** A visitor without a session sees a Brimble-rendered password page. They enter the password, submit, and are redirected back to the URL they came from.
+- **Session cookie.** On a successful login, the proxy sets an `httpOnly` session cookie (`x-brimble-session`). Subsequent requests carry the cookie and pass through without re-prompting until the cookie expires.
+- **Not HTTP Basic Auth.** Brimble doesn't return a `WWW-Authenticate: Basic` challenge. `curl -u user:pass` won't authenticate, and browsers won't pop a credentials dialog — visitors interact with the password page.
 
-## Enable password protection
+## What visitors see
 
-1. Open the project.
-2. Go to **Settings** → **Access**.
-3. Toggle **Password protection** on.
-4. Set a username and password. Save.
+A request to a password-protected project returns a Brimble password page with a single password field. The visitor enters the password and submits. On success they're redirected to the URL they were trying to reach. On failure the page reloads with an "Invalid credentials" message.
 
-![TODO: screenshot of the Access settings panel showing the Password protection toggle on, with username and password inputs, and a "Generate strong password" affordance](./images/PLACEHOLDER.png)
+The cookie is `httpOnly` — JavaScript can't read it, so the password page is the only way to obtain a session.
 
-*Password protection on a project — basic auth enforced at the edge.*
+![TODO: screenshot of the Brimble password page that's shown when an unauthenticated visitor hits a protected project — single password input, submit button, project hostname visible](./images/PLACEHOLDER.png)
 
-The next request to the project URL will see a `401 Unauthorized` with a `WWW-Authenticate: Basic` challenge. Browsers prompt for credentials; programmatic clients send them in the `Authorization` header.
+*The password page shown by Brimble's edge for protected projects.*
 
-## Test it
+## When it applies
 
-```bash
-curl -I https://<project-name>.brimble.app
-# HTTP/2 401
+Password protection covers **every request to the project** — top-level URL, asset paths, API endpoints, WebSocket upgrades. There's no per-path bypass.
 
-curl -I -u username:password https://<project-name>.brimble.app
-# HTTP/2 200
-```
+If you need a public health check on an otherwise-protected project, run an unprotected sibling project at a different hostname for the public endpoint, or implement [app-level auth](#app-level-authentication) instead.
 
-In a browser, opening the URL pops a credentials dialog.
+## Checking the current state
 
-## Update the password
+In the dashboard, open the project. The overview shows **Site password enabled: Yes** or **Site password enabled: No**. This is read-only on the overview page — it surfaces the current state but doesn't toggle it.
 
-Same panel: **Settings** → **Access** → **Update password**. The new password applies immediately. Existing sessions in browsers (which cache basic auth) keep working until the browser is restarted; cached credentials match either the old or the new value depending on browser behavior.
+## Enabling, changing, or disabling
 
-For sensitive projects, plan a rotation by:
-
-1. Setting a new password.
-2. Telling everyone to clear their browser's cached credentials for the URL.
-3. Confirming the old password no longer works.
-
-## Disable password protection
-
-Toggle **Password protection** off. The project becomes publicly accessible immediately.
-
-## Apply only to some paths
-
-The dashboard toggles password protection on the entire project. To allow specific paths through unauthenticated (e.g., `/healthz` for monitoring), implement that in your application — return 200 without checking auth, and let your other routes rely on the edge's basic auth.
-
-This works because basic auth at the edge applies to **every** request. If your app exposes a healthcheck path that doesn't depend on auth, monitoring tools can probe it by including credentials, or you can leave password protection off and use [app-level auth](#app-level-authentication) for the protected routes.
+A self-serve UI to toggle site password protection or rotate the password isn't currently exposed in the dashboard. To enable, change, or remove it, contact support with the project name and the password you want set. This page will be updated when self-serve controls ship.
 
 ## App-level authentication
 
-For more control (per-user accounts, sessions, role-based access), implement auth in your code instead of edge basic auth. Common stacks:
+For more control (per-user accounts, sessions, role-based access), implement auth in your code instead. Common stacks:
 
 - Express + Passport
 - Django + django-allauth
 - Rails + Devise
 - A reverse proxy or auth provider (Auth0, Clerk, Cognito) sitting in front of your app
 
-Disable password protection in Brimble when using app-level auth — otherwise users will be prompted twice.
+Use either site password protection **or** app-level auth — not both. Running both means visitors hit two prompts.
+
+## Considerations
+
+- **Don't use site password as your only access control for sensitive data.** It's a single shared secret with no audit trail. For per-user access or anything you'd reach for a real auth service for, use app-level auth instead.
+- **Cookies are scoped to the hostname.** Authenticating on `staging.example.com` doesn't grant access to `app.example.com`. Each protected hostname has its own session.
 
 ## Verification
 
+Open the project URL in a browser. You should see Brimble's password page. Submit the password — you should be redirected to your service.
+
 ```bash
-curl -I https://<project-name>.brimble.app
+curl -I https://<project>.brimble.app
 ```
 
-Without credentials, you should get `HTTP/2 401` and a `WWW-Authenticate: Basic` header. With credentials (`-u user:pass`), `HTTP/2 200`.
+A `HTTP/2 401` with the password page in the body confirms protection is active. (You won't see a `WWW-Authenticate` header — the response body itself is the password form.)
 
 ## Troubleshooting
 
-**Browser doesn't prompt for credentials.** It cached a "no auth" response from before you enabled the protection. Clear site data for the URL, or open in a private window.
+**Form keeps rejecting the password.** The password is case-sensitive and has no leading/trailing whitespace. Confirm exactly what was set with whoever configured it.
 
-**Credentials are correct but I still see 401.** Make sure you're hitting the right hostname. The protection applies to the project's hostnames (default and custom). If you're hitting an old hostname that's no longer attached, you'll see a generic 404 or a "not connected" page, not a 401.
+**Logged in once, but every page reload re-prompts.** Your browser is dropping cookies. Check it accepts cookies from the project hostname — privacy modes and third-party-cookie blocks usually still allow first-party cookies, but extensions can interfere.
 
-**Other 401s come from inside my app.** Edge basic auth and app-level auth both return 401. Check the response body — Brimble's edge returns a short auth-required page, while your app returns whatever you've coded.
+**Authenticated for `staging.example.com`, but `app.example.com` re-prompts.** Cookies are per-hostname. Each hostname has its own session.
+
+**`curl -u user:pass` returns the password page.** That's expected — Brimble doesn't read Basic Auth headers. The browser's password page is the only login surface.
 
 ## Next steps
 
-- [Manage environment variables](environment-variables.md) — credentials your app uses internally.
-- [Networking](../networking/overview.md) — how the edge enforces auth.
+- [Networking and the edge](../networking/overview.md) — how the edge enforces auth before requests reach your service.
+- [Custom domains](../domains/custom-domains.md) — password protection works on default and custom domains.

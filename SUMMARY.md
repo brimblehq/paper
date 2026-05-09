@@ -44,6 +44,7 @@
 
 * [Overview](networking/overview.md)
 * [Request lifecycle](networking/request-lifecycle.md)
+* [Internal services](networking/internal-services.md)
 * [Rate limits](networking/rate-limits.md)
 
 ## Scaling
@@ -51,6 +52,10 @@
 * [Configure scaling](scaling/overview.md)
 
 ## Observability
+
+* [Project metrics](observability/metrics.md)
+
+## Analytics
 
 * [Web analytics](analytics/web-analytics.md)
 
