@@ -81,16 +81,6 @@ A user can be in many teams, each with its own plan. Personal projects are bille
 
 The workspace switcher in the top-left of the dashboard lists your personal account and every team you're a member of. Switch context to see only the projects under that workspace.
 
-## Verification
-
-After inviting a member, ask them to:
-
-1. Accept the invite.
-2. Switch into the team in the workspace switcher.
-3. Open a project.
-
-If they can see the project list and open one, they're in.
-
 ## Troubleshooting
 
 **Invitee never got the email.** Check spam. If still missing, revoke and re-invite. Confirm the email address is right, typos are common.

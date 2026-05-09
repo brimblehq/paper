@@ -10,9 +10,7 @@ If you want a ready-made MCP server from a marketplace, see [Discover MCP server
 - A Brimble account.
 - The MCP server should expose itself over HTTP (Streamable HTTP, SSE, or WebSocket transport). MCP servers that only speak stdio don't work for remote deployment.
 
-## What you get
-
-After deploy, your MCP server is reachable at `https://<project-name>.brimble.app/mcp` (the `/mcp` path is conventional but you can serve on any path your code listens to). Any MCP client that supports remote servers can connect to it.
+After deploy, the server is reachable at `https://<project-name>.brimble.app/mcp`. The `/mcp` path is conventional, you can serve on any path your code listens to.
 
 ## Step 1: Make sure the server speaks HTTP
 

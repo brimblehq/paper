@@ -6,9 +6,10 @@ The password check happens at the edge, no requests reach your container without
 
 ## How it works
 
-- **One password per project.** No username. Anyone with the password can access the site.
+- **One password per project.** No username. Anyone with the password can access the site. It's a single shared secret with no audit trail, so don't use it as the only access control for sensitive data.
 - **Form-based login.** A visitor without a session sees a Brimble-rendered password page. They enter the password, submit, and are redirected back to the URL they came from.
 - **Session cookie.** On a successful login, the proxy sets an `httpOnly` session cookie (`x-brimble-session`). Subsequent requests carry the cookie and pass through without re-prompting until the cookie expires.
+- **Per-hostname.** Cookies are scoped to the hostname. Authenticating on `staging.example.com` doesn't grant access to `app.example.com`. Each protected hostname has its own session.
 - **Not HTTP Basic Auth.** Brimble doesn't return a `WWW-Authenticate: Basic` challenge. `curl -u user:pass` won't authenticate, and browsers won't pop a credentials dialog, visitors interact with the password page.
 
 ## What visitors see
@@ -45,21 +46,6 @@ For more control (per-user accounts, sessions, role-based access), implement aut
 - A reverse proxy or auth provider (Auth0, Clerk, Cognito) sitting in front of your app
 
 Use either site password protection **or** app-level auth, not both. Running both means visitors hit two prompts.
-
-## Considerations
-
-- **Don't use site password as your only access control for sensitive data.** It's a single shared secret with no audit trail. For per-user access or anything you'd reach for a real auth service for, use app-level auth instead.
-- **Cookies are scoped to the hostname.** Authenticating on `staging.example.com` doesn't grant access to `app.example.com`. Each protected hostname has its own session.
-
-## Verification
-
-Open the project URL in a browser. You should see Brimble's password page. Submit the password, you should be redirected to your service.
-
-```bash
-curl -I https://<project>.brimble.app
-```
-
-A `HTTP/2 401` with the password page in the body confirms protection is active. (You won't see a `WWW-Authenticate` header, the response body itself is the password form.)
 
 ## Troubleshooting
 

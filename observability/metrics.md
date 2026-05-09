@@ -60,17 +60,12 @@ The dropdown in the top right of the tab picks the time window:
 
 Switching the range refreshes the chart and the gauges. Longer ranges aggregate more, minute-level resolution at 1 hour, hourly aggregates at 7+ days.
 
-## What the metrics tell you
+## Reading the chart
 
-A few common patterns and what they usually mean:
+A few patterns worth recognizing:
 
-- **CPU pinned at 100%**, your service is CPU-bound. Either optimize hot paths, scale up the project's compute size, or add containers via [scaling](../scaling/overview.md).
-- **Memory climbing steadily over hours/days**, memory leak. Restart the deployment to confirm (the saw-tooth on restart proves the leak), then find what's holding allocations.
-- **Memory near 100%**, likely getting OOM-killed periodically. Check runtime logs for restart loops; bump the project's memory size or fix the allocation pattern.
-- **Network egress spiky**, traffic comes in bursts. Normal for batch jobs and scheduled work; check the timing matches your scheduler.
-- **Network egress flat-high**, sustained high outbound traffic. Investigate whether you're proxying large responses, leaking data, or a CDN/cache is bypassed.
-- **P99 response time much higher than P90**, a small slice of requests are slow. Usually a slow downstream (database query, third-party API) on specific paths. Cross-reference with request logs.
-- **Response times rising during peak hours**, you're at capacity. Scale or optimize.
+- **Memory climbing steadily over hours, then dropping when the deployment restarts.** That saw-tooth shape is a leak. The chart confirms it; finding what's holding allocations is on you.
+- **P99 response time much higher than P90.** A small slice of requests are slow. Usually a slow downstream (a database query, a third-party API) on specific paths. Cross-reference with request logs.
 
 ## Database projects
 

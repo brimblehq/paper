@@ -69,15 +69,6 @@ ENDPOINT=https://api.example.com/v1
 
 The resolver guards against cycles, if `A` references `B` and `B` references `A`, both resolve to their last-known string instead of looping.
 
-## Why use references instead of duplicating
-
-The big wins:
-
-1. **One place to rotate a credential.** Change the shared `STRIPE_KEY` once; every dependent project picks it up on its next deploy.
-2. **Composable URLs.** Build canonical URLs from a base domain plus a path, instead of hardcoding the full URL in 12 places.
-3. **Cross-project wiring.** A worker can read a database project's connection string by reference, with no manual copy.
-4. **Per-environment inheritance.** Promote a value from staging to production by changing the inheritance, not by re-pasting strings.
-
 ## Limits
 
 - References don't escape `{{...}}`, there's no syntax for "literal `{{shared.X}}` in a value." If your real value contains those braces, refactor or store the value in a way that doesn't need them at deploy time.

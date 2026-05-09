@@ -89,19 +89,6 @@ To move a domain from your personal account to a team (or between teams) without
 
 The domain, and all its DNS records, moves over. The current project attachment is cleared; reattach the domain to a project under the new workspace.
 
-## Verification
-
-After a transfer-in, run:
-
-```bash
-whois your-domain.com | grep -i registrar
-dig your-domain.com NS +short
-```
-
-The registrar should show Brimble (or Brimble's upstream registrar partner). The nameservers should list `ns1.brimble.io` and `ns2.brimble.io` if you didn't override them.
-
-After a transfer-out, the registrar field changes once the new registrar finalizes. Until then, the domain still shows as Brimble-managed.
-
 ## Troubleshooting
 
 **Auth code rejected.** Triple-check the code (no leading or trailing whitespace, exact case). If still wrong, the code may have expired, generate a fresh one at the current registrar and retry.

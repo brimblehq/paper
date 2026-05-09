@@ -47,18 +47,6 @@ Once DNS propagates, Brimble:
 
 Propagation usually takes a few minutes but can take up to 24 hours, depending on your DNS provider's TTL.
 
-## Verification
-
-Open `https://your-domain.com` in a browser. You should see your app, served over HTTPS with a valid certificate.
-
-From the terminal:
-
-```bash
-curl -I https://your-domain.com
-```
-
-A successful response shows `HTTP/2 200` (or whatever status your app returns for `/`) and an HTTPS connection that didn't error.
-
 ## Troubleshooting
 
 **Domain stuck on "verifying."** DNS hasn't propagated yet. Check from a third party:

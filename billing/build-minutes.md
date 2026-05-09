@@ -104,16 +104,6 @@ A few cheap wins:
 - **Multistage Dockerfiles.** Build in a heavy stage; run from a thin stage. The `docker build` cache reuses layers when only the source changes.
 - **Skip unnecessary work in CI/build flows.** Don't run tests in the build phase, run them in your CI before merge instead.
 
-## Verification
-
-After topping up:
-
-1. Open **Billing → Build minutes**.
-2. The "+ N minutes in top-up credits" line should reflect the new credits.
-3. The total available (included + credits) should jump.
-
-A push immediately after the top-up uses the new credits if your included minutes were exhausted.
-
 ## Troubleshooting
 
 **"Add a payment method before topping up."** Add a card under **Billing → Payment methods**, then retry.

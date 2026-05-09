@@ -74,18 +74,6 @@ To update:
 
 For automation, integrate with your CI: have CI call out to Brimble's API to trigger a redeploy after a successful push.
 
-## Verification
-
-Once active:
-
-```bash
-curl -I https://<project-name>.brimble.app
-```
-
-Should return a 2xx/3xx response from your container.
-
-For workers, check the runtime logs to confirm the process is doing what you expect.
-
 ## Troubleshooting
 
 **Pull fails: "no such image" or "manifest unknown."** Triple-check the image reference (registry, namespace, name, tag). Tags are case-sensitive. For private images, confirm the credentials work locally with `docker login` + `docker pull`.

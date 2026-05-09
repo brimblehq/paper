@@ -66,23 +66,6 @@ The card on file is charged immediately. The expiry date moves forward by the se
 
 If a domain on auto-renewal fails to renew (declined card, expired card), Brimble fires a `domain.renewal_failed` webhook and surfaces a warning on the domain page. Update the payment method and click **Renew** to retry.
 
-## Verification
-
-Open the domain in the dashboard. The status should be **Active**, the registrar should show **Brimble**, and the nameservers should list `ns1.brimble.io` and `ns2.brimble.io`.
-
-From the terminal:
-
-```bash
-dig your-domain.com NS +short
-```
-
-Expected:
-
-```
-ns1.brimble.io.
-ns2.brimble.io.
-```
-
 ## Troubleshooting
 
 **Domain shows "Failed" instead of "Active."** Registration failed at the registrar. Common causes: payment didn't clear, name violates registry policy, registrant email blocked. Open the domain to see the failure message; payment failures auto-refund.

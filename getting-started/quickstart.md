@@ -46,18 +46,6 @@ When the deployment finishes, your project is live at `https://<project-name>.br
 **Image needed:** screenshot of the deployment logs drawer showing a successful build and a green "live" status
 {% endhint %}
 
-## Verification
-
-Open `https://<project-name>.brimble.app` in a browser. You should see your app respond.
-
-From the terminal:
-
-```bash
-curl -I https://<project-name>.brimble.app
-```
-
-You should see an `HTTP/2 200` response (or whatever status your app returns for `/`).
-
 ## Troubleshooting
 
 **Build fails with "framework not detected."** Brimble couldn't infer your build setup. Set the framework, build command, and start command manually in step 2.

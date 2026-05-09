@@ -136,10 +136,6 @@ If you've lost everything:
 
 This is why saving recovery codes during setup is mandatory in the UI, it's your last-line escape.
 
-## Verification
-
-To confirm 2FA is set up correctly, sign out and sign back in. You should see the 2FA challenge step. If you don't, 2FA isn't actually enabled, repeat the setup.
-
 ## Troubleshooting
 
 **TOTP code is rejected even though it looks right.** Your phone's clock is drifting. TOTP relies on accurate time. Sync your phone's clock to a network time source.

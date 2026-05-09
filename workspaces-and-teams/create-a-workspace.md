@@ -90,15 +90,6 @@ Switching context filters the project list, the dashboard home, and most setting
 | **Member** | Read and write to projects. Deploy, manage env vars, add domains. Cannot manage billing or members. |
 | **Viewer** | Read-only across projects, deployments, logs. |
 
-## Verification
-
-After creating the workspace:
-
-1. Switch into it from the workspace switcher.
-2. Confirm you see an empty project list.
-3. Open **Settings → Members** and confirm pending invites are listed.
-4. Open **Settings → Billing** and confirm the next charge date and current seats/builds.
-
 ## Troubleshooting
 
 **"Card declined" on creation.** The card on file failed when Brimble tried to charge for the first month. Add a different card under **Billing → Payment methods** and try again. The workspace doesn't get created until payment goes through.

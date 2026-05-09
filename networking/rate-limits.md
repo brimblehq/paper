@@ -60,8 +60,4 @@ The 2FA prompt allows 5 wrong attempts per challenge, then locks for a cooling-o
 
 ## Higher limits
 
-For workloads that need more than the default public traffic limit (high-traffic public APIs, large file ingest, etc.), contact support. Custom rate limit policies, custom body size limits, and per-project carve-outs are available on Pro and Team plans.
-
-## What you can't change in the dashboard
-
-The current dashboard surfaces the rate-limit thresholds and overage rates but doesn't let you raise them in place. Raise them through support or by upgrading your plan, depending on which limit you're hitting.
+For workloads that need more than the default public traffic limit (high-traffic public APIs, large file ingest, and similar), contact support. Custom rate limit policies, custom body size limits, and per-project carve-outs are available on Pro and Team plans. The dashboard surfaces the current thresholds but doesn't let you raise them in place; that goes through support or a plan upgrade.

@@ -38,21 +38,6 @@ The redirect takes effect immediately, no DNS change, no deploy, no propagation 
 
 For most marketing or domain-rename use cases, **301** is what you want. Use **307** if you need to redirect API traffic and preserve methods.
 
-## Verification
-
-```bash
-curl -I https://your-domain.com
-```
-
-Expected response:
-
-```
-HTTP/2 301
-Location: https://destination.example.com/
-```
-
-The status line should match the code you picked. The `Location` header should be your destination URL.
-
 ## Clear a redirect
 
 1. Open the domain.

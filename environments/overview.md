@@ -68,16 +68,6 @@ If you specifically don't want a value present at build time (for example, secre
 
 You can add, edit, or delete variables in the dashboard under **Environment** on the project page. Editing a variable does **not** redeploy automatically, the new value applies on the next deployment. To pick it up immediately, click **Redeploy** on the latest deployment.
 
-## Verification
-
-To confirm a variable is set in the running container, log it from your app on startup:
-
-```javascript
-console.log("DATABASE_URL configured:", !!process.env.DATABASE_URL);
-```
-
-Don't log the value itself, Brimble's runtime logs are not encrypted at rest the same way the variable store is, and any log output is visible to anyone with access to the project.
-
 ## Next steps
 
 - [Environment variables guide](environment-variables.md), task-oriented walkthrough.

@@ -226,19 +226,6 @@ curl -X POST https://api.brimble.io/v1/webhooks/test \
 
 `type` is one of `webhook` (signed, with `X-Brimble-Test: true`), `discord` (unsigned, formatted for a Discord channel), or `slack` (unsigned, formatted for a Slack channel). The test request times out after 10 seconds and is not retried.
 
-## Verification
-
-After saving a webhook, push a commit. Within seconds you should see:
-
-- `deployment.started` deliver as the build begins.
-- `deployment.success` (or `deployment.failed`) deliver when the deployment completes.
-
-If you don't see them:
-
-1. Check **Settings → Webhooks**. The toggle on each URL must be on.
-2. Confirm the events list includes the events you expected.
-3. Verify your endpoint accepts POSTs and returns within 10 seconds.
-
 ## Troubleshooting
 
 **No deliveries at all.** The webhook URL may not be saved. Check **Settings → Webhooks** in the dashboard. Also confirm the events list isn't empty.

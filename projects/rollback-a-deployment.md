@@ -31,16 +31,6 @@ A rollback restores the **code artifact only**. It does not roll back:
 
 For migrations specifically, prefer additive changes: add columns before reading them, never drop a column in the same release that stops writing to it. This keeps rollbacks safe.
 
-## Verification
-
-After the rollback completes, hit your project's URL or health endpoint:
-
-```bash
-curl -I https://<project-name>.brimble.app/healthz
-```
-
-The response includes `X-Brimble-Project-Version`, an ISO timestamp identifying the deployment serving the request. Compare it to the deployment timestamp in the dashboard to confirm the rollback took effect.
-
 ## Troubleshooting
 
 **"Redeploy this version" is greyed out.** The deployment never finished building, or the artifact has been pruned. Pick a more recent successful deployment.
