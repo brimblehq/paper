@@ -35,7 +35,7 @@ CPU, memory, and storage are billed per project, on top of the plan price. Each 
 | **Bandwidth** | Plan limit | $0.25 / GB |
 | **Build minutes** | Plan limit | $0.002 / minute |
 
-Storage is always metered — no included amount on any plan. CPU and memory are included up to a plan-specific cap, then billed.
+Storage is always metered, no included amount on any plan. CPU and memory are included up to a plan-specific cap, then billed.
 
 ## Free plan limits
 
@@ -58,7 +58,7 @@ Payment methods supported:
 - **Credit/debit card** via Stripe (US, EU, most countries).
 - **Card** via Paystack (African markets).
 
-You can hold up to 3 cards on file. One is the default; you can change it in **Billing → Payment methods**. Card management opens at the provider's hosted form — Brimble doesn't see card numbers.
+You can hold up to 3 cards on file. One is the default; you can change it in **Billing → Payment methods**. Card management opens at the provider's hosted form, Brimble doesn't see card numbers.
 
 ## Billing cycle
 

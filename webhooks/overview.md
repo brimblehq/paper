@@ -17,7 +17,7 @@ Webhooks are configured **per subscription**, not per project. Three URLs can be
 | `discordUrl` | A Discord channel webhook URL (`https://discord.com/api/webhooks/.../...`) | Discord-formatted messages. No signature; Discord authenticates by URL secrecy. |
 | `slackUrl` | A Slack incoming webhook URL (`https://hooks.slack.com/services/...`) | Slack-formatted messages. No signature; Slack authenticates by URL secrecy. |
 
-A single events list applies to all three destinations — whichever ones are set.
+A single events list applies to all three destinations, whichever ones are set.
 
 ## Set up a webhook
 
@@ -27,9 +27,9 @@ A single events list applies to all three destinations — whichever ones are se
 4. Pick the events you want to receive. Use **Select all** to subscribe to every event.
 5. Save.
 
-![TODO: screenshot of the Webhooks settings page showing the three URL input fields (Webhook, Discord, Slack), the events checklist grouped by category (Deployment, Project, Domain, Environment, DNS, Autoscaling, Subscription, Payment), and a Save button](./images/PLACEHOLDER.png)
-
-*The Webhooks settings page with the three destination URLs and the event subscription checklist.*
+{% hint style="info" %}
+**Image needed:** screenshot of the Webhooks settings page showing the three URL input fields (Webhook, Discord, Slack), the events checklist grouped by category (Deployment, Project, Domain, Environment, DNS, Autoscaling, Subscription, Payment), and a Save button
+{% endhint %}
 
 The next matching event delivers to every configured destination.
 
@@ -82,7 +82,7 @@ Full payload schema for every event is in [Webhook events reference](events.md).
 
 ## Verifying signatures
 
-Every HTTP webhook delivery includes `X-Brimble-Webhook`, an HMAC-SHA256 of the raw request body, hex-encoded. Verify it before trusting any payload — anyone can post arbitrary JSON to your endpoint, but only Brimble has the signing secret.
+Every HTTP webhook delivery includes `X-Brimble-Webhook`, an HMAC-SHA256 of the raw request body, hex-encoded. Verify it before trusting any payload, anyone can post arbitrary JSON to your endpoint, but only Brimble has the signing secret.
 
 The signing secret is the **subscription's deployment secret key**, available in the dashboard under **Settings → Webhooks → Show secret**.
 
@@ -170,7 +170,7 @@ func brimble(w http.ResponseWriter, r *http.Request) {
 }
 ```
 
-The single biggest mistake is signing against `JSON.parse(...)` output instead of the raw bytes. JSON parsing reorders keys, normalizes whitespace, and re-encodes — the signature won't match. Capture the raw body before any parser touches it.
+The single biggest mistake is signing against `JSON.parse(...)` output instead of the raw bytes. JSON parsing reorders keys, normalizes whitespace, and re-encodes, the signature won't match. Capture the raw body before any parser touches it.
 
 ## Handling test events
 
@@ -178,7 +178,7 @@ Test events have:
 
 - The exact same envelope and signature as a real event.
 - An additional `X-Brimble-Test: true` header.
-- A payload **you supplied** when calling **Send test event** (or `POST /v1/webhooks/test`) — Brimble doesn't synthesize one for you.
+- A payload **you supplied** when calling **Send test event** (or `POST /v1/webhooks/test`), Brimble doesn't synthesize one for you.
 
 If your handler has side effects (sending emails, writing to a database), short-circuit on the test header:
 
@@ -191,18 +191,18 @@ if (req.header("X-Brimble-Test") === "true") {
 
 ## Discord and Slack delivery
 
-Discord and Slack URLs are pre-authenticated by URL secrecy — Brimble doesn't sign requests to them. Each event is rendered as a channel message:
+Discord and Slack URLs are pre-authenticated by URL secrecy, Brimble doesn't sign requests to them. Each event is rendered as a channel message:
 
-- **Discord** — embed-style message with project name, event, and short summary.
-- **Slack** — block-formatted message with the same fields.
+- **Discord**, embed-style message with project name, event, and short summary.
+- **Slack**, block-formatted message with the same fields.
 
-You can configure all three URLs at once. The same event delivers to each independently — if your HTTP endpoint times out, the Discord/Slack messages still post.
+You can configure all three URLs at once. The same event delivers to each independently, if your HTTP endpoint times out, the Discord/Slack messages still post.
 
 ## Delivery semantics
 
-- **At-least-once.** A delivery may be retried if your endpoint fails or times out. Make your handler idempotent — keying on `data._id` + `event` works for most resources.
+- **At-least-once.** A delivery may be retried if your endpoint fails or times out. Make your handler idempotent, keying on `data._id` + `event` works for most resources.
 - **Order is not guaranteed.** Two events from the same project can arrive out of order. Use `createdAt`/`updatedAt`/`startTime`/`endTime` from `data` to reconcile.
-- **Best-effort delivery.** After repeated failures, a delivery is dropped — your webhook stays enabled and continues to receive future events.
+- **Best-effort delivery.** After repeated failures, a delivery is dropped, your webhook stays enabled and continues to receive future events.
 - **No webhook is automatically disabled** by Brimble. If your endpoint has been broken for hours, deliveries are dropped, but new events keep being attempted.
 
 ## Test a webhook
@@ -251,9 +251,9 @@ If you don't see them:
 
 **Endpoint times out under load.** Acknowledge fast (return 200 immediately), then process asynchronously. Don't run downstream calls inside the request handler.
 
-**Rapid duplicate deliveries.** Most likely your endpoint returned a non-2xx status, triggering a retry. Confirm you return 200 even when the body is malformed — never error inside the handler before sending the response.
+**Rapid duplicate deliveries.** Most likely your endpoint returned a non-2xx status, triggering a retry. Confirm you return 200 even when the body is malformed, never error inside the handler before sending the response.
 
 ## Next steps
 
-- [Webhook events reference](events.md) — every event with full payload schema.
-- [Deployments](../projects/deployments.md) — what triggers each `deployment.*` event.
+- [Webhook events reference](events.md), every event with full payload schema.
+- [Deployments](../projects/deployments.md), what triggers each `deployment.*` event.

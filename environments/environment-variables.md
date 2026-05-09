@@ -14,9 +14,9 @@ Set, edit, and delete environment variables for a project. Variables are injecte
 4. Click **Add variable**.
 5. Enter the name and value. Click **Save**.
 
-![TODO: screenshot of the Environment tab on a project showing the variables table with name, value (with eye/eye-slash toggle), environment dropdown, secret/public indicator, and the "Add variable" entry point](./images/PLACEHOLDER.png)
-
-*The Environment tab on a project. Each row shows the variable's name, current value, who last modified it, and whether it's marked secret or public.*
+{% hint style="info" %}
+**Image needed:** screenshot of the Environment tab on a project showing the variables table with name, value (with eye/eye-slash toggle), environment dropdown, secret/public indicator, and the "Add variable" entry point
+{% endhint %}
 
 The variable is stored encrypted at rest. The next deployment picks it up.
 
@@ -29,9 +29,9 @@ For pasting in a `.env` file:
 3. Paste the contents of your `.env` file. Lines starting with `#` are treated as comments.
 4. Click **Import**.
 
-![TODO: screenshot of the Bulk import modal with a textarea showing a few KEY=value lines and a comment line, plus the Import button](./images/PLACEHOLDER.png)
-
-*The bulk import modal accepts standard `.env` syntax.*
+{% hint style="info" %}
+**Image needed:** screenshot of the Bulk import modal with a textarea showing a few KEY=value lines and a comment line, plus the Import button
+{% endhint %}
 
 Each line of the form `KEY=value` becomes a variable. Quoted values are unquoted. Values containing `=`, `#`, or whitespace should be wrapped in single or double quotes:
 
@@ -48,7 +48,7 @@ Editing variables doesn't redeploy your project automatically. Changes apply on 
 - Push a new commit to pick them up automatically.
 - Or click **Redeploy** on the latest deployment to apply them now.
 
-This is intentional — environment changes are tied to a specific build, so you always know which version of your code is running with which config.
+This is intentional, environment changes are tied to a specific build, so you always know which version of your code is running with which config.
 
 ## Edit a variable
 
@@ -73,7 +73,7 @@ If a variable is set on both the child and the parent, the child's value wins.
 
 ## Reference shared or cross-project variables
 
-A variable's value can include references to other variables — `{{shared.NAME}}` for a shared environment value, or `{{@project-slug.NAME}}` for a value from another project in the same workspace. Brimble resolves these at deploy time so the running container sees the final string.
+A variable's value can include references to other variables, `{{shared.NAME}}` for a shared environment value, or `{{@project-slug.NAME}}` for a value from another project in the same workspace. Brimble resolves these at deploy time so the running container sees the final string.
 
 ```
 API_URL={{shared.BASE_URL}}/v1
@@ -151,5 +151,5 @@ Don't log the value of a secret. Logs are visible to anyone with project access.
 
 ## Next steps
 
-- [Environments concept](overview.md) — how environments and inheritance work.
-- [System environment variables](system-variables.md) — what Brimble injects automatically.
+- [Environments concept](overview.md), how environments and inheritance work.
+- [System environment variables](system-variables.md), what Brimble injects automatically.

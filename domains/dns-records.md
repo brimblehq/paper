@@ -44,7 +44,7 @@ A record marked **proxied** routes traffic through Brimble's edge. Use proxied r
 
 A non-proxied record returns the raw value. Use non-proxied for:
 
-- Mail records (`MX`, `TXT` with SPF/DKIM/DMARC) — never proxy these.
+- Mail records (`MX`, `TXT` with SPF/DKIM/DMARC), never proxy these.
 - Records pointing to non-Brimble services (SaaS verification, third-party hosts).
 
 Only `A` and `CNAME` records can be proxied.
@@ -115,7 +115,7 @@ dig api.your-domain.com +short
 dig your-domain.com TXT +short
 ```
 
-If the answer doesn't match what's in the dashboard, propagation is in flight — wait up to the TTL of the previous record. For new records, propagation is usually under 5 minutes.
+If the answer doesn't match what's in the dashboard, propagation is in flight, wait up to the TTL of the previous record. For new records, propagation is usually under 5 minutes.
 
 ## Limits
 

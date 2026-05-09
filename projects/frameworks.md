@@ -2,7 +2,7 @@
 
 Brimble's build pipeline auto-detects most popular frameworks and pre-fills the install, build, and start commands. This page lists what's detected and what defaults you get.
 
-If your stack isn't listed, set the commands manually under **Settings → Build**. Anything that runs in a Linux container will work — detection is a convenience, not a requirement.
+If your stack isn't listed, set the commands manually under **Settings → Build**. Anything that runs in a Linux container will work, detection is a convenience, not a requirement.
 
 ## How detection works
 
@@ -12,7 +12,7 @@ Brimble inspects:
 - The contents of those files for framework-specific signals (e.g. `next` in `dependencies`).
 - A few file-pattern checks (`Procfile`, `wrangler.toml`, etc.).
 
-A `Dockerfile` at the repo root takes precedence — Brimble uses it directly and skips framework detection.
+A `Dockerfile` at the repo root takes precedence, Brimble uses it directly and skips framework detection.
 
 ## Node.js
 
@@ -136,12 +136,12 @@ The Dockerfile must:
 
 ## Custom commands
 
-For any framework — detected or not — you can override under **Settings → Build**:
+For any framework, detected or not, you can override under **Settings → Build**:
 
-- **Install command** — typically the package manager install step.
-- **Build command** — anything that compiles or bundles. Empty for runtime-only languages.
-- **Pre-start command** — runs once per build, after the build, before the artifact is pushed. Useful for migrations.
-- **Start command** — launches the runtime container. Must keep the process in the foreground.
+- **Install command**, typically the package manager install step.
+- **Build command**, anything that compiles or bundles. Empty for runtime-only languages.
+- **Pre-start command**, runs once per build, after the build, before the artifact is pushed. Useful for migrations.
+- **Start command**, launches the runtime container. Must keep the process in the foreground.
 
 The commands run in `bash`. Standard shell features (pipes, redirects, `&&`) work.
 

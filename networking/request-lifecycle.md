@@ -2,7 +2,7 @@
 
 What happens between a user typing your URL and your service returning a response. This page covers the request path end-to-end so you can debug latency, errors, and unexpected behavior with the right mental model.
 
-Brimble runs every public request through **Cloudflare** before it reaches Brimble's own infrastructure. Cloudflare provides DDoS protection, edge caching, and the secure tunnel into Brimble's network. From your service's perspective, the request comes from Brimble's gateway — but the first hop, every time, is Cloudflare.
+Brimble runs every public request through **Cloudflare** before it reaches Brimble's own infrastructure. Cloudflare provides DDoS protection, edge caching, and the secure tunnel into Brimble's network. From your service's perspective, the request comes from Brimble's gateway, but the first hop, every time, is Cloudflare.
 
 ## High-level flow
 
@@ -44,7 +44,7 @@ Until DNS propagates, no other layer matters. If `dig your-domain.com +short` do
 
 Cloudflare terminates TLS at the user-facing edge using a Let's Encrypt certificate Brimble provisions for the hostname. For Brimble-managed domains the cert is issued automatically; for custom domains the cert is issued the first time the domain points at the edge and renewed before expiry.
 
-After TLS, the request is plaintext HTTP between Cloudflare and Brimble's gateway, but it's tunneled — see step 4.
+After TLS, the request is plaintext HTTP between Cloudflare and Brimble's gateway, but it's tunneled, see step 4.
 
 ## 3. WAF, DDoS, and caching
 
@@ -52,13 +52,13 @@ Before forwarding, Cloudflare:
 
 - **Filters DDoS and abusive traffic** at the network and application layers. A request that triggers Cloudflare's filters never reaches Brimble.
 - **Optionally serves from cache** for cacheable responses. By default, Brimble configures the cache to leave HTML uncached and respect cache headers for static assets. When a deployment goes active, Brimble purges the cache for the project's hostnames so users see the new version immediately.
-- **Rate-limits** abusive single-source traffic. The limits are independent of your project's compute size — they're an infrastructure-level guardrail.
+- **Rate-limits** abusive single-source traffic. The limits are independent of your project's compute size, they're an infrastructure-level guardrail.
 
 A small set of paths (websocket upgrades, gRPC, anything with auth headers) is always passed through untouched.
 
 ## 4. Cloudflare tunnel into Brimble
 
-Cloudflare reaches Brimble's gateway through a **Zero Trust tunnel**. Each Brimble server runs a tunnel agent that registers with Cloudflare; Cloudflare sends the request through the tunnel to the right server. There's no public IP for Brimble's gateway — it's only reachable through Cloudflare.
+Cloudflare reaches Brimble's gateway through a **Zero Trust tunnel**. Each Brimble server runs a tunnel agent that registers with Cloudflare; Cloudflare sends the request through the tunnel to the right server. There's no public IP for Brimble's gateway, it's only reachable through Cloudflare.
 
 What this means for you:
 
@@ -68,7 +68,7 @@ What this means for you:
 
 ## 5. Brimble Gateway: header strip
 
-Once inside, the gateway is the first thing in Brimble's own network to see the request. It removes a small set of dangerous request headers — used by frameworks for internal-only signaling that should never be set by an external client:
+Once inside, the gateway is the first thing in Brimble's own network to see the request. It removes a small set of dangerous request headers, used by frameworks for internal-only signaling that should never be set by an external client:
 
 - `x-react-router-spa-mode`
 - `x-react-router-prerender-data`
@@ -80,9 +80,9 @@ If a client tries to set one, the gateway drops it before your code runs.
 
 The gateway looks up the request's hostname against the domain table. Three outcomes:
 
-- **Match found, project attached** — proceed.
-- **Match found, no project** — return 404 "Deployment Not Found".
-- **No match** — return a generic "not connected to Brimble" page.
+- **Match found, project attached**, proceed.
+- **Match found, no project**, return 404 "Deployment Not Found".
+- **No match**, return a generic "not connected to Brimble" page.
 
 The hostname is an exact match. `app.example.com` is a different lookup from `example.com`.
 
@@ -120,25 +120,25 @@ The gateway adds and rewrites a few headers before forwarding to your container:
 
 | Header | Value |
 |---|---|
-| `x-forwarded-proto` | `https` (always — even if the connection between Cloudflare and Brimble was plaintext) |
+| `x-forwarded-proto` | `https` (always, even if the connection between Cloudflare and Brimble was plaintext) |
 | `x-forwarded-ssl` | `on` |
 | `host` | rewritten to your domain |
 | `x-brimble-host` | the gateway server that handled the request |
-| `x-brimble-id` | a fresh UUID for this request — log this for correlation |
+| `x-brimble-id` | a fresh UUID for this request, log this for correlation |
 | `x-brimble-project-version` | an ISO timestamp identifying which deployment is serving |
 
-The original `x-forwarded-for` and `x-real-ip` headers from Cloudflare carry the user's real IP — your code can read them to know who's connecting.
+The original `x-forwarded-for` and `x-real-ip` headers from Cloudflare carry the user's real IP, your code can read them to know who's connecting.
 
-For document requests (`Accept: text/html`, `Sec-Fetch-Dest: document`), conditional cache headers (`if-none-match`, `if-modified-since`, `if-match`, `if-unmodified-since`, `if-range`) are stripped — the edge always serves fresh HTML, never a 304. Static assets keep their conditional headers.
+For document requests (`Accept: text/html`, `Sec-Fetch-Dest: document`), conditional cache headers (`if-none-match`, `if-modified-since`, `if-match`, `if-unmodified-since`, `if-range`) are stripped, the edge always serves fresh HTML, never a 304. Static assets keep their conditional headers.
 
 ## 9. Backend resolution
 
 The gateway picks which container instance to send the request to.
 
-- **Single-container projects** — the request goes to the project's container at its internal IP and port.
-- **Multi-container projects** (with an autoscaling group) — the gateway uses Brimble's internal service discovery to find healthy instances and picks the container with the fewest active connections (least-connection algorithm). If that container errors at connection time, the gateway falls back to another instance.
+- **Single-container projects**, the request goes to the project's container at its internal IP and port.
+- **Multi-container projects** (with an autoscaling group), the gateway uses Brimble's internal service discovery to find healthy instances and picks the container with the fewest active connections (least-connection algorithm). If that container errors at connection time, the gateway falls back to another instance.
 
-The selection happens per request — sticky sessions aren't the default. If your service depends on session affinity, store session state in a database or shared cache, not in the container's memory.
+The selection happens per request, sticky sessions aren't the default. If your service depends on session affinity, store session state in a database or shared cache, not in the container's memory.
 
 ## 10. Forward to your container
 
@@ -158,7 +158,7 @@ For gRPC (`Content-Type: application/grpc*`), the gateway forwards using HTTP/2 
 
 Your code runs. It has access to:
 
-- All your environment variables (resolved — `{{shared.X}}` and `{{@slug.X}}` references are already substituted).
+- All your environment variables (resolved, `{{shared.X}}` and `{{@slug.X}}` references are already substituted).
 - The injected headers from step 8.
 - The standard `process.env.PORT` to bind to.
 
@@ -176,28 +176,28 @@ The response travels back: gateway → Cloudflare tunnel → Cloudflare's edge �
 
 Total round trip: typically tens to hundreds of milliseconds, dominated by:
 
-- **User-to-Cloudflare latency** — short, since Cloudflare has anycast presence near most users.
-- **Cloudflare-to-Brimble** — depends on the Brimble region.
-- **Your service's processing time** — the only thing you fully control.
-- **Edge-to-container traffic** — generally microseconds for in-region traffic.
+- **User-to-Cloudflare latency**, short, since Cloudflare has anycast presence near most users.
+- **Cloudflare-to-Brimble**, depends on the Brimble region.
+- **Your service's processing time**, the only thing you fully control.
+- **Edge-to-container traffic**, generally microseconds for in-region traffic.
 
 ## Debugging request flow
 
 When a request behaves unexpectedly, work through the layers in order:
 
-1. **DNS first.** `dig your-domain.com +short` — does it resolve to Cloudflare's edge?
-2. **TLS.** `curl -I https://your-domain.com` — does it return any HTTP response, or fail at the connection level?
+1. **DNS first.** `dig your-domain.com +short`, does it resolve to Cloudflare's edge?
+2. **TLS.** `curl -I https://your-domain.com`, does it return any HTTP response, or fail at the connection level?
 3. **Cloudflare interception.** A response with `Server: cloudflare` and a Cloudflare error page (1xxx codes) means Cloudflare blocked or couldn't reach Brimble.
 4. **Brimble hostname match.** Does the response say "not connected" or render a Brimble error page? Check the project's domain attachment.
-5. **Ingress rules.** Look at the response — 401 (auth), 403 (disabled), 200 maintenance page (maintenance), 3xx redirect (redirect rule).
+5. **Ingress rules.** Look at the response, 401 (auth), 403 (disabled), 200 maintenance page (maintenance), 3xx redirect (redirect rule).
 6. **Backend.** Open the project in the dashboard. Is it deployed? Active? Are runtime logs flowing?
 7. **Application.** If the request reaches your service, the answer is in your application logs.
 
-The `x-brimble-id` header on every response is a unique ID for the request — log it on your side and Brimble's side correlates the same request across both.
+The `x-brimble-id` header on every response is a unique ID for the request, log it on your side and Brimble's side correlates the same request across both.
 
 ## Next steps
 
-- [Networking and the edge](overview.md) — limits and edge behavior.
-- [Internal services](internal-services.md) — how your services reach each other privately.
-- [502 errors](../troubleshooting/502-errors.md) — what to check when the gateway can't reach your service.
-- [DNS troubleshooting](../troubleshooting/dns.md) — when the request doesn't even reach Brimble.
+- [Networking and the edge](overview.md), limits and edge behavior.
+- [Internal services](internal-services.md), how your services reach each other privately.
+- [502 errors](../troubleshooting/502-errors.md), what to check when the gateway can't reach your service.
+- [DNS troubleshooting](../troubleshooting/dns.md), when the request doesn't even reach Brimble.

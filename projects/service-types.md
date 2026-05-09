@@ -5,7 +5,7 @@ Every Brimble project has a service type. The type determines build behavior, ru
 | Service type | Build source | Runtime | Public URL | Health check | Use for |
 |---|---|---|---|---|---|
 | **Web service** | Git repo (Railpack / `Dockerfile`) **or** pre-built Docker image | Container, listens on `$PORT` | Yes | HTTP GET on `healthCheckPath` | Express, Django, Rails, FastAPI, Spring Boot, Phoenix, any HTTP server |
-| **Static site** | Git repo (frontend builder) | None — assets served from edge | Yes | None | Next.js (export), Vite, Astro, Hugo, plain HTML/JS |
+| **Static site** | Git repo (frontend builder) | None, assets served from edge | Yes | None | Next.js (export), Vite, Astro, Hugo, plain HTML/JS |
 | **Worker** | Git repo (Railpack / `Dockerfile`) **or** pre-built Docker image | Container, no port | No | Process liveness | Queue consumers, schedulers, background jobs |
 | **Database** | Managed image | Engine-specific | No (private endpoint) and Yes (public endpoint) | Engine readiness probe | Postgres, MySQL, MariaDB, MongoDB, Redis, Valkey, RabbitMQ, Neo4j, ClickHouse |
 | **MCP server** | Git repo (Railpack / `Dockerfile`) **or** pre-built Docker image | Container, listens on `$PORT` | Yes | HTTP GET on `healthCheckPath` | Remote MCP servers for AI clients |
@@ -15,8 +15,8 @@ Every Brimble project has a service type. The type determines build behavior, ru
 A long-running container that handles HTTP traffic.
 
 **Source options:**
-- **Git repository** — Brimble builds from source using Railpack (auto-detected) or a `Dockerfile` if one is at the project root.
-- **Docker image** — pull a pre-built image from Docker Hub, GHCR, or any container registry. See [Deploy from a Docker image](deploy-from-docker-image.md).
+- **Git repository**, Brimble builds from source using Railpack (auto-detected) or a `Dockerfile` if one is at the project root.
+- **Docker image**, pull a pre-built image from Docker Hub, GHCR, or any container registry. See [Deploy from a Docker image](deploy-from-docker-image.md).
 
 **Required:**
 - The container's start command must listen on `process.env.PORT`.
@@ -104,7 +104,7 @@ If you need a data store, pick **database**.
 
 If you're shipping an MCP server for AI tools, pick **MCP server**.
 
-When in doubt, **web service** is the safe default — anything that listens on `$PORT` will work.
+When in doubt, **web service** is the safe default, anything that listens on `$PORT` will work.
 
 ## Switching service types
 

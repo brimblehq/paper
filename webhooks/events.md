@@ -22,7 +22,7 @@ There is no top-level `timestamp`, `project`, or `team`. Resource information li
 |---|---|
 | `Content-Type` | `application/json` |
 | `X-Brimble-Webhook` | HMAC-SHA256 of the raw request body, hex-encoded. |
-| `X-Brimble-Test` | `true` — only present on test events. |
+| `X-Brimble-Test` | `true`, only present on test events. |
 
 ## Common types
 
@@ -314,7 +314,7 @@ interface EnvPayload {
 }
 ```
 
-**About `value`.** The variable's value is included in the payload. Brimble stores secrets in an encrypted secret store; the `value` field on the webhook payload is the encrypted form for variables that have been written through the secret store (the typical path), and may be plaintext for variables created in legacy flows. Treat the field as sensitive in either case — log handlers should never write `value` to disk or to a log aggregator.
+**About `value`.** The variable's value is included in the payload. Brimble stores secrets in an encrypted secret store; the `value` field on the webhook payload is the encrypted form for variables that have been written through the secret store (the typical path), and may be plaintext for variables created in legacy flows. Treat the field as sensitive in either case, log handlers should never write `value` to disk or to a log aggregator.
 
 When a bulk import adds many variables in one operation, Brimble emits one `environment.variables.added` event per variable, not a single batched event.
 
@@ -537,6 +537,6 @@ Pass the events you want when configuring a webhook, or `["*"]` to receive every
 
 ## Delivery model
 
-- **At-least-once.** A delivery may be retried after a failed response. Make handlers idempotent — keying on `data._id` plus `event` works for most resources.
+- **At-least-once.** A delivery may be retried after a failed response. Make handlers idempotent, keying on `data._id` plus `event` works for most resources.
 - **Order is not guaranteed.** Two events from the same project can arrive out of order. Use `createdAt` / `updatedAt` / `startTime` / `endTime` from `data` to reconcile.
 - **Best-effort.** After repeated delivery failures, a single delivery is dropped. Your webhook itself stays enabled and continues to receive subsequent events.

@@ -43,9 +43,9 @@ Each in-progress deployment streams logs through these phases:
 
 Logs for each phase stream into the dashboard in real time. You can also view them after the fact under **Deployment history**.
 
-![TODO: screenshot of the live deployment logs drawer streaming output, with phase headers (Clone, Detect, Install, Build, Push, Deploy) collapsible, status chip showing "In progress", and a "Cancel" button visible in the header](./images/PLACEHOLDER.png)
-
-*Live deployment logs stream by phase as the build runs.*
+{% hint style="info" %}
+**Image needed:** screenshot of the live deployment logs drawer streaming output, with phase headers (Clone, Detect, Install, Build, Push, Deploy) collapsible, status chip showing "In progress", and a "Cancel" button visible in the header
+{% endhint %}
 
 ## Build queue
 
@@ -66,11 +66,11 @@ Old deployments aren't deleted. Every previous build for a project sits in **Dep
 2. Find the deployment you want to restore.
 3. Click **Redeploy this version**.
 
-Brimble re-runs that deployment's image (no rebuild) and flips traffic to it. The rolled-back deployment becomes the new active one. Rollbacks are seconds, not minutes — there's no rebuild step.
+Brimble re-runs that deployment's image (no rebuild) and flips traffic to it. The rolled-back deployment becomes the new active one. Rollbacks are seconds, not minutes, there's no rebuild step.
 
 ## Cancelling a deployment
 
-You can cancel a deployment at any time during the build or deploy phases. After it's active, "cancelling" doesn't apply — use **Redeploy this version** to roll back instead.
+You can cancel a deployment at any time during the build or deploy phases. After it's active, "cancelling" doesn't apply, use **Redeploy this version** to roll back instead.
 
 ## Watching a deployment
 
@@ -78,16 +78,16 @@ Three places show deployment status:
 
 - **Dashboard.** Status badge on the project, plus a live logs drawer.
 - **Webhooks.** Brimble emits `deployment.started`, `deployment.success`, and `deployment.failed` events. See [Webhook events](../webhooks/events.md).
-- **Deployment history** in the project — every previous build, with status, commit, and timing.
+- **Deployment history** in the project, every previous build, with status, commit, and timing.
 
 ## Failed deployments
 
 A failed deployment never receives traffic. The previously active deployment keeps serving. Common failure modes are documented in [Build failures](../troubleshooting/build-failures.md).
 
-When a deployment fails, the dashboard shows the failed phase and the last 100 lines of logs. Read logs **bottom-up** — the first error is usually the real one; everything after it is fallout.
+When a deployment fails, the dashboard shows the failed phase and the last 100 lines of logs. Read logs **bottom-up**, the first error is usually the real one; everything after it is fallout.
 
 ## Next steps
 
-- [Environments](environments.md) — Production, Preview, and how each gets its own deployment stream.
-- [Builds](builds.md) — how Brimble turns source code into an artifact.
-- [Build failures](../troubleshooting/build-failures.md) — common errors during a deployment.
+- [Environments](environments.md), Production, Preview, and how each gets its own deployment stream.
+- [Builds](builds.md), how Brimble turns source code into an artifact.
+- [Build failures](../troubleshooting/build-failures.md), common errors during a deployment.

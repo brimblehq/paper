@@ -4,13 +4,13 @@ Provision a managed database on Brimble. You pick an engine, version, region, an
 
 ## Prerequisites
 
-- A Brimble account with a paid plan, or a free-tier project (some engines are restricted on free).
-- A project that will use the database. The database can live on its own; you wire it into your service via an environment variable.
+* A Brimble account with a paid plan, or a free-tier project (some engines are restricted on free).
+* A project that will use the database. The database can live on its own and you wire it into your service via an environment variable.
 
 ## Supported engines
 
 | Engine | Common use |
-|---|---|
+| ------ | ---------- |
 | **PostgreSQL** | Default relational database. Pick this if you don't have a strong reason. |
 | **MySQL** | Relational. Use if your stack expects MySQL specifically. |
 | **MariaDB** | MySQL-compatible drop-in. |
@@ -26,52 +26,52 @@ Versions available per engine are shown in the dashboard during provisioning.
 ## Provision
 
 1. Open the dashboard.
-2. Click **New project** → **Database**.
+2. Click **New project → Database**.
 3. Pick the engine and version.
-4. Choose a region. Co-locate the database with the service that will use it — cross-region database calls add latency to every query.
+4. Choose a region. Co-locate the database with the service that will use it; cross-region database calls add latency to every query.
 5. Pick a sizing tier (CPU, memory, storage). Start small; you can resize later.
-6. Set a name. Use lowercase with dashes (e.g. `acme-pg-prod`).
+6. Set a name. Use lowercase with dashes, for example `acme-pg-prod`.
 7. Click **Provision**.
 
-Provisioning typically takes 60–120 seconds. The dashboard shows the status: `provisioning` → `active`.
+Provisioning typically takes 60 to 120 seconds. The dashboard shows the status moving from `provisioning` to `active`.
 
-![TODO: screenshot of the database provisioning dialog with engine, version, region, and size selected](./images/PLACEHOLDER.png)
-
-*The database provisioning flow.*
+{% hint style="info" %}
+**Image needed:** the database provisioning dialog with engine, version, region, and size all selected, ready to click **Provision**.
+{% endhint %}
 
 ## Get the connection string
 
 Once active, the database's overview page shows:
 
-- **Connection string** — a fully-formed URL using the public load-balancer hostname. Plug into your app.
-- **Host**, **Port** — the public endpoint and port.
-- **User** and **Password** — credentials.
-- **Database name** — the default database (for engines that have the concept).
+* **Connection string**, a fully-formed URL using the public load-balancer hostname. Plug into your app.
+* **Host** and **Port**, the public endpoint and port.
+* **User** and **Password**, credentials.
+* **Database name**, the default database for engines that have the concept.
 
 Click the eye icon to reveal the password.
 
 In addition, Brimble auto-injects four system environment variables into the database project itself:
 
 | Variable | Use it for |
-|---|---|
+| -------- | ---------- |
 | `CONNECTION_STRING` | Full URI using the public hostname. |
 | `SERVICE_HOST` | Public hostname only. |
 | `SERVICE_PORT` | The engine's port. |
-| `PRIVATE_SERVICE_HOST` | The internal hostname (`<db-slug>.service.brimble.internal`) — fastest path for services in the same workspace and region. |
+| `PRIVATE_SERVICE_HOST` | The internal hostname (`<db-slug>.service.brimble.internal`). Fastest path for services in the same workspace and region. |
 
-These let you wire up consumers cleanly via env-variable references — see below.
+These let you wire up consumers cleanly via env-variable references; see below.
 
 ## Connect from a Brimble service
 
 In the service that needs the database, set its `DATABASE_URL` (or whatever your code expects) using [environment-variable references](../environments/env-references.md). The references resolve at deploy time and pick up changes automatically.
 
-For the **fastest** path, reference the database's private hostname:
+For the fastest path, reference the database's private hostname:
 
 ```
 DATABASE_URL = postgres://{{@my-postgres.DB_USER}}:{{@my-postgres.DB_PASSWORD}}@{{@my-postgres.PRIVATE_SERVICE_HOST}}:{{@my-postgres.SERVICE_PORT}}/{{@my-postgres.DB_NAME}}
 ```
 
-Replace `my-postgres` with your database project's slug. Connections opened to `PRIVATE_SERVICE_HOST` stay on Brimble's internal network — no public hop, no bandwidth charge, lower latency.
+Replace `my-postgres` with your database project's slug. Connections opened to `PRIVATE_SERVICE_HOST` stay on Brimble's internal network. No public hop, no bandwidth charge, lower latency.
 
 The private hostname only works for consumers in the same workspace and region. Cross-region or external consumers should use the public connection string. For full details on the internal network, see [Internal services](../networking/internal-services.md).
 
@@ -90,44 +90,26 @@ When the whitelist is empty, connections are open from any source. With at least
 CPU, memory, and storage can be scaled up at any time. Storage can only grow, not shrink.
 
 1. Open the database project.
-2. Go to **Settings** → **Sizing**.
+2. Go to **Settings → Sizing**.
 3. Pick the new size and click **Apply**.
 
-Scaling causes a short restart (typically under 30 seconds). Connections drop and reconnect — make sure your client has reconnect logic.
+Scaling causes a short restart (typically under 30 seconds). Connections drop and reconnect, so make sure your client has reconnect logic.
 
 ## Backups
 
 Backups can be enabled on any database from **Settings → Backups**. When enabled, Brimble takes scheduled snapshots and retains them for the period configured on the project. You can also take an on-demand backup with **Back up now**.
 
-Restoring from a backup happens via support today — open a ticket with the database project and the snapshot timestamp.
+Restoring from a backup happens via support today. Open a ticket with the database project and the snapshot timestamp.
 
 ## Rotate the password
 
 To rotate the database password:
 
 1. Open the database project.
-2. Go to **Settings** → **Credentials**.
+2. Go to **Settings → Credentials**.
 3. Click **Rotate password**.
 
 Rotating requires 2FA. The new password takes effect immediately; existing connections are dropped. Update the connection string in any service using the database, then redeploy that service.
-
-## Verification
-
-From a Brimble service, log connection success on startup:
-
-```javascript
-import { Pool } from "pg";
-
-const pool = new Pool({ connectionString: process.env.DATABASE_URL });
-const { rows } = await pool.query("SELECT version()");
-console.log("DB connected:", rows[0].version);
-```
-
-From your laptop, with the engine's CLI:
-
-```bash
-psql "$DATABASE_URL" -c "SELECT version();"
-```
 
 ## Troubleshooting
 
@@ -137,9 +119,9 @@ psql "$DATABASE_URL" -c "SELECT version();"
 
 **Connection works locally but fails from the service.** Make sure the service and database are in the same region for private-endpoint use, or that you're using the public endpoint with TLS otherwise.
 
-**Provisioning failed.** Open the database project. The status page shows the provisioning state and any error. Common causes: region out of capacity, name conflict, payment issue. Click **Retry** on the project to attempt provisioning again.
+**Provisioning failed.** Open the database project. The status page shows the provisioning state and any error. Common causes are: region out of capacity, name conflict, or a payment issue. Click **Retry** on the project to attempt provisioning again.
 
 ## Next steps
 
-- [Manage environment variables](environment-variables.md) — wiring the connection string into a service.
-- [Service types reference](service-types.md) — full database options.
+* [Manage environment variables](../environments/environment-variables.md), for wiring the connection string into a service.
+* [Service types](service-types.md), the full database options.

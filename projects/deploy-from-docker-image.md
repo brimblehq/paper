@@ -21,17 +21,17 @@ Deploy a project from a pre-built Docker image instead of building from source. 
    - `myteam/my-image:abc123` (Docker Hub)
    - `registry.example.com/team/image:tag` (custom registry)
 4. If the image is private, expand **Registry credentials** and enter:
-   - **Username** — the registry username.
-   - **Password / token** — a password or access token. For GHCR, this is a personal access token with `read:packages`. For Docker Hub, a personal access token works better than your password.
+   - **Username**, the registry username.
+   - **Password / token**, a password or access token. For GHCR, this is a personal access token with `read:packages`. For Docker Hub, a personal access token works better than your password.
 
-![TODO: screenshot of the new-project flow with "Docker image" selected and the registry credentials section expanded](./images/PLACEHOLDER.png)
-
-*The Docker source step in the new-project flow.*
+{% hint style="info" %}
+**Image needed:** screenshot of the new-project flow with "Docker image" selected and the registry credentials section expanded
+{% endhint %}
 
 5. Configure the runtime:
-   - **Service type** — usually **Web service**. Pick **Worker** if the image isn't an HTTP server.
-   - **Region** — datacenter to deploy in.
-   - **Compute size** — CPU and memory.
+   - **Service type**, usually **Web service**. Pick **Worker** if the image isn't an HTTP server.
+   - **Region**, datacenter to deploy in.
+   - **Compute size**, CPU and memory.
 6. Set environment variables your image needs.
 7. Click **Deploy**.
 
@@ -42,7 +42,7 @@ Brimble pulls the image, starts a container with your environment variables, and
 When the container starts, Brimble injects:
 
 - All environment variables you configured for the active environment.
-- `PORT` — the port Brimble assigns. Your image must read this and listen on it for web services. (Workers don't need to listen.)
+- `PORT`, the port Brimble assigns. Your image must read this and listen on it for web services. (Workers don't need to listen.)
 - `BRIMBLE_*` system variables (`BRIMBLE_REGION`, `BRIMBLE_COMMIT_SHA` is empty since there's no commit, `BRIMBLE_PROJECT`, etc.).
 
 The container's command is whatever the image defines (`CMD` or `ENTRYPOINT`). To override, set a custom start command under **Settings → Build**.
@@ -51,7 +51,7 @@ The container's command is whatever the image defines (`CMD` or `ENTRYPOINT`). T
 
 Your image should:
 
-- **Listen on `0.0.0.0:$PORT`** for web services. Don't listen on `127.0.0.1` — Brimble's edge can't reach localhost-only services.
+- **Listen on `0.0.0.0:$PORT`** for web services. Don't listen on `127.0.0.1`, Brimble's edge can't reach localhost-only services.
 - **Run a foreground process.** A container that exits is treated as crashed and restarted (or marked failed after repeated restarts).
 - **Have a `CMD` or `ENTRYPOINT`** that doesn't depend on a TTY. Brimble runs containers non-interactively.
 
@@ -65,7 +65,7 @@ If a credential expires, the next pull will fail with a deployment error. Update
 
 ## Updating the image
 
-There's no auto-deploy hook for image registries — pushing a new tag doesn't redeploy automatically.
+There's no auto-deploy hook for image registries, pushing a new tag doesn't redeploy automatically.
 
 To update:
 
@@ -90,7 +90,7 @@ For workers, check the runtime logs to confirm the process is doing what you exp
 
 **Pull fails: "no such image" or "manifest unknown."** Triple-check the image reference (registry, namespace, name, tag). Tags are case-sensitive. For private images, confirm the credentials work locally with `docker login` + `docker pull`.
 
-**Pull fails: "unauthorized."** Credentials are wrong or expired. For GHCR, the token needs `read:packages` scope. For Docker Hub, free accounts have rate limits — use an authenticated pull.
+**Pull fails: "unauthorized."** Credentials are wrong or expired. For GHCR, the token needs `read:packages` scope. For Docker Hub, free accounts have rate limits, use an authenticated pull.
 
 **Container starts but immediately exits.** The image's `CMD` ran to completion. Override with a long-running command under **Settings → Build → Start command**, or fix the image's entrypoint.
 
@@ -100,6 +100,6 @@ For workers, check the runtime logs to confirm the process is doing what you exp
 
 ## Next steps
 
-- [Service types](service-types.md) — picking the right type for your image.
-- [Manage environment variables](environment-variables.md) — wiring config into your container.
-- [Builds](builds.md) — the alternative path: building from source.
+- [Service types](service-types.md), picking the right type for your image.
+- [Manage environment variables](environment-variables.md), wiring config into your container.
+- [Builds](builds.md), the alternative path: building from source.

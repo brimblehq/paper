@@ -4,7 +4,7 @@ Add, edit, and delete DNS records for a domain managed by Brimble. This guide co
 
 ## Prerequisites
 
-- A domain in your Brimble account, with nameservers set to `ns1.brimble.io` and `ns2.brimble.io`. If your domain is using external nameservers, the records you add in the Brimble dashboard won't take effect — you have to manage records at the external provider instead.
+- A domain in your Brimble account, with nameservers set to `ns1.brimble.io` and `ns2.brimble.io`. If your domain is using external nameservers, the records you add in the Brimble dashboard won't take effect, you have to manage records at the external provider instead.
 
 ## Open the records UI
 
@@ -13,19 +13,19 @@ Add, edit, and delete DNS records for a domain managed by Brimble. This guide co
 
 The records table shows every record on the domain, with type, host, value, TTL, proxy state, and per-row edit/delete actions.
 
-![TODO: screenshot of the DNS records table for a domain, showing several record rows with type, host, value, TTL, "Proxied" toggle, and edit/delete icons](./images/PLACEHOLDER.png)
-
-*The DNS records table for a Brimble-managed domain.*
+{% hint style="info" %}
+**Image needed:** screenshot of the DNS records table for a domain, showing several record rows with type, host, value, TTL, "Proxied" toggle, and edit/delete icons
+{% endhint %}
 
 ## Add a record
 
 1. Click **Add record**.
 2. Fill in:
-   - **Type** — `A`, `AAAA`, `CNAME`, `MX`, `TXT`, `NS`, `SRV`, or `CAA`.
-   - **Name** — the subdomain. Use `@` for the apex (root) domain. Use `www`, `api`, etc. for subdomains.
-   - **Value** — the record's answer (IP, hostname, text, etc., depending on type).
-   - **TTL** — defaults to **Auto** (3600 seconds). Pick a shorter value if you're about to make changes.
-   - **Proxied** — only available on `A` and `CNAME`. When on, traffic for the host routes through Brimble's edge (with TLS, edge rate limits, and the origin IP hidden). When off, the record returns the raw value.
+   - **Type**, `A`, `AAAA`, `CNAME`, `MX`, `TXT`, `NS`, `SRV`, or `CAA`.
+   - **Name**, the subdomain. Use `@` for the apex (root) domain. Use `www`, `api`, etc. for subdomains.
+   - **Value**, the record's answer (IP, hostname, text, etc., depending on type).
+   - **TTL**, defaults to **Auto** (3600 seconds). Pick a shorter value if you're about to make changes.
+   - **Proxied**, only available on `A` and `CNAME`. When on, traffic for the host routes through Brimble's edge (with TLS, edge rate limits, and the origin IP hidden). When off, the record returns the raw value.
 3. Click **Save**.
 
 The record is published to Brimble's authoritative DNS within seconds, but resolvers cache the previous answer up to its TTL.
@@ -36,7 +36,7 @@ Click the pencil icon next to a record. The edit form is identical to the add fo
 
 ## Delete a record
 
-Click the trash icon next to a record and confirm. There's no undo — re-add the record if you delete by mistake.
+Click the trash icon next to a record and confirm. There's no undo, re-add the record if you delete by mistake.
 
 ## Common patterns
 
@@ -58,7 +58,7 @@ For DNS providers that support apex CNAME flattening / ALIAS at the apex (Cloudf
 @   TXT "v=spf1 include:_spf.google.com ~all"
 ```
 
-Don't proxy MX records — they're SMTP, not HTTP.
+Don't proxy MX records, they're SMTP, not HTTP.
 
 ### Domain ownership verification
 
@@ -101,7 +101,7 @@ After making a change, raise the TTL back up once you're confident.
 | Proxied | Use for |
 |---|---|
 | **On** | Records that point at a Brimble-hosted service (`A` or `CNAME`). Gets you free TLS, edge rate limits, and hides the origin IP. |
-| **Off** | Records pointing at non-Brimble services. Mail records (`MX`, `TXT` for SPF/DKIM/DMARC) — never proxy these. SaaS verification records. |
+| **Off** | Records pointing at non-Brimble services. Mail records (`MX`, `TXT` for SPF/DKIM/DMARC), never proxy these. SaaS verification records. |
 
 Only `A` and `CNAME` can be proxied. Other types are always served raw.
 
@@ -113,7 +113,7 @@ The most common reason is that the domain isn't actually using Brimble's nameser
 dig your-domain.com NS +short
 ```
 
-If you don't see `ns1.brimble.io` and `ns2.brimble.io`, your records live at whatever nameservers `dig` returned — not at Brimble. Either delegate the domain to Brimble's nameservers, or manage records at the external provider.
+If you don't see `ns1.brimble.io` and `ns2.brimble.io`, your records live at whatever nameservers `dig` returned, not at Brimble. Either delegate the domain to Brimble's nameservers, or manage records at the external provider.
 
 If nameservers are correct but a record still seems wrong, check propagation from public resolvers:
 
@@ -122,10 +122,10 @@ dig @1.1.1.1 your-record.example.com +short
 dig @8.8.8.8 your-record.example.com +short
 ```
 
-If those return the new value, you're done — local caches will refresh once their TTL expires.
+If those return the new value, you're done, local caches will refresh once their TTL expires.
 
 ## Next steps
 
-- [DNS record types](dns-records.md) — every record type and its fields.
-- [DNS troubleshooting](../troubleshooting/dns.md) — when records aren't behaving.
-- [Add a custom domain](custom-domains.md) — point a Brimble-managed domain at a project.
+- [DNS record types](dns-records.md), every record type and its fields.
+- [DNS troubleshooting](../troubleshooting/dns.md), when records aren't behaving.
+- [Add a custom domain](custom-domains.md), point a Brimble-managed domain at a project.

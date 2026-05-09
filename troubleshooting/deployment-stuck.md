@@ -1,6 +1,6 @@
 # Deployment is stuck
 
-A deployment that doesn't start or doesn't finish. Different from a deployment that **fails** (those produce an error and a logs page) — these stay in `pending` or `in progress` indefinitely.
+A deployment that doesn't start or doesn't finish. Different from a deployment that **fails** (those produce an error and a logs page), these stay in `pending` or `in progress` indefinitely.
 
 ## Stuck in "pending"
 
@@ -42,7 +42,7 @@ If the account's billing has been failing for over 7 days, builds are disabled. 
 
 **Fix:** Update the payment method under **Billing → Payment methods**, then click **Redeploy**.
 
-## Stuck in "in progress" — clone phase
+## Stuck in "in progress", clone phase
 
 Logs show a clone-attempt line and stop.
 
@@ -62,7 +62,7 @@ Your repo has submodules that point to URLs Brimble can't reach (private hosts, 
 
 **Fix:** Either remove the submodule, or change its URL to one Brimble can authenticate against (HTTPS with the same credentials).
 
-## Stuck in "in progress" — install or build phase
+## Stuck in "in progress", install or build phase
 
 Logs are silent, or a single command is running indefinitely.
 
@@ -72,7 +72,7 @@ A package manager is fetching a large dependency over a slow link, or hanging on
 
 **Confirm:** The last log line is something like "fetching", "downloading", or "resolving". No progress for 5+ minutes.
 
-**Fix:** Click **Cancel** and **Redeploy**. If it hangs again on the same package, the issue is upstream — try a different version, vendor the dependency, or pin to a registry mirror.
+**Fix:** Click **Cancel** and **Redeploy**. If it hangs again on the same package, the issue is upstream, try a different version, vendor the dependency, or pin to a registry mirror.
 
 ### Cause 2: Build script with no output
 
@@ -96,7 +96,7 @@ Your build is using too much memory and the runner is paging or thrashing instea
 
 **Fix:** Reduce memory pressure (smaller bundle, build flags like `NODE_OPTIONS=--max-old-space-size=2048`), or bump the project's compute size temporarily for the build.
 
-## Stuck in "in progress" — health check phase
+## Stuck in "in progress", health check phase
 
 Build succeeded, container started, but Brimble never marks it active.
 
@@ -152,6 +152,6 @@ Include the deployment ID and the project name. Brimble's logs include extra con
 
 ## Next steps
 
-- [Build failures](build-failures.md) — for deployments that fail with an error.
-- [502 errors](502-errors.md) — for deployments that go active but don't serve traffic.
-- [Deployments](../projects/deployments.md) — the full lifecycle and what each phase does.
+- [Build failures](build-failures.md), for deployments that fail with an error.
+- [502 errors](502-errors.md), for deployments that go active but don't serve traffic.
+- [Deployments](../projects/deployments.md), the full lifecycle and what each phase does.

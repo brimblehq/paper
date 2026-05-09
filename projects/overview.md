@@ -36,13 +36,13 @@ Use for: Next.js (static export), Vite, Astro, Hugo, plain HTML, anything where 
 
 ### Worker
 
-A long-running process with no HTTP port. Workers are not exposed to the internet — they're for queue consumers, schedulers, message handlers, or any background process that does its own work.
+A long-running process with no HTTP port. Workers are not exposed to the internet, they're for queue consumers, schedulers, message handlers, or any background process that does its own work.
 
 Use for: BullMQ workers, Celery workers, Sidekiq, custom queue consumers, long-polling scripts.
 
 ### Database
 
-A managed data service. Brimble provisions the engine you choose, runs it, and gives you a connection string. You don't push code to a database project — Brimble manages the image, the version, backups, and the volume.
+A managed data service. Brimble provisions the engine you choose, runs it, and gives you a connection string. You don't push code to a database project, Brimble manages the image, the version, backups, and the volume.
 
 Supported engines: PostgreSQL, MySQL, MariaDB, MongoDB, Redis, Valkey, RabbitMQ, Neo4j, ClickHouse.
 
@@ -66,9 +66,9 @@ Account or Team
     └── Metrics, logs, webhooks
 ```
 
-![TODO: screenshot of the Projects list view in the dashboard, showing a few project cards with status chips, framework logos, branch labels, last commit message, deployed-by avatar, and tags](./images/PLACEHOLDER.png)
-
-*The Projects list — each card summarizes one project's current state.*
+{% hint style="info" %}
+**Image needed:** screenshot of the Projects list view in the dashboard, showing a few project cards with status chips, framework logos, branch labels, last commit message, deployed-by avatar, and tags
+{% endhint %}
 
 A team can hold many projects. A project can hold many environments. Each environment has its own set of environment variables. Each deployment ships from a specific environment.
 
@@ -80,6 +80,6 @@ A team can hold many projects. A project can hold many environments. Each enviro
 
 ## Next steps
 
-- [Deployments](deployments.md) — how a build becomes a running service.
-- [Environments](environments.md) — Production, Preview, and how env vars flow.
-- [Service types reference](service-types.md) — every service type, side-by-side.
+- [Deployments](deployments.md), how a build becomes a running service.
+- [Environments](environments.md), Production, Preview, and how env vars flow.
+- [Service types reference](service-types.md), every service type, side-by-side.

@@ -1,12 +1,12 @@
 # Build failures
 
-Your deployment failed during build. The previous deployment is still serving — nothing's down — but the new code isn't live. This page walks the common failure modes.
+Your deployment failed during build. The previous deployment is still serving, nothing's down, but the new code isn't live. This page walks the common failure modes.
 
 ## Read the logs first
 
 Open the failed deployment in the dashboard. Logs stream by phase: clone → detect → install → build → package → push → deploy.
 
-**Read from the bottom up.** The first error in the logs is the real one; everything after it is fallout. Don't focus on the last line — focus on the first stack trace, exit code, or "error:" message.
+**Read from the bottom up.** The first error in the logs is the real one; everything after it is fallout. Don't focus on the last line, focus on the first stack trace, exit code, or "error:" message.
 
 The phase that failed is shown in the deployment header. Match it to the sections below.
 
@@ -60,7 +60,7 @@ The build phase runs your build command.
 
 **Asset compilation fails (Rails, Phoenix).** Asset precompile needs the right tools. Make sure Node/Yarn are installed (Brimble installs them automatically for Rails projects).
 
-**Database migration fails during pre-start.** A migration script set as your pre-start command fails — usually because the database schema is in a state the migration didn't expect. Run migrations locally against a copy of the production DB to confirm before pushing.
+**Database migration fails during pre-start.** A migration script set as your pre-start command fails, usually because the database schema is in a state the migration didn't expect. Run migrations locally against a copy of the production DB to confirm before pushing.
 
 ## Phase: package
 
@@ -72,7 +72,7 @@ Packaging takes the build output and wraps it as a deployable artifact.
 
 ## Phase: push
 
-The push phase uploads the artifact to Brimble's internal registry. Failures here are almost always transient — click **Redeploy**.
+The push phase uploads the artifact to Brimble's internal registry. Failures here are almost always transient, click **Redeploy**.
 
 If push fails repeatedly, contact support; this typically indicates a Brimble-side issue.
 
@@ -97,13 +97,13 @@ const port = Number(process.env.PORT) || 3000;
 app.listen(port, "0.0.0.0", () => console.log(`listening on ${port}`));
 ```
 
-Note `0.0.0.0` (not `localhost` and not `127.0.0.1`) — Brimble's edge can't reach localhost-only listeners.
+Note `0.0.0.0` (not `localhost` and not `127.0.0.1`), Brimble's edge can't reach localhost-only listeners.
 
 **Health check returns non-2xx.** Your `healthCheckPath` (default `/`) returns an error. Either fix the route, or set `healthCheckPath` to a working endpoint under **Settings → Configuration**.
 
 **Database connection times out at startup.** Your app boots, tries to connect to the database, and hangs. Verify `DATABASE_URL` is set and the database is in the same region.
 
-**Port collision.** Your code logs "address already in use." Almost always a leftover from local development hardcoding port 3000 or 8080. Read `process.env.PORT` — Brimble assigns the port at deploy time.
+**Port collision.** Your code logs "address already in use." Almost always a leftover from local development hardcoding port 3000 or 8080. Read `process.env.PORT`, Brimble assigns the port at deploy time.
 
 ## Diagnostic snippets
 
@@ -126,11 +126,11 @@ If the build picks a version different from your local environment, results dive
 
 If the logs don't make the cause obvious:
 
-1. Click **Redeploy** once — transient errors do happen.
+1. Click **Redeploy** once, transient errors do happen.
 2. If it fails the same way, copy the first error and the phase name.
 3. Open a support ticket with the deployment ID. Brimble's logs include extra context not visible in the dashboard.
 
 ## Next steps
 
-- [Deployments](../projects/deployments.md) — full deployment lifecycle.
-- [Builds](../projects/builds.md) — what happens during each build phase.
+- [Deployments](../projects/deployments.md), full deployment lifecycle.
+- [Builds](../projects/builds.md), what happens during each build phase.

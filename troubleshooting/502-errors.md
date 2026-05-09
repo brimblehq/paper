@@ -1,6 +1,6 @@
 # 502 Bad Gateway
 
-The edge is returning 502 for your project. The deployment is up — Brimble's edge can see it — but it can't get a usable response from your container. This page lists every cause we see and how to confirm.
+The edge is returning 502 for your project. The deployment is up, Brimble's edge can see it, but it can't get a usable response from your container. This page lists every cause we see and how to confirm.
 
 ## Quick triage
 
@@ -10,7 +10,7 @@ Run:
 curl -I https://<project-name>.brimble.app
 ```
 
-A `502 Bad Gateway` means the edge reached your service but didn't get a 1xx/2xx/3xx/4xx/5xx HTTP response within the timeout — either the container isn't listening, the listener is on the wrong address, or the service is hung.
+A `502 Bad Gateway` means the edge reached your service but didn't get a 1xx/2xx/3xx/4xx/5xx HTTP response within the timeout, either the container isn't listening, the listener is on the wrong address, or the service is hung.
 
 ## Cause 1: Service isn't listening on `$PORT`
 
@@ -37,7 +37,7 @@ uvicorn.run(app, host="0.0.0.0", port=int(os.environ["PORT"]))
 http.ListenAndServe(":"+os.Getenv("PORT"), nil)
 ```
 
-The `|| 3000` fallback only matters locally — in production `PORT` is always set.
+The `|| 3000` fallback only matters locally, in production `PORT` is always set.
 
 ## Cause 2: Service listening on the wrong host
 
@@ -74,7 +74,7 @@ process.on("unhandledRejection", (err) => console.error("unhandled:", err));
 process.on("uncaughtException", (err) => { console.error("uncaught:", err); process.exit(1); });
 ```
 
-If the crash is a known bug you're working on, check the runtime memory profile. Out-of-memory kills are a common silent cause — a container that hits its memory limit gets killed by the runtime without a clean exit.
+If the crash is a known bug you're working on, check the runtime memory profile. Out-of-memory kills are a common silent cause, a container that hits its memory limit gets killed by the runtime without a clean exit.
 
 ## Cause 4: Service is slow
 
@@ -82,7 +82,7 @@ Your app is up but takes longer than the edge timeout to respond. The edge gives
 
 **Confirm:** Slow endpoints return 502 even when they eventually finish processing. Watch your service's response times in **Observability**.
 
-**Fix:** Make the slow endpoint faster, or move work to a background job and return a 202 immediately. The edge timeout is generous (30+ seconds) but not unlimited. Long-polling, SSE, and WebSocket connections aren't subject to the request timeout — only ordinary HTTP requests are.
+**Fix:** Make the slow endpoint faster, or move work to a background job and return a 202 immediately. The edge timeout is generous (30+ seconds) but not unlimited. Long-polling, SSE, and WebSocket connections aren't subject to the request timeout, only ordinary HTTP requests are.
 
 ## Cause 5: Deployment is restarting
 
@@ -129,7 +129,7 @@ You added or changed an env var in the dashboard, but the running container has 
 
 ## Cause 10: Rate limit at the edge
 
-You're hitting Brimble's edge rate limit (500 requests per 10 minutes per IP per domain). Above the limit, the edge returns 429, not 502 — but if you mistake one for the other, you may chase the wrong cause.
+You're hitting Brimble's edge rate limit (500 requests per 10 minutes per IP per domain). Above the limit, the edge returns 429, not 502, but if you mistake one for the other, you may chase the wrong cause.
 
 **Confirm:**
 
@@ -154,5 +154,5 @@ If all six are clean and you still see 502, open a ticket with the project name 
 
 ## Next steps
 
-- [Networking](../networking/overview.md) — how the edge routes to your service.
-- [Build failures](build-failures.md) — if the deployment never reaches **Active**.
+- [Networking](../networking/overview.md), how the edge routes to your service.
+- [Build failures](build-failures.md), if the deployment never reaches **Active**.

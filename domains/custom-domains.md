@@ -15,15 +15,15 @@ Point your own domain at a deployed Brimble project. Brimble issues a TLS certif
 
 Brimble shows you the DNS record to set at your provider.
 
-![TODO: screenshot of the Add Domain dialog showing the CNAME record Brimble expects](./images/PLACEHOLDER.png)
-
-*The Add Domain dialog shows the exact DNS record to copy.*
+{% hint style="info" %}
+**Image needed:** screenshot of the Add Domain dialog showing the CNAME record Brimble expects
+{% endhint %}
 
 ## Step 2: Set the DNS record
 
 You have two options at your DNS provider, depending on whether you're pointing a subdomain or an apex domain.
 
-### Option A — CNAME (recommended for subdomains)
+### Option A, CNAME (recommended for subdomains)
 
 Use this for any subdomain like `app.example.com`, `api.example.com`, or `www.example.com`.
 
@@ -31,11 +31,11 @@ Use this for any subdomain like `app.example.com`, `api.example.com`, or `www.ex
 |-------|-------------------|------------------------|
 | CNAME | `app` (subdomain) | `gateway.brimble.app`  |
 
-### Option B — A record (for apex domains)
+### Option B, A record (for apex domains)
 
 Most DNS providers don't allow CNAMEs at the root (`example.com`). For an apex, use the **A record** value shown in the dashboard.
 
-If your DNS provider supports CNAME flattening or ALIAS records (Cloudflare, Route 53, DNSimple, and others), point an `ALIAS` or flattened `CNAME` at `gateway.brimble.app` — that's preferable to a hardcoded A record because it tracks edge IP changes automatically.
+If your DNS provider supports CNAME flattening or ALIAS records (Cloudflare, Route 53, DNSimple, and others), point an `ALIAS` or flattened `CNAME` at `gateway.brimble.app`, that's preferable to a hardcoded A record because it tracks edge IP changes automatically.
 
 ## Step 3: Wait for verification
 
@@ -67,7 +67,7 @@ A successful response shows `HTTP/2 200` (or whatever status your app returns fo
 dig your-domain.com +short
 ```
 
-The output should match the value Brimble showed you. If it doesn't, double-check the record at your DNS provider — typos in the target hostname are the most common cause.
+The output should match the value Brimble showed you. If it doesn't, double-check the record at your DNS provider, typos in the target hostname are the most common cause.
 
 **TLS certificate fails to issue.** Let's Encrypt requires the domain to resolve to Brimble's edge before issuing a certificate. If DNS is correct, Brimble retries automatically; wait a few minutes. If it still fails after an hour, check that no `CAA` record on your domain blocks Let's Encrypt:
 
@@ -94,5 +94,5 @@ Once those nameservers are active, you can manage all DNS records (A, CNAME, MX,
 
 ## Next steps
 
-* Push a new deployment — your custom domain stays attached across deployments.
+* Push a new deployment, your custom domain stays attached across deployments.
 * Add a second domain to the same project for staging vs. production hostnames.

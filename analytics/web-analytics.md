@@ -1,6 +1,6 @@
 # Web analytics
 
-Track pageviews, sessions, geography, devices, and referrers for a deployed project. Brimble's built-in analytics work without a third-party tracker — you enable them in the dashboard, drop a snippet on your site, and traffic shows up.
+Track pageviews, sessions, geography, devices, and referrers for a deployed project. Brimble's built-in analytics work without a third-party tracker, you enable them in the dashboard, drop a snippet on your site, and traffic shows up.
 
 ## Prerequisites
 
@@ -16,14 +16,14 @@ Track pageviews, sessions, geography, devices, and referrers for a deployed proj
 
 There are two snippet flavors:
 
-- **Client-side** — a small `<script>` you drop into your site's HTML head. Works for any frontend, including static sites.
-- **Server-side** — a server-rendered include for frameworks that mount the page on the server (Next.js server components, Remix loaders, Rails views, etc.).
+- **Client-side**, a small `<script>` you drop into your site's HTML head. Works for any frontend, including static sites.
+- **Server-side**, a server-rendered include for frameworks that mount the page on the server (Next.js server components, Remix loaders, Rails views, etc.).
 
 Pick whichever fits your stack. Both report to the same dashboard.
 
-![TODO: screenshot of the Web analytics enable screen showing the tracking snippet panel with client-side and server-side tabs](./images/PLACEHOLDER.png)
-
-*The tracking snippet panel after enabling analytics.*
+{% hint style="info" %}
+**Image needed:** screenshot of the Web analytics enable screen showing the tracking snippet panel with client-side and server-side tabs
+{% endhint %}
 
 ## Drop in the snippet
 
@@ -37,10 +37,10 @@ Deploy. The next page load reports back to Brimble.
 
 For frameworks with their own analytics conventions:
 
-- **Next.js** — add the snippet to `_app.tsx` (Pages router) or `app/layout.tsx` (App router).
-- **Vite / React / Vue** — add to `index.html`.
-- **Astro / Hugo / static** — add to your layout template.
-- **Rails / Django / Phoenix** — add to your application layout.
+- **Next.js**, add the snippet to `_app.tsx` (Pages router) or `app/layout.tsx` (App router).
+- **Vite / React / Vue**, add to `index.html`.
+- **Astro / Hugo / static**, add to your layout template.
+- **Rails / Django / Phoenix**, add to your application layout.
 
 ## What's tracked
 
@@ -48,7 +48,7 @@ For frameworks with their own analytics conventions:
 |---|---|
 | **Pageviews** | Each page load counts as one pageview. SPA navigations are tracked via the History API. |
 | **Sessions** | A burst of activity from one visitor. A session ends after 30 minutes of inactivity. |
-| **Visitors** | Unique pseudonymous IDs. Brimble doesn't fingerprint or set persistent cookies — visitors are estimated. |
+| **Visitors** | Unique pseudonymous IDs. Brimble doesn't fingerprint or set persistent cookies, visitors are estimated. |
 | **Top pages** | URLs sorted by pageview count. |
 | **Top referrers** | Where visitors came from (other domains, social platforms, search engines). |
 | **Geography** | Country and (where available) city, derived from IP. |
@@ -80,7 +80,7 @@ Existing data stays in the dashboard until you click **Delete website data**, wh
 
 ## Multiple sites in one project
 
-Each Brimble project gets one website ID. If you serve multiple sites from one project (sub-paths or subdomains routed to different parts of the same service), pageviews are attributed to the host the request came in on — the dashboard groups them under "Top pages" with the full path.
+Each Brimble project gets one website ID. If you serve multiple sites from one project (sub-paths or subdomains routed to different parts of the same service), pageviews are attributed to the host the request came in on, the dashboard groups them under "Top pages" with the full path.
 
 ## Verification
 
@@ -95,9 +95,9 @@ If it doesn't, open your browser's Network tab and check that requests to `analy
 
 ## Troubleshooting
 
-**Snippet loaded but no data.** Most ad-blockers and privacy extensions don't block Brimble analytics by default, but some do. Try a fresh browser profile to confirm. If it works there, your prod traffic is just being filtered by some users — the analytics dashboard will still show real visitors.
+**Snippet loaded but no data.** Most ad-blockers and privacy extensions don't block Brimble analytics by default, but some do. Try a fresh browser profile to confirm. If it works there, your prod traffic is just being filtered by some users, the analytics dashboard will still show real visitors.
 
-**Wrong numbers.** Bot traffic is filtered automatically (known crawlers, headless browsers without proper UAs). If you're comparing to server-side request logs, expect a gap — server logs include bots and prefetches that the analytics dashboard hides.
+**Wrong numbers.** Bot traffic is filtered automatically (known crawlers, headless browsers without proper UAs). If you're comparing to server-side request logs, expect a gap, server logs include bots and prefetches that the analytics dashboard hides.
 
 **SPA route changes don't count.** The snippet listens for History API events (`pushState`, `replaceState`). If your router uses fragment-only navigation (`#/route`) or replaces the page DOM without pushing state, it won't tick. Switch your router to History API mode, or call the SDK's manual track method.
 
@@ -109,5 +109,5 @@ window.brimble?.track("signup", { plan: "pro" });
 
 ## Next steps
 
-- [Logs](../projects/deployments.md) — runtime logs and request logs are separate from web analytics.
-- [Custom domains](../domains/custom-domains.md) — analytics work the same on default and custom domains.
+- [Logs](../projects/deployments.md), runtime logs and request logs are separate from web analytics.
+- [Custom domains](../domains/custom-domains.md), analytics work the same on default and custom domains.

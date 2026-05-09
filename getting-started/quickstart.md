@@ -16,9 +16,9 @@ If you don't have an app handy, any small Node, Python, or Go web server with a 
 3. Connect your Git provider if it isn't already linked, then pick the repository to deploy.
 4. Choose the **branch** you want Brimble to track (usually `main`).
 
-![TODO: screenshot of the new-project flow with a GitHub repo selected and the branch dropdown open](./images/PLACEHOLDER.png)
-
-*The "New project" flow after selecting a Git provider and repository.*
+{% hint style="info" %}
+**Image needed:** screenshot of the new-project flow with a GitHub repo selected and the branch dropdown open
+{% endhint %}
 
 ## Step 2: Configure the build
 
@@ -32,19 +32,19 @@ Brimble auto-detects most frameworks. Review the detected settings or override t
 | **Start command** | What runs to start your server (e.g. `npm start`). |
 | **Environment variables** | Any values your app needs at build or runtime. |
 | **Region** | The datacenter where your project runs. Pick one near your users. |
-| **Compute size** | Memory and CPU. Start small — you can scale later. |
+| **Compute size** | Memory and CPU. Start small, you can scale later. |
 
 Your app must read its HTTP port from the `PORT` environment variable. Brimble assigns the port at runtime; if your server listens on a hardcoded port, requests will fail with a 502.
 
 ## Step 3: Deploy
 
-Click **Deploy**. The dashboard opens a logs drawer where you can watch each phase of the build and deployment stream in real time — clone, framework detection, build, push, start.
+Click **Deploy**. The dashboard opens a logs drawer where you can watch each phase of the build and deployment stream in real time, clone, framework detection, build, push, start.
 
 When the deployment finishes, your project is live at `https://<project-name>.brimble.app`.
 
-![TODO: screenshot of the deployment logs drawer showing a successful build and a green "live" status](./images/PLACEHOLDER.png)
-
-*Build and deploy logs stream live in the dashboard.*
+{% hint style="info" %}
+**Image needed:** screenshot of the deployment logs drawer showing a successful build and a green "live" status
+{% endhint %}
 
 ## Verification
 
@@ -64,11 +64,11 @@ You should see an `HTTP/2 200` response (or whatever status your app returns for
 
 **Deploy succeeds but the URL returns 502.** Your app isn't listening on the right port. Make sure your server reads the `PORT` environment variable instead of hardcoding a value.
 
-**Build fails partway through.** Open the failed deployment in the dashboard and read the logs from the bottom up — the first error is usually the real one. Common causes: a missing dependency, a build script that needs an env var, or a Node/Python version mismatch.
+**Build fails partway through.** Open the failed deployment in the dashboard and read the logs from the bottom up, the first error is usually the real one. Common causes: a missing dependency, a build script that needs an env var, or a Node/Python version mismatch.
 
 **The deploy completes but the URL shows a default Brimble page.** Your project may still be starting. Wait 30 seconds and refresh. If it persists, check the runtime logs for a startup error.
 
 ## Next steps
 
-* [Add a custom domain](../domains/custom-domains.md) — point `app.example.com` at your project.
+* [Add a custom domain](../domains/custom-domains.md), point `app.example.com` at your project.
 * Push a new commit to the tracked branch. Brimble will build and deploy it automatically.

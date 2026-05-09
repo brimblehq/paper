@@ -4,9 +4,9 @@ Services in the same workspace can talk to each other privately, without going o
 
 Use this when:
 
-- A web service needs to call its database — connect via the database's private endpoint.
-- A worker pulls jobs from a Redis queue — same.
-- One service calls another service's HTTP API — internal hostname instead of `<name>.brimble.app`.
+- A web service needs to call its database, connect via the database's private endpoint.
+- A worker pulls jobs from a Redis queue, same.
+- One service calls another service's HTTP API, internal hostname instead of `<name>.brimble.app`.
 
 ## Internal hostname format
 
@@ -21,7 +21,7 @@ Where `<project-slug>` is the lowercase, dash-separated form of the project name
 A few things this hostname does **not** support:
 
 - Resolution from outside Brimble. Your laptop can't `curl` it. It's only valid from inside another Brimble container in the same workspace.
-- Cross-workspace lookups. Internal addresses are workspace-scoped — a personal project can't reach a team workspace's project, and vice versa.
+- Cross-workspace lookups. Internal addresses are workspace-scoped, a personal project can't reach a team workspace's project, and vice versa.
 - TLS verification with public CAs. The internal connection isn't going through Cloudflare or Brimble's public edge.
 
 ## How databases expose their internal endpoint
@@ -35,7 +35,7 @@ When you provision a managed database, Brimble auto-injects four environment var
 | `SERVICE_PORT` | The port the engine listens on. |
 | `PRIVATE_SERVICE_HOST` | The internal hostname: `<db-project-slug>.service.brimble.internal`. Use this from any service in the same workspace and region for the fastest path. |
 
-These are marked as system variables on the database project — visible to you, but you don't manage them.
+These are marked as system variables on the database project, visible to you, but you don't manage them.
 
 ## Connect a service to its database privately
 
@@ -59,7 +59,7 @@ If you'd rather pass a single URL, build it from the parts:
 DATABASE_URL = postgres://{{@my-postgres.DB_USER}}:{{@my-postgres.DB_PASSWORD}}@{{@my-postgres.PRIVATE_SERVICE_HOST}}:{{@my-postgres.SERVICE_PORT}}/{{@my-postgres.DB_NAME}}
 ```
 
-Connections opened to `PRIVATE_SERVICE_HOST` stay on Brimble's internal network — no Cloudflare, no public IPs, lower latency, no bandwidth charge.
+Connections opened to `PRIVATE_SERVICE_HOST` stay on Brimble's internal network, no Cloudflare, no public IPs, lower latency, no bandwidth charge.
 
 ## Service-to-service HTTP
 
@@ -73,21 +73,21 @@ const res = await fetch(`${apiBase}/v1/items`);
 
 A few things to know:
 
-- The connection is **HTTP, not HTTPS**. There's no TLS on the internal hostname — it's intra-VPC traffic. Don't try to negotiate TLS; you'll fail to connect.
+- The connection is **HTTP, not HTTPS**. There's no TLS on the internal hostname, it's intra-VPC traffic. Don't try to negotiate TLS; you'll fail to connect.
 - The port is your service's runtime port. If you don't know the port (Brimble assigns it), set the consumer's env var via reference: `API_HOST = {{@project-b.SERVICE_PORT}}`.
-- Internal traffic doesn't pass through the public gateway. So Brimble's request headers (`x-brimble-id`, `x-brimble-project-version`, `x-forwarded-proto`) are **not** added — your destination service sees the raw request from your origin service.
+- Internal traffic doesn't pass through the public gateway. So Brimble's request headers (`x-brimble-id`, `x-brimble-project-version`, `x-forwarded-proto`) are **not** added, your destination service sees the raw request from your origin service.
 - Internal traffic doesn't appear in the destination project's request logs (which are populated by the public gateway).
 
 ## When to use internal vs public
 
 | Scenario | Use |
 |---|---|
-| Service in workspace A calls a database in workspace A | **Internal** — `PRIVATE_SERVICE_HOST` |
-| Service calls another service in the same workspace | **Internal** — `<slug>.service.brimble.internal` |
-| Service calls a third-party API (Stripe, Twilio, etc.) | **Public** — that API's URL |
-| Your laptop connects to a Brimble database for admin work | **Public** — use `SERVICE_HOST` and the public `CONNECTION_STRING` |
-| Service in one workspace needs to call a service in a different workspace | **Public** — internal addresses don't cross workspace boundaries |
-| Production service in `fra1` calls a database in `nyc1` | **Public** — the internal network is region-scoped; cross-region must go through public endpoints |
+| Service in workspace A calls a database in workspace A | **Internal**, `PRIVATE_SERVICE_HOST` |
+| Service calls another service in the same workspace | **Internal**, `<slug>.service.brimble.internal` |
+| Service calls a third-party API (Stripe, Twilio, etc.) | **Public**, that API's URL |
+| Your laptop connects to a Brimble database for admin work | **Public**, use `SERVICE_HOST` and the public `CONNECTION_STRING` |
+| Service in one workspace needs to call a service in a different workspace | **Public**, internal addresses don't cross workspace boundaries |
+| Production service in `fra1` calls a database in `nyc1` | **Public**, the internal network is region-scoped; cross-region must go through public endpoints |
 
 ## Verification
 
@@ -101,7 +101,7 @@ const records = await dns.lookup(host);
 console.log("resolved:", records);
 ```
 
-A successful lookup returns an internal IP. From outside Brimble, the same lookup fails with `ENOTFOUND` — that's expected.
+A successful lookup returns an internal IP. From outside Brimble, the same lookup fails with `ENOTFOUND`, that's expected.
 
 ```bash
 # In your service's runtime
@@ -115,7 +115,7 @@ nslookup my-postgres.service.brimble.internal
 
 ## Troubleshooting
 
-**`ENOTFOUND` or `DNS resolution failed` from a Brimble service.** Your container is in a different region from the target. Internal hostnames are region-scoped — co-locate the projects, or fall back to the public hostname.
+**`ENOTFOUND` or `DNS resolution failed` from a Brimble service.** Your container is in a different region from the target. Internal hostnames are region-scoped, co-locate the projects, or fall back to the public hostname.
 
 **Connection refused on the internal port.** The target project might not be listening yet (cold start), or its `replicas`/scaling state is `0`. Open the target's Observability tab to confirm it's healthy.
 
@@ -127,6 +127,6 @@ nslookup my-postgres.service.brimble.internal
 
 ## Next steps
 
-- [Reference shared and cross-project variables](../environments/env-references.md) — `{{@slug.X}}` resolves variables across projects.
-- [Deploy a database](../projects/deploy-a-database.md) — provisions the managed databases that expose `PRIVATE_SERVICE_HOST`.
-- [Request lifecycle](request-lifecycle.md) — what public requests go through (Cloudflare → gateway → your service).
+- [Reference shared and cross-project variables](../environments/env-references.md), `{{@slug.X}}` resolves variables across projects.
+- [Deploy a database](../projects/deploy-a-database.md), provisions the managed databases that expose `PRIVATE_SERVICE_HOST`.
+- [Request lifecycle](request-lifecycle.md), what public requests go through (Cloudflare → gateway → your service).

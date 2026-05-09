@@ -13,14 +13,14 @@ This guide covers creating a paid team workspace from scratch. To invite people 
 
 1. Click your avatar → **New workspace**.
 2. Fill in:
-   - **Workspace image** — optional logo (PNG, JPG, or WebP).
-   - **Workspace name** — the human name (e.g. "Acme Engineering").
-   - **Workspace URL** — the slug used in URLs. Auto-generated from the name; edit if you need something specific. The slug is the part after `brimble.app/` in workspace links.
+   - **Workspace image**, optional logo (PNG, JPG, or WebP).
+   - **Workspace name**, the human name (e.g. "Acme Engineering").
+   - **Workspace URL**, the slug used in URLs. Auto-generated from the name; edit if you need something specific. The slug is the part after `brimble.app/` in workspace links.
 3. Click **Continue**.
 
-![TODO: screenshot of step 1 of workspace creation showing the image upload, name field, and URL slug input prefixed with brimble.app/](./images/PLACEHOLDER.png)
-
-*Workspace name and slug.*
+{% hint style="info" %}
+**Image needed:** screenshot of step 1 of workspace creation showing the image upload, name field, and URL slug input prefixed with brimble.app/
+{% endhint %}
 
 ## Step 2: Size and concurrent builds
 
@@ -44,14 +44,14 @@ Click **Continue**.
 
 Invite the people who'll be in the workspace. For each row:
 
-- **Email** — the invitee's address. They'll get an email with a link.
-- **Role** — pick from `Member`, `Administrator`, or `Viewer`. The Creator role is reserved for the workspace owner.
+- **Email**, the invitee's address. They'll get an email with a link.
+- **Role**, pick from `Member`, `Administrator`, or `Viewer`. The Creator role is reserved for the workspace owner.
 
 Click **Add another** to invite more. You can leave this step empty and invite people later.
 
-The page shows a billing summary: seats cost + builds cost + total. If you've added more invites than your team size, a warning appears: "You've invited N members but only have M seats — additional seats will be charged."
+The page shows a billing summary: seats cost + builds cost + total. If you've added more invites than your team size, a warning appears: "You've invited N members but only have M seats, additional seats will be charged."
 
-You can't invite yourself — Brimble blocks the email matching your account.
+You can't invite yourself, Brimble blocks the email matching your account.
 
 ## Step 4: Create
 
@@ -69,15 +69,15 @@ Things you'll typically do next:
 
 - **Create a project** under the workspace. Switch into the workspace via the switcher and click **New project**.
 - **Set up webhooks** for the workspace under **Settings → Webhooks**.
-- **Configure 2FA** on your account if you haven't — required for ownership transfer.
+- **Configure 2FA** on your account if you haven't, required for ownership transfer.
 - **Adjust limits.** Bumping seats or builds is one click in **Settings → Billing**.
 
 ## Switching between workspaces
 
 The workspace switcher in the top-left of the dashboard groups your workspaces:
 
-- **Personal Accounts** — your individual workspace.
-- **Teams** — every team workspace you're a member of.
+- **Personal Accounts**, your individual workspace.
+- **Teams**, every team workspace you're a member of.
 
 Switching context filters the project list, the dashboard home, and most settings to the active workspace.
 
@@ -103,14 +103,14 @@ After creating the workspace:
 
 **"Card declined" on creation.** The card on file failed when Brimble tried to charge for the first month. Add a different card under **Billing → Payment methods** and try again. The workspace doesn't get created until payment goes through.
 
-**Promo code says "invalid."** Codes are case-sensitive and time-limited. Re-check exactly as provided. If it's still rejected, contact whoever gave you the code — promo codes can be revoked or expire without warning.
+**Promo code says "invalid."** Codes are case-sensitive and time-limited. Re-check exactly as provided. If it's still rejected, contact whoever gave you the code, promo codes can be revoked or expire without warning.
 
 **Invitee never got the email.** Check spam. Revoke the pending invite from **Settings → Members** and re-invite to the right address. Typos are the most common cause.
 
-**Want to start small.** Pick 3 seats and 0 concurrent builds. You can upgrade later as the team grows. Note: 0 concurrent builds means workspace projects queue builds indefinitely, like the personal free plan — generally pick at least 1.
+**Want to start small.** Pick 3 seats and 0 concurrent builds. You can upgrade later as the team grows. Note: 0 concurrent builds means workspace projects queue builds indefinitely, like the personal free plan, generally pick at least 1.
 
 ## Next steps
 
-- [Manage teams](manage-teams.md) — invite people, change roles, transfer ownership.
-- [Plans and pricing](../billing/plans.md) — full pricing breakdown including overages.
-- [Two-factor authentication](two-factor-authentication.md) — required for ownership transfer.
+- [Manage teams](manage-teams.md), invite people, change roles, transfer ownership.
+- [Plans and pricing](../billing/plans.md), full pricing breakdown including overages.
+- [Two-factor authentication](two-factor-authentication.md), required for ownership transfer.

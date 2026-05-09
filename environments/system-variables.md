@@ -10,7 +10,7 @@ Brimble injects a small set of environment variables into every deployment, on t
 |---|---|---|
 | `PORT` | Runtime, web service and MCP server | The port your service must listen on. Brimble assigns it at deploy time; never hardcode. |
 | `NODE_ENV` | Build (Node only) | `production` by default for production deploys. Override per-environment if needed. |
-| `CI` | Build | `true` — many tools use this to suppress interactive prompts. |
+| `CI` | Build | `true`, many tools use this to suppress interactive prompts. |
 
 ### On managed database projects
 
@@ -21,7 +21,7 @@ Database projects automatically expose connection details as system variables. T
 | `CONNECTION_STRING` | Full URI using the public load-balancer hostname. |
 | `SERVICE_HOST` | The public hostname only. |
 | `SERVICE_PORT` | The engine's port. |
-| `PRIVATE_SERVICE_HOST` | The internal hostname (`<project-slug>.service.brimble.internal`) — fastest path for services in the same workspace and region. See [Internal services](../networking/internal-services.md). |
+| `PRIVATE_SERVICE_HOST` | The internal hostname (`<project-slug>.service.brimble.internal`), fastest path for services in the same workspace and region. See [Internal services](../networking/internal-services.md). |
 
 ## Reading them in code
 
@@ -47,7 +47,7 @@ port := os.Getenv("PORT")
 For web services and MCP servers, `PORT` is mandatory:
 
 - Read it. Don't hardcode.
-- Listen on `0.0.0.0`, not `localhost` or `127.0.0.1` — Brimble's edge can't reach localhost-only listeners.
+- Listen on `0.0.0.0`, not `localhost` or `127.0.0.1`, Brimble's edge can't reach localhost-only listeners.
 
 A common boot pattern:
 
@@ -60,7 +60,7 @@ The `|| 3000` fallback only matters when running locally; in production `PORT` i
 
 ## What you can't override
 
-`PORT` is controlled by Brimble — you can't set it, and any value you put in your env config is ignored at runtime.
+`PORT` is controlled by Brimble, you can't set it, and any value you put in your env config is ignored at runtime.
 
 ## Detecting environment
 

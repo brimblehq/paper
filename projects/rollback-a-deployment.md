@@ -1,11 +1,11 @@
 # Roll back a deployment
 
-If a new deployment breaks production, roll back to a previous one. Rollbacks reuse the previous artifact — no rebuild — and finish in seconds.
+If a new deployment breaks production, roll back to a previous one. Rollbacks reuse the previous artifact, no rebuild, and finish in seconds.
 
 ## Prerequisites
 
 - A project with at least two completed deployments.
-- The previous deployment must have been **Active** at some point — Brimble can only redeploy artifacts that finished building successfully.
+- The previous deployment must have been **Active** at some point, Brimble can only redeploy artifacts that finished building successfully.
 
 ## Roll back
 
@@ -15,9 +15,9 @@ If a new deployment breaks production, roll back to a previous one. Rollbacks re
 4. Click **⋯** → **Redeploy this version**.
 5. Confirm. Brimble re-runs that deployment's image and flips traffic to it within ~30 seconds.
 
-![TODO: screenshot of the Deployment history page showing several deployment rows with status chips, commit messages, branches, deployer avatars, timestamps, and the row-level "⋯" menu open with the "Redeploy this version" option highlighted](./images/PLACEHOLDER.png)
-
-*Deployment history with the redeploy action open on a previous deployment.*
+{% hint style="info" %}
+**Image needed:** screenshot of the Deployment history page showing several deployment rows with status chips, commit messages, branches, deployer avatars, timestamps, and the row-level "⋯" menu open with the "Redeploy this version" option highlighted
+{% endhint %}
 
 The rolled-back deployment becomes the new active one. Your deployment history adds a new row pointing at the same commit SHA.
 
@@ -57,5 +57,5 @@ If a deployment is hanging in `pending` or `in progress` and you want to roll ba
 
 ## Next steps
 
-- [Deployments](deployments.md) — full lifecycle and what each state means.
-- [Build failures](../troubleshooting/build-failures.md) — diagnose why the new deployment broke.
+- [Deployments](deployments.md), full lifecycle and what each state means.
+- [Build failures](../troubleshooting/build-failures.md), diagnose why the new deployment broke.

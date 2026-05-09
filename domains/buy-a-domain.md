@@ -16,9 +16,9 @@ Search for and register a new domain directly from the Brimble dashboard. Purcha
 
 When a TLD is on a discount, the result shows the saving (for example, "save up to 20%").
 
-![TODO: screenshot of the domain search results showing several TLD options with prices and a "save up to 20%" badge on one row](./images/PLACEHOLDER.png)
-
-*Search results show price-per-year by TLD with discounts called out.*
+{% hint style="info" %}
+**Image needed:** screenshot of the domain search results showing several TLD options with prices and a "save up to 20%" badge on one row
+{% endhint %}
 
 ## Buy the domain
 
@@ -32,7 +32,7 @@ Click **Buy** on the result you want. The purchase form asks for:
 | **Registrant email** | Auto-filled from your account email. Override if you want registration messages going elsewhere. |
 | **Payment method** | Pick the card to charge. You can add a new card from inside the form. |
 
-Renewal prices may differ from the first-year price — the form shows both. Confirm the totals, then click **Buy**.
+Renewal prices may differ from the first-year price, the form shows both. Confirm the totals, then click **Buy**.
 
 The purchase is processed immediately. The domain shows up under **Domains** with a "Purchased from Brimble" indicator and a **Status: Active** badge once registration confirms.
 
@@ -45,14 +45,14 @@ A purchased domain comes with:
 - **WHOIS privacy applied** if you toggled it on.
 - **Auto-renewal flagged** per your selection.
 
-To attach the domain to a project, see [Add a custom domain](custom-domains.md). The flow is the same as bringing a domain you already own — pick a project, optionally set up a redirect.
+To attach the domain to a project, see [Add a custom domain](custom-domains.md). The flow is the same as bringing a domain you already own, pick a project, optionally set up a redirect.
 
 ## Renew a domain
 
 Domains that come up for renewal appear in **Domains** with an expiry banner:
 
-- **Yellow** — expires within 7 days. **Renew soon** button visible.
-- **Red** — already expired. DNS edits are blocked until you renew.
+- **Yellow**, expires within 7 days. **Renew soon** button visible.
+- **Red**, already expired. DNS edits are blocked until you renew.
 
 To renew (manually or in advance):
 
@@ -89,10 +89,10 @@ ns2.brimble.io.
 
 **Bought a domain but it's not showing up.** Reload the **Domains** page. New registrations land within seconds; if it's been more than a minute, contact support with the order timestamp.
 
-**Privacy toggle was off when I bought it.** Open the domain and toggle privacy on. Some TLDs don't support privacy at all — the toggle is hidden in that case.
+**Privacy toggle was off when I bought it.** Open the domain and toggle privacy on. Some TLDs don't support privacy at all, the toggle is hidden in that case.
 
 ## Next steps
 
-- [Add a custom domain](custom-domains.md) — attach the domain to a project.
-- [Manage DNS records](manage-dns-records.md) — point subdomains at services.
-- [Transfer a domain](transfer-a-domain.md) — bring an existing domain into Brimble or move one out.
+- [Add a custom domain](custom-domains.md), attach the domain to a project.
+- [Manage DNS records](manage-dns-records.md), point subdomains at services.
+- [Transfer a domain](transfer-a-domain.md), bring an existing domain into Brimble or move one out.

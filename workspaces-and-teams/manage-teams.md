@@ -35,9 +35,9 @@ A team always has exactly one Creator. There can be many Administrators, Members
 4. Enter the email address and pick a role.
 5. Click **Send invite**.
 
-![TODO: screenshot of the Members settings page showing existing members with their roles and a highlighted "Invite member" entry point that opens the invite dialog](./images/PLACEHOLDER.png)
-
-*The Members settings page lists current members and pending invites.*
+{% hint style="info" %}
+**Image needed:** screenshot of the Members settings page showing existing members with their roles and a highlighted "Invite member" entry point that opens the invite dialog
+{% endhint %}
 
 The invitee gets an email with a link. If they don't already have a Brimble account, the link prompts them to sign up; otherwise, they accept and are added to the team.
 
@@ -93,7 +93,7 @@ If they can see the project list and open one, they're in.
 
 ## Troubleshooting
 
-**Invitee never got the email.** Check spam. If still missing, revoke and re-invite. Confirm the email address is right — typos are common.
+**Invitee never got the email.** Check spam. If still missing, revoke and re-invite. Confirm the email address is right, typos are common.
 
 **Member sees a blank project list after accepting.** The invite went to the wrong email and they accepted with a different account. Remove and re-invite the right address.
 
@@ -101,5 +101,5 @@ If they can see the project list and open one, they're in.
 
 ## Next steps
 
-- [Plans and pricing](../billing/plans.md) — what each plan includes.
-- [Two-factor authentication](two-factor-authentication.md) — required for ownership transfer and a few other sensitive actions.
+- [Plans and pricing](../billing/plans.md), what each plan includes.
+- [Two-factor authentication](two-factor-authentication.md), required for ownership transfer and a few other sensitive actions.

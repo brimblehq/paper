@@ -1,6 +1,6 @@
 # Rate limits
 
-The hard limits Brimble's edge enforces on incoming traffic. These are infrastructure-level guardrails — they protect your service from abusive single-source traffic and don't depend on your project's compute capacity.
+The hard limits Brimble's edge enforces on incoming traffic. These are infrastructure-level guardrails, they protect your service from abusive single-source traffic and don't depend on your project's compute capacity.
 
 ## Public traffic
 

@@ -1,17 +1,17 @@
 # Reference shared and cross-project variables
 
-A variable's value can include references to other variables. References resolve at deploy time, so the running container sees the final string — not the `{{...}}` syntax.
+A variable's value can include references to other variables. References resolve at deploy time, so the running container sees the final string, not the `{{...}}` syntax.
 
 Two kinds of references exist:
 
-- **`{{shared.NAME}}`** — pulls a value from a **shared environment** the project inherits from.
-- **`{{@project-slug.NAME}}`** — pulls a value from another project in the same workspace.
+- **`{{shared.NAME}}`**, pulls a value from a **shared environment** the project inherits from.
+- **`{{@project-slug.NAME}}`**, pulls a value from another project in the same workspace.
 
 References are useful when the same value (an API base URL, a feature-flag key, a third-party token) needs to be in many projects without copy-pasting and rotating in N places.
 
-## Shared variables — `{{shared.NAME}}`
+## Shared variables, `{{shared.NAME}}`
 
-A workspace can have a **shared environment** — a set of variables defined once and inherited by any project that opts in.
+A workspace can have a **shared environment**, a set of variables defined once and inherited by any project that opts in.
 
 When a project inherits from a shared environment, you can reference any of its variables from within a project-level variable using `{{shared.NAME}}`.
 
@@ -37,7 +37,7 @@ API_URL=https://api.example.com
 
 If the shared variable doesn't exist, the reference is left as-is in the resolved value (`{{shared.MISSING}}` stays literal). The deployment logs a warning so you can spot it.
 
-## Cross-project references — `{{@project-slug.NAME}}`
+## Cross-project references, `{{@project-slug.NAME}}`
 
 You can pull a variable from another project in the same workspace by prefixing the slug with `@`:
 
@@ -50,11 +50,11 @@ Cross-project references follow these rules:
 
 - **Same workspace only.** A team project can only reference other team projects (under the same team). A personal project can only reference your other personal projects. There's no cross-workspace reference.
 - **Slug-based.** The `@` prefix is the project's slug (the lowercase, dash-separated form of its name). Brimble normalizes the slug before lookup, so casing doesn't matter.
-- **One-way and resolved at deploy time.** If you change the source variable, the consuming project doesn't redeploy automatically — its env stays at the previous value until it redeploys.
+- **One-way and resolved at deploy time.** If you change the source variable, the consuming project doesn't redeploy automatically, its env stays at the previous value until it redeploys.
 
 ## Combining and chaining references
 
-References can be embedded in a longer string and can chain — a referenced value that itself contains a reference will resolve, too.
+References can be embedded in a longer string and can chain, a referenced value that itself contains a reference will resolve, too.
 
 ```
 SHARED_API=https://api.{{shared.BASE_DOMAIN}}
@@ -67,14 +67,14 @@ Deploying a project that reads `ENDPOINT` and inherits from the shared environme
 ENDPOINT=https://api.example.com/v1
 ```
 
-The resolver guards against cycles — if `A` references `B` and `B` references `A`, both resolve to their last-known string instead of looping.
+The resolver guards against cycles, if `A` references `B` and `B` references `A`, both resolve to their last-known string instead of looping.
 
 ## When references don't resolve
 
 A reference that can't be resolved stays as the literal `{{...}}` string in the deployed value, and the deployment logs a warning. Common causes:
 
 - **Shared variable doesn't exist.** Check the spelling, and that the project actually inherits from the shared environment (`Environments → Inherit from`).
-- **Project slug doesn't match.** The slug is the lowercase, dash-form of the project name. Confirm by opening the source project — the slug appears in URLs.
+- **Project slug doesn't match.** The slug is the lowercase, dash-form of the project name. Confirm by opening the source project, the slug appears in URLs.
 - **Cross-workspace reference.** A team project can't read variables from a personal project (or vice versa). Move the variable into the right workspace, or duplicate it.
 - **Referenced project doesn't have the variable.** The variable name doesn't exist on the source project. Add it there first.
 
@@ -89,7 +89,7 @@ app.get("/debug/env", (req, res) => {
 });
 ```
 
-Don't expose this endpoint in production for sensitive variables — gate it behind auth or remove it before going live.
+Don't expose this endpoint in production for sensitive variables, gate it behind auth or remove it before going live.
 
 ## Why use references instead of duplicating
 
@@ -102,11 +102,11 @@ The big wins:
 
 ## Limits
 
-- References don't escape `{{...}}` — there's no syntax for "literal `{{shared.X}}` in a value." If your real value contains those braces, refactor or store the value in a way that doesn't need them at deploy time.
+- References don't escape `{{...}}`, there's no syntax for "literal `{{shared.X}}` in a value." If your real value contains those braces, refactor or store the value in a way that doesn't need them at deploy time.
 - References resolve every deploy. The resolver caches per request, so a deploy with many references is fast, but it's not free. Don't fan out into hundreds of references unless you need to.
-- The resolver uses your secret store as the source of truth — references read live values, not snapshots.
+- The resolver uses your secret store as the source of truth, references read live values, not snapshots.
 
 ## Next steps
 
-- [Manage environment variables](environment-variables.md) — adding, editing, and inheriting variables.
-- [Environments](overview.md) — the inheritance model.
+- [Manage environment variables](environment-variables.md), adding, editing, and inheriting variables.
+- [Environments](overview.md), the inheritance model.

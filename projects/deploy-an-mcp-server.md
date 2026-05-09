@@ -51,9 +51,9 @@ The path can be anything (`/mcp` is conventional). Whatever you pick, your MCP c
 4. Brimble auto-detects the install, build, and start commands. Override under **Settings → Build** if needed.
 5. Pick a region close to your primary clients.
 
-![TODO: screenshot of the new-project flow with "MCP server" selected as the service type, and the MCP authentication toggle visible](./images/PLACEHOLDER.png)
-
-*Creating an MCP project.*
+{% hint style="info" %}
+**Image needed:** screenshot of the new-project flow with "MCP server" selected as the service type, and the MCP authentication toggle visible
+{% endhint %}
 
 ## Step 3: Choose authentication
 
@@ -65,7 +65,7 @@ MCP servers usually shouldn't be open to the internet. Brimble has a built-in au
 
 When MCP authentication is on, Brimble requires every request to include an `x-brimble-key` header with your project's MCP key. The key is shown in **Settings → Configuration**; click the eye icon to reveal it. Rotate the key from the same panel.
 
-If you'd rather implement auth in your application code (per-user tokens, rotation logic, etc.), leave the toggle off and validate auth headers yourself in your handler. Don't enable both — clients would have to satisfy two layers.
+If you'd rather implement auth in your application code (per-user tokens, rotation logic, etc.), leave the toggle off and validate auth headers yourself in your handler. Don't enable both, clients would have to satisfy two layers.
 
 ## Step 4: Deploy
 
@@ -109,7 +109,7 @@ Expected: a JSON-RPC response listing the tools your server registered.
 
 The dashboard streams stdout and stderr from the MCP server in real time. Useful when debugging which tools an agent is calling and with what arguments.
 
-If your server's logging is verbose, log selectively — runtime logs accumulate and are visible to anyone with project access.
+If your server's logging is verbose, log selectively, runtime logs accumulate and are visible to anyone with project access.
 
 ## Troubleshooting
 
@@ -125,6 +125,6 @@ If your server's logging is verbose, log selectively — runtime logs accumulate
 
 ## Next steps
 
-- [Discover MCP servers](discover-mcp-servers.md) — deploy a ready-made MCP server from Brimble's marketplace.
-- [Custom domains](../domains/custom-domains.md) — give your MCP server a stable URL.
-- [Networking](../networking/overview.md) — how the edge handles HTTP, headers, and WebSockets.
+- [Discover MCP servers](discover-mcp-servers.md), deploy a ready-made MCP server from Brimble's marketplace.
+- [Custom domains](../domains/custom-domains.md), give your MCP server a stable URL.
+- [Networking](../networking/overview.md), how the edge handles HTTP, headers, and WebSockets.

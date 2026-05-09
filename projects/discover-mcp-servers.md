@@ -1,6 +1,6 @@
 # Discover and deploy MCP servers
 
-Brimble's add-on marketplace surfaces ready-to-deploy MCP servers — Model Context Protocol services for AI clients to call. Browse, inspect, and one-click deploy any of them into your workspace.
+Brimble's add-on marketplace surfaces ready-to-deploy MCP servers, Model Context Protocol services for AI clients to call. Browse, inspect, and one-click deploy any of them into your workspace.
 
 ## Prerequisites
 
@@ -12,8 +12,8 @@ Brimble's add-on marketplace surfaces ready-to-deploy MCP servers — Model Cont
 1. In the sidebar, click **Discover**.
 2. The marketplace lists every MCP server Brimble has indexed.
 3. Filter or search:
-   - **Category tabs** — `All` plus categories like `development`, `productivity`, etc.
-   - **Search bar** — match by name or description.
+   - **Category tabs**, `All` plus categories like `development`, `productivity`, etc.
+   - **Search bar**, match by name or description.
 
 Each card shows:
 
@@ -22,17 +22,17 @@ Each card shows:
 - The number of tools the server provides.
 - A **Verified** badge for officially-vetted servers.
 
-![TODO: screenshot of the Discover page showing a grid of MCP server cards with category filter tabs and a search input at the top](./images/PLACEHOLDER.png)
-
-*The MCP server marketplace.*
+{% hint style="info" %}
+**Image needed:** screenshot of the Discover page showing a grid of MCP server cards with category filter tabs and a search input at the top
+{% endhint %}
 
 ## Inspect a server
 
 Click a card to open the server's detail page. You'll see:
 
-- **Long description** — what the server does and when to use it.
-- **Tools list** — every tool the server exposes, with parameter schemas (name, type, required-or-optional). Useful for understanding what an AI client will be able to do once you deploy.
-- **Related servers** — three similar servers in the same category.
+- **Long description**, what the server does and when to use it.
+- **Tools list**, every tool the server exposes, with parameter schemas (name, type, required-or-optional). Useful for understanding what an AI client will be able to do once you deploy.
+- **Related servers**, three similar servers in the same category.
 
 Spend time on the tools list. The shape of those tools determines what an agent connected to this server can actually accomplish.
 
@@ -40,8 +40,8 @@ Spend time on the tools list. The shape of those tools determines what an agent 
 
 1. On the server's detail page, click **Deploy server**.
 2. Decide whether to **Enable authentication**:
-   - **On** — clients must include an `x-brimble-key` header on every request. Brimble issues you a key after deployment.
-   - **Off** — the MCP server is reachable to anyone with the URL. Safe for public read-only servers; risky for anything that does work or holds state.
+   - **On**, clients must include an `x-brimble-key` header on every request. Brimble issues you a key after deployment.
+   - **Off**, the MCP server is reachable to anyone with the URL. Safe for public read-only servers; risky for anything that does work or holds state.
 3. Click **Deploy**.
 
 Brimble provisions the server as a project under your active workspace. It builds and deploys like any other MCP project.
@@ -96,7 +96,7 @@ The old key stops working immediately on rotation.
 
 ## Custom MCP servers
 
-To deploy your own MCP server (not from the marketplace), see [Deploy an MCP server](deploy-an-mcp-server.md). The flow is the same as a web service — the only Brimble-specific extra is the authentication header.
+To deploy your own MCP server (not from the marketplace), see [Deploy an MCP server](deploy-an-mcp-server.md). The flow is the same as a web service, the only Brimble-specific extra is the authentication header.
 
 ## Verification
 
@@ -117,11 +117,11 @@ If you didn't enable authentication, drop the `x-brimble-key` header and the req
 
 **`401 Unauthorized` on every request.** Authentication is enabled and the `x-brimble-key` header is missing or wrong. Pull the current key from **Settings → Configuration** and update your client.
 
-**Server shows as deployed but `/mcp` returns 502.** The server's container isn't responding. Open the project's logs to see the startup output. Some MCP servers from the marketplace need additional environment variables — check the server's detail page for required config.
+**Server shows as deployed but `/mcp` returns 502.** The server's container isn't responding. Open the project's logs to see the startup output. Some MCP servers from the marketplace need additional environment variables, check the server's detail page for required config.
 
 **Duplicate "deploy" button creates two projects.** The marketplace deploys a fresh project each time you click. To re-deploy an existing MCP server, go to that project and click **Redeploy** instead.
 
 ## Next steps
 
-- [Deploy an MCP server](deploy-an-mcp-server.md) — deploy your own custom MCP code.
-- [Service types](service-types.md) — what MCP servers run as on Brimble.
+- [Deploy an MCP server](deploy-an-mcp-server.md), deploy your own custom MCP code.
+- [Service types](service-types.md), what MCP servers run as on Brimble.

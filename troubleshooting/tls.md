@@ -17,14 +17,14 @@ The browser shows `ERR_SSL_PROTOCOL_ERROR`, `SSL_ERROR_NO_CYPHER_OVERLAP`, or "t
 
 Open the project's **Domains** tab. Each domain shows a TLS status:
 
-- **Active** — certificate issued, expiring date shown.
-- **Pending** — Brimble is requesting the certificate. Wait a minute.
-- **Failed** — Let's Encrypt rejected the request. Read the failure reason.
-- **Verifying** — DNS hasn't propagated yet; certificate request hasn't started.
+- **Active**, certificate issued, expiring date shown.
+- **Pending**, Brimble is requesting the certificate. Wait a minute.
+- **Failed**, Let's Encrypt rejected the request. Read the failure reason.
+- **Verifying**, DNS hasn't propagated yet; certificate request hasn't started.
 
 If status is **Verifying**, see [DNS issues](dns.md). TLS won't issue until DNS is right.
 
-If status is **Failed**, the dashboard shows a reason — usually a CAA block, a domain mismatch, or a Let's Encrypt rate limit.
+If status is **Failed**, the dashboard shows a reason, usually a CAA block, a domain mismatch, or a Let's Encrypt rate limit.
 
 ## Step 2: Check DNS
 
@@ -32,7 +32,7 @@ If status is **Failed**, the dashboard shows a reason — usually a CAA block, a
 dig your-domain.com +short
 ```
 
-The answer must point at Brimble's edge — either `gateway.brimble.app` (CNAME) or the edge IP shown when you added the domain (A record).
+The answer must point at Brimble's edge, either `gateway.brimble.app` (CNAME) or the edge IP shown when you added the domain (A record).
 
 If the answer is empty or wrong, fix DNS first. TLS issuance fails on the first request and Brimble retries with backoff; aggressive retries can hit Let's Encrypt's rate limits, so don't bash refresh.
 
@@ -66,7 +66,7 @@ Let's Encrypt rate-limits per registered domain (the registrable part, e.g. `exa
 
 If you're testing repeatedly with a real domain, you can hit the limits. The dashboard surfaces "rate limit exceeded" with a wait time. There's no fix except waiting.
 
-For active development, point a test subdomain (`dev.example.com`) at Brimble — that's a different rate-limit bucket than `example.com` itself.
+For active development, point a test subdomain (`dev.example.com`) at Brimble, that's a different rate-limit bucket than `example.com` itself.
 
 ## Step 5: Confirm domain is attached
 
@@ -93,9 +93,9 @@ The page loads over HTTPS, but the browser blocks some resources because they're
 
 **Cause:** Your code has hardcoded `http://` URLs, or it's reading the request's protocol as HTTP because it doesn't trust the proxy.
 
-**Fix 1 — application code:** Replace hardcoded `http://` with `https://`, or use protocol-relative URLs (`//cdn.example.com/...`).
+**Fix 1, application code:** Replace hardcoded `http://` with `https://`, or use protocol-relative URLs (`//cdn.example.com/...`).
 
-**Fix 2 — framework configuration:** Brimble sets `X-Forwarded-Proto: https` on every forwarded request. Configure your framework to trust it:
+**Fix 2, framework configuration:** Brimble sets `X-Forwarded-Proto: https` on every forwarded request. Configure your framework to trust it:
 
 - **Express:** `app.set("trust proxy", true)`.
 - **Django:** `SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")`.
@@ -112,7 +112,7 @@ Brimble renews certificates automatically, well before expiry. If you see an exp
 echo | openssl s_client -servername your-domain.com -connect your-domain.com:443 2>/dev/null | openssl x509 -noout -dates
 ```
 
-If the `notAfter` is in the past, the cert wasn't renewed. The most common cause is that DNS broke between issuance and renewal — the renewal couldn't validate the domain.
+If the `notAfter` is in the past, the cert wasn't renewed. The most common cause is that DNS broke between issuance and renewal, the renewal couldn't validate the domain.
 
 **Fix:** Run through DNS troubleshooting above. Once DNS is right, Brimble retries the renewal within minutes.
 
@@ -146,5 +146,5 @@ Contact support with:
 
 ## Next steps
 
-- [Custom domains](../domains/custom-domains.md) — initial setup.
-- [DNS issues](dns.md) — when DNS itself is wrong.
+- [Custom domains](../domains/custom-domains.md), initial setup.
+- [DNS issues](dns.md), when DNS itself is wrong.

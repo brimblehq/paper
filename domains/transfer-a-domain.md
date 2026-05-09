@@ -11,7 +11,7 @@ Transfers between registrars take **several days** and depend on responses from 
 - The domain is unlocked at your current registrar.
 - You can access the registrant email on the domain (transfer confirmation goes there).
 - You have the **EPP code** (also called the auth code, transfer code, or authorization code) from the current registrar.
-- A payment method on file in Brimble — transferring counts as a one-year renewal and is billed accordingly.
+- A payment method on file in Brimble, transferring counts as a one-year renewal and is billed accordingly.
 
 ### Steps
 
@@ -27,9 +27,9 @@ Transfers between registrars take **several days** and depend on responses from 
    - [ ] I understand transfers may take several days to complete.
 8. Click **Start transfer**.
 
-![TODO: screenshot of the transfer-in modal showing the EPP/auth code field, registrant email override, and the three-item pre-transfer checklist](./images/PLACEHOLDER.png)
-
-*The transfer-in modal asks for the auth code and a checklist confirmation.*
+{% hint style="info" %}
+**Image needed:** screenshot of the transfer-in modal showing the EPP/auth code field, registrant email override, and the three-item pre-transfer checklist
+{% endhint %}
 
 The dashboard shows a toast: "Domain transfer initiated. This may take several days to complete."
 
@@ -37,10 +37,10 @@ The dashboard shows a toast: "Domain transfer initiated. This may take several d
 
 While the transfer is in flight, the domain page shows:
 
-- **Pending verification** — awaiting registrant email confirmation.
-- **In progress** — confirmed; the registrar handoff is running.
-- **Active** — transfer complete. The domain is now under Brimble's management.
-- **Failed** — the transfer was rejected. Common causes: domain still locked, expired/invalid auth code, registrant email bounced, registry policy block.
+- **Pending verification**, awaiting registrant email confirmation.
+- **In progress**, confirmed; the registrar handoff is running.
+- **Active**, transfer complete. The domain is now under Brimble's management.
+- **Failed**, the transfer was rejected. Common causes: domain still locked, expired/invalid auth code, registrant email bounced, registry policy block.
 
 If the transfer fails, the charge is automatically refunded.
 
@@ -55,7 +55,7 @@ If the transfer fails, the charge is automatically refunded.
 ### Prerequisites
 
 - The domain is registered through Brimble (not just attached as a custom domain).
-- 2FA is enabled on your account — transfer-out requires step-up authentication.
+- 2FA is enabled on your account, transfer-out requires step-up authentication.
 - The new registrar has accepted the inbound transfer order on their side.
 
 ### Steps
@@ -70,11 +70,11 @@ If the transfer fails, the charge is automatically refunded.
 5. Brimble reveals the **EPP / auth code** for this domain. The code is one-time and visible only on this screen.
 6. Copy the code and paste it into the new registrar's transfer-in flow.
 
-![TODO: screenshot of the transfer-out auth code reveal screen with a copy button and a "regenerate" affordance, after 2FA confirmation](./images/PLACEHOLDER.png)
+{% hint style="info" %}
+**Image needed:** screenshot of the transfer-out auth code reveal screen with a copy button and a "regenerate" affordance, after 2FA confirmation
+{% endhint %}
 
-*After 2FA, Brimble shows the EPP code to give the new registrar.*
-
-After you initiate the transfer at the new registrar, Brimble approves the outbound side automatically. The domain leaves Brimble's management when the new registrar's transfer completes — typically within 5–7 days.
+After you initiate the transfer at the new registrar, Brimble approves the outbound side automatically. The domain leaves Brimble's management when the new registrar's transfer completes, typically within 5–7 days.
 
 You'll receive a `domain.transfer_out_completed` webhook (if subscribed) when it's done.
 
@@ -87,7 +87,7 @@ To move a domain from your personal account to a team (or between teams) without
 3. Pick the destination workspace.
 4. Confirm.
 
-The domain — and all its DNS records — moves over. The current project attachment is cleared; reattach the domain to a project under the new workspace.
+The domain, and all its DNS records, moves over. The current project attachment is cleared; reattach the domain to a project under the new workspace.
 
 ## Verification
 
@@ -104,18 +104,18 @@ After a transfer-out, the registrar field changes once the new registrar finaliz
 
 ## Troubleshooting
 
-**Auth code rejected.** Triple-check the code (no leading or trailing whitespace, exact case). If still wrong, the code may have expired — generate a fresh one at the current registrar and retry.
+**Auth code rejected.** Triple-check the code (no leading or trailing whitespace, exact case). If still wrong, the code may have expired, generate a fresh one at the current registrar and retry.
 
 **Transfer-in shows "Pending verification" indefinitely.** The registrant didn't confirm the email. Check spam, or have the registrant resend the verification email.
 
 **Transfer-in failed and got refunded.** The reason appears on the domain's status page. Most failures come down to: domain still locked, auth code wrong/expired, or a registry policy issue (TLDs sometimes have minimum age requirements).
 
-**Transfer-out blocked.** New domains (less than 60 days since registration or last transfer) cannot be transferred — that's an ICANN rule, not a Brimble one. Wait out the lock.
+**Transfer-out blocked.** New domains (less than 60 days since registration or last transfer) cannot be transferred, that's an ICANN rule, not a Brimble one. Wait out the lock.
 
 **Lost the EPP code mid-transfer.** Repeat the transfer-out flow from the dashboard. Each invocation generates a fresh code; the previous one is invalidated.
 
 ## Next steps
 
-- [Buy a domain](buy-a-domain.md) — register a new domain in Brimble.
-- [Manage DNS records](manage-dns-records.md) — set up records for the transferred domain.
-- [Custom domains](custom-domains.md) — attach the transferred domain to a project.
+- [Buy a domain](buy-a-domain.md), register a new domain in Brimble.
+- [Manage DNS records](manage-dns-records.md), set up records for the transferred domain.
+- [Custom domains](custom-domains.md), attach the transferred domain to a project.

@@ -14,7 +14,7 @@ Brimble also requires step-up authentication for several sensitive operations: d
 
 Brimble walks you through three steps:
 
-### Step 1 — Scan
+### Step 1, Scan
 
 A QR code appears. Scan it with Google Authenticator, Authy, 1Password, or any TOTP app.
 
@@ -22,7 +22,7 @@ If your authenticator app doesn't support QR codes, copy the **manual setup key*
 
 Click **Continue**.
 
-### Step 2 — Verify
+### Step 2, Verify
 
 Enter the 6-digit code your authenticator app shows.
 
@@ -30,20 +30,20 @@ If the code is rejected, you have a clock-drift problem on the device generating
 
 Click **Verify**.
 
-### Step 3 — Save your recovery codes
+### Step 3, Save your recovery codes
 
-Brimble generates a set of recovery codes — single-use 8-character codes you can use instead of a TOTP code if you lose access to your authenticator app. **They're shown once.**
+Brimble generates a set of recovery codes, single-use 8-character codes you can use instead of a TOTP code if you lose access to your authenticator app. **They're shown once.**
 
 You have two options on this screen:
 
-- **Copy all** — copy the codes to your clipboard.
-- **Download** — save them as `brimble-2fa-recovery-codes.txt`.
+- **Copy all**, copy the codes to your clipboard.
+- **Download**, save them as `brimble-2fa-recovery-codes.txt`.
 
-Tick **I have saved my recovery codes** and click **Done** to close the modal. Brimble blocks the close action until the box is ticked, on purpose — losing both your authenticator and your recovery codes means a manual support recovery.
+Tick **I have saved my recovery codes** and click **Done** to close the modal. Brimble blocks the close action until the box is ticked, on purpose, losing both your authenticator and your recovery codes means a manual support recovery.
 
-![TODO: screenshot of the "Save your recovery codes" step showing the recovery codes grid, Copy all and Download buttons, and the "I have saved my recovery codes" checkbox](./images/PLACEHOLDER.png)
-
-*Recovery codes are shown once during setup.*
+{% hint style="info" %}
+**Image needed:** screenshot of the "Save your recovery codes" step showing the recovery codes grid, Copy all and Download buttons, and the "I have saved my recovery codes" checkbox
+{% endhint %}
 
 After this, the Security panel shows **2FA is enabled** with the count of recovery codes remaining.
 
@@ -52,7 +52,7 @@ After this, the Security panel shows **2FA is enabled** with the count of recove
 When 2FA is enabled, signing in works like this:
 
 1. Enter email and password (or click an OAuth provider, or sign in with passkey).
-2. Brimble shows the 2FA challenge with a countdown — "This challenge expires in MM:SS".
+2. Brimble shows the 2FA challenge with a countdown, "This challenge expires in MM:SS".
 3. Enter the 6-digit code from your authenticator app.
 4. Click **Verify & sign in**.
 
@@ -68,7 +68,7 @@ Some actions require 2FA even when you're already signed in. When you trigger on
 - Transfer a domain out of Brimble.
 - Transfer team ownership.
 
-Enter the code or pass the passkey challenge. The step-up is short-lived — repeated sensitive actions in quick succession only prompt once, but stepping up doesn't keep you "elevated" indefinitely.
+Enter the code or pass the passkey challenge. The step-up is short-lived, repeated sensitive actions in quick succession only prompt once, but stepping up doesn't keep you "elevated" indefinitely.
 
 ## Recovery codes
 
@@ -82,7 +82,7 @@ Brimble warns you when codes are running low. Regenerate a fresh set:
 4. Save the newly-generated codes (Copy all or Download).
 5. Tick the acknowledgement and click **Done**.
 
-Regenerating invalidates the entire previous set — old codes stop working immediately.
+Regenerating invalidates the entire previous set, old codes stop working immediately.
 
 ## Disable 2FA
 
@@ -95,7 +95,7 @@ Disabling 2FA removes the requirement for sign-in **and** for step-up actions. W
 
 ## Passkeys
 
-Passkeys are a separate panel under **Security**. They let you sign in (or step up) using Touch ID, Windows Hello, or a hardware security key — no codes to type.
+Passkeys are a separate panel under **Security**. They let you sign in (or step up) using Touch ID, Windows Hello, or a hardware security key, no codes to type.
 
 Passkeys can be used **with or without** TOTP. You don't need to enable TOTP first.
 
@@ -106,7 +106,7 @@ Passkeys can be used **with or without** TOTP. You don't need to enable TOTP fir
 3. Follow the browser's prompt. On Mac you'll get Touch ID. On Windows, Hello. With a hardware key, plug it in and tap.
 4. The new passkey appears in the list with the device name and creation date.
 
-You can add multiple passkeys. **Adding more than one is recommended** — if your only passkey is on a device you lose, you'll need a recovery code to get back in.
+You can add multiple passkeys. **Adding more than one is recommended**, if your only passkey is on a device you lose, you'll need a recovery code to get back in.
 
 ### Sign in with a passkey
 
@@ -123,7 +123,7 @@ You're signed in.
 
 In the **Passkeys** list, each passkey has **Rename** and **Delete** buttons.
 
-Brimble blocks **Delete** on your last passkey if 2FA isn't also enabled — it's a guard against locking yourself out. Either enable TOTP first, or add a second passkey before removing the old one.
+Brimble blocks **Delete** on your last passkey if 2FA isn't also enabled, it's a guard against locking yourself out. Either enable TOTP first, or add a second passkey before removing the old one.
 
 ## Lost your authenticator and your recovery codes
 
@@ -131,14 +131,14 @@ If you have a passkey on a device you can still access, sign in with the passkey
 
 If you've lost everything:
 
-- The passkey recovery flow at `/passkey-recovery` lets you regain account access using one of your TOTP recovery codes — but that requires having saved them.
+- The passkey recovery flow at `/passkey-recovery` lets you regain account access using one of your TOTP recovery codes, but that requires having saved them.
 - Without the recovery codes either, contact support. Account recovery is manual and may take days.
 
-This is why saving recovery codes during setup is mandatory in the UI — it's your last-line escape.
+This is why saving recovery codes during setup is mandatory in the UI, it's your last-line escape.
 
 ## Verification
 
-To confirm 2FA is set up correctly, sign out and sign back in. You should see the 2FA challenge step. If you don't, 2FA isn't actually enabled — repeat the setup.
+To confirm 2FA is set up correctly, sign out and sign back in. You should see the 2FA challenge step. If you don't, 2FA isn't actually enabled, repeat the setup.
 
 ## Troubleshooting
 
@@ -156,5 +156,5 @@ To confirm 2FA is set up correctly, sign out and sign back in. You should see th
 
 ## Next steps
 
-- [Manage teams](manage-teams.md) — invite team members and manage roles.
-- [Create a workspace](create-a-workspace.md) — workspaces inherit your account's security settings.
+- [Manage teams](manage-teams.md), invite team members and manage roles.
+- [Create a workspace](create-a-workspace.md), workspaces inherit your account's security settings.

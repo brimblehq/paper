@@ -23,25 +23,25 @@ Edge
 User
 ```
 
-The edge is the only public entry point. Your service container has no public IP — all traffic must go through the edge.
+The edge is the only public entry point. Your service container has no public IP, all traffic must go through the edge.
 
 ## Routing
 
 Routing is hostname-based. Brimble looks at the `Host` header and matches it against:
 
-- **`<project-name>.brimble.app`** — the default URL for every project.
-- **`<project-name>-<environment>.brimble.app`** — Preview and other non-production environments.
-- **Your custom domains** — once verified.
+- **`<project-name>.brimble.app`**, the default URL for every project.
+- **`<project-name>-<environment>.brimble.app`**, Preview and other non-production environments.
+- **Your custom domains**, once verified.
 
 If a hostname doesn't match a known project, the edge returns a generic 404. Reserved hostnames (`localhost`, internal addresses) return a "not connected" page.
 
 ## TLS
 
-Every Brimble URL serves over HTTPS. The edge handles TLS termination, so your service speaks plain HTTP internally — you never need to configure certificates on your container.
+Every Brimble URL serves over HTTPS. The edge handles TLS termination, so your service speaks plain HTTP internally, you never need to configure certificates on your container.
 
 For default URLs (`*.brimble.app`), Brimble uses a wildcard certificate. For custom domains, Brimble issues a free certificate from Let's Encrypt as soon as the domain points at the edge. Certificates renew automatically before expiry.
 
-If a custom domain's certificate fails to issue, the most common cause is a `CAA` DNS record that doesn't authorize Let's Encrypt — see [TLS troubleshooting](../troubleshooting/tls.md).
+If a custom domain's certificate fails to issue, the most common cause is a `CAA` DNS record that doesn't authorize Let's Encrypt, see [TLS troubleshooting](../troubleshooting/tls.md).
 
 ## Headers Brimble injects
 
@@ -49,7 +49,7 @@ The edge adds a small set of headers before forwarding the request:
 
 | Header | Value |
 |---|---|
-| `X-Forwarded-Proto` | `https` (always — even if the original request hit `http://`) |
+| `X-Forwarded-Proto` | `https` (always, even if the original request hit `http://`) |
 | `X-Forwarded-For` | The client's real IP |
 | `X-Real-IP` | The client's real IP |
 | `X-Brimble-Host` | The hostname the request came in on |
@@ -91,7 +91,7 @@ Public traffic to your project is rate-limited at the edge:
 
 This protects your service from abusive single-IP traffic patterns. Above the limit, the edge returns `429 Too Many Requests` until the window rolls.
 
-The limit is independent of the project's compute capacity — it's an infrastructure-level guardrail. For higher limits or custom rules, contact support.
+The limit is independent of the project's compute capacity, it's an infrastructure-level guardrail. For higher limits or custom rules, contact support.
 
 Internal Brimble IPs (the dashboard, the API, your other Brimble projects) are exempt.
 
@@ -106,16 +106,16 @@ For larger uploads (file uploads, large data ingest), upload directly to object 
 Brimble probes your service after deployment to decide whether traffic should flow to the new version:
 
 - **Web services.** A GET request to `healthCheckPath` (default `/`). Anything in the 2xx or 3xx range counts as healthy.
-- **Workers.** Process liveness only — if the process is alive, the worker is healthy.
+- **Workers.** Process liveness only, if the process is alive, the worker is healthy.
 - **Static sites.** No probe; the artifact is served directly.
 
-You can change the health check path under **Settings → Configuration**. Use a lightweight endpoint that doesn't depend on slow downstream services — `GET /healthz` is a common pattern.
+You can change the health check path under **Settings → Configuration**. Use a lightweight endpoint that doesn't depend on slow downstream services, `GET /healthz` is a common pattern.
 
 If a deployment fails its health check repeatedly, it's marked **degraded**. Traffic continues to flow to the previous active deployment.
 
 ## Connection retries
 
-By default a project runs as a single container, and the edge sends all of its traffic to that one. A single connection-level retry happens automatically if the container is briefly unavailable (between health-check passes during a deploy, for example). Application-level errors — a 5xx response your code returned — go straight to the client; the edge doesn't retry those.
+By default a project runs as a single container, and the edge sends all of its traffic to that one. A single connection-level retry happens automatically if the container is briefly unavailable (between health-check passes during a deploy, for example). Application-level errors, a 5xx response your code returned, go straight to the client; the edge doesn't retry those.
 
 If you've configured an [autoscaling group](../scaling/overview.md) and the project is running multiple containers, the edge distributes traffic across them and retries connection-level failures against another container before failing the request.
 
@@ -123,10 +123,10 @@ If you've configured an [autoscaling group](../scaling/overview.md) and the proj
 
 Your service can make outbound HTTP(S) requests freely. There's no egress whitelist for normal traffic.
 
-Outbound traffic from a Brimble service appears to come from a region-specific IP range. If you're whitelisting Brimble at a third-party API, get the current ranges from support — they aren't fixed forever.
+Outbound traffic from a Brimble service appears to come from a region-specific IP range. If you're whitelisting Brimble at a third-party API, get the current ranges from support, they aren't fixed forever.
 
 ## Next steps
 
-- [Custom domains](../domains/custom-domains.md) — pointing your own domain at a project.
-- [502 errors](../troubleshooting/502-errors.md) — what to check when the edge can't reach your service.
-- [Rate limits](rate-limits.md) — full set of edge limits.
+- [Custom domains](../domains/custom-domains.md), pointing your own domain at a project.
+- [502 errors](../troubleshooting/502-errors.md), what to check when the edge can't reach your service.
+- [Rate limits](rate-limits.md), full set of edge limits.

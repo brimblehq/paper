@@ -4,19 +4,19 @@ Brimble is a platform-as-a-service for deploying applications. You connect a Git
 
 If you've used Heroku, Render, or Railway, the model will feel familiar.
 
-![TODO: screenshot of the Brimble dashboard home showing the welcome panel, the projects-this-week stats, recent deployed projects as cards, connected domains count, and the sidebar with Home / Projects / Domains / Scaling / Discover](./images/PLACEHOLDER.png)
-
-*The Brimble dashboard home, after deploying a few projects.*
+{% hint style="info" %}
+**Image needed:** screenshot of the Brimble dashboard home showing the welcome panel, the projects-this-week stats, recent deployed projects as cards, connected domains count, and the sidebar with Home / Projects / Domains / Scaling / Discover
+{% endhint %}
 
 ## What you can deploy
 
 Each thing you deploy on Brimble is a **project**. A project has a type that determines how it builds and runs:
 
-* **Web service** — long-running HTTP servers (Next.js, Express, Django, Rails, FastAPI, etc.)
-* **Static site** — pre-built HTML, CSS, and JS bundles
-* **Worker** — background jobs, queue consumers, scheduled tasks
-* **Database** — managed PostgreSQL, MySQL, MongoDB, Redis, or SQLite
-* **MCP server** — Model Context Protocol servers for AI tooling
+* **Web service**, long-running HTTP servers (Next.js, Express, Django, Rails, FastAPI, etc.)
+* **Static site**, pre-built HTML, CSS, and JS bundles
+* **Worker**, background jobs, queue consumers, scheduled tasks
+* **Database**, managed PostgreSQL, MySQL, MongoDB, Redis, or SQLite
+* **MCP server**, Model Context Protocol servers for AI tooling
 
 You can run as many projects as your plan allows, in any combination.
 
@@ -25,7 +25,7 @@ You can run as many projects as your plan allows, in any combination.
 1. You connect a Git repository (GitHub, GitLab, or Bitbucket) and pick a branch.
 2. Brimble detects your framework and builds an artifact.
 3. The artifact runs in an isolated sandbox in the region you chose.
-4. The edge layer terminates TLS and routes traffic to your project at `<project-name>.brimble.app` — or your custom domain.
+4. The edge layer terminates TLS and routes traffic to your project at `<project-name>.brimble.app`, or your custom domain.
 
 Every push to the connected branch triggers a new build and deployment. Old deployments stay around so you can roll back.
 
@@ -37,5 +37,5 @@ Every push to the connected branch triggers a new build and deployment. Old depl
 
 ## Next steps
 
-* [Quickstart →](quickstart.md) — deploy your first project
+* [Quickstart →](quickstart.md), deploy your first project
 * [Add a custom domain →](../domains/custom-domains.md)

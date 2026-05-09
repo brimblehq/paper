@@ -2,34 +2,34 @@
 
 Brimble can put a single shared password in front of a project. Visitors see a password prompt before any request reaches your service. Useful for staging deployments, internal tools, and anything that shouldn't be publicly readable.
 
-The password check happens at the edge — no requests reach your container without it.
+The password check happens at the edge, no requests reach your container without it.
 
 ## How it works
 
 - **One password per project.** No username. Anyone with the password can access the site.
 - **Form-based login.** A visitor without a session sees a Brimble-rendered password page. They enter the password, submit, and are redirected back to the URL they came from.
 - **Session cookie.** On a successful login, the proxy sets an `httpOnly` session cookie (`x-brimble-session`). Subsequent requests carry the cookie and pass through without re-prompting until the cookie expires.
-- **Not HTTP Basic Auth.** Brimble doesn't return a `WWW-Authenticate: Basic` challenge. `curl -u user:pass` won't authenticate, and browsers won't pop a credentials dialog — visitors interact with the password page.
+- **Not HTTP Basic Auth.** Brimble doesn't return a `WWW-Authenticate: Basic` challenge. `curl -u user:pass` won't authenticate, and browsers won't pop a credentials dialog, visitors interact with the password page.
 
 ## What visitors see
 
 A request to a password-protected project returns a Brimble password page with a single password field. The visitor enters the password and submits. On success they're redirected to the URL they were trying to reach. On failure the page reloads with an "Invalid credentials" message.
 
-The cookie is `httpOnly` — JavaScript can't read it, so the password page is the only way to obtain a session.
+The cookie is `httpOnly`, JavaScript can't read it, so the password page is the only way to obtain a session.
 
-![TODO: screenshot of the Brimble password page that's shown when an unauthenticated visitor hits a protected project — single password input, submit button, project hostname visible](./images/PLACEHOLDER.png)
-
-*The password page shown by Brimble's edge for protected projects.*
+{% hint style="info" %}
+**Image needed:** screenshot of the Brimble password page that's shown when an unauthenticated visitor hits a protected project, single password input, submit button, project hostname visible
+{% endhint %}
 
 ## When it applies
 
-Password protection covers **every request to the project** — top-level URL, asset paths, API endpoints, WebSocket upgrades. There's no per-path bypass.
+Password protection covers **every request to the project**, top-level URL, asset paths, API endpoints, WebSocket upgrades. There's no per-path bypass.
 
 If you need a public health check on an otherwise-protected project, run an unprotected sibling project at a different hostname for the public endpoint, or implement [app-level auth](#app-level-authentication) instead.
 
 ## Checking the current state
 
-In the dashboard, open the project. The overview shows **Site password enabled: Yes** or **Site password enabled: No**. This is read-only on the overview page — it surfaces the current state but doesn't toggle it.
+In the dashboard, open the project. The overview shows **Site password enabled: Yes** or **Site password enabled: No**. This is read-only on the overview page, it surfaces the current state but doesn't toggle it.
 
 ## Enabling, changing, or disabling
 
@@ -44,7 +44,7 @@ For more control (per-user accounts, sessions, role-based access), implement aut
 - Rails + Devise
 - A reverse proxy or auth provider (Auth0, Clerk, Cognito) sitting in front of your app
 
-Use either site password protection **or** app-level auth — not both. Running both means visitors hit two prompts.
+Use either site password protection **or** app-level auth, not both. Running both means visitors hit two prompts.
 
 ## Considerations
 
@@ -53,25 +53,25 @@ Use either site password protection **or** app-level auth — not both. Running 
 
 ## Verification
 
-Open the project URL in a browser. You should see Brimble's password page. Submit the password — you should be redirected to your service.
+Open the project URL in a browser. You should see Brimble's password page. Submit the password, you should be redirected to your service.
 
 ```bash
 curl -I https://<project>.brimble.app
 ```
 
-A `HTTP/2 401` with the password page in the body confirms protection is active. (You won't see a `WWW-Authenticate` header — the response body itself is the password form.)
+A `HTTP/2 401` with the password page in the body confirms protection is active. (You won't see a `WWW-Authenticate` header, the response body itself is the password form.)
 
 ## Troubleshooting
 
 **Form keeps rejecting the password.** The password is case-sensitive and has no leading/trailing whitespace. Confirm exactly what was set with whoever configured it.
 
-**Logged in once, but every page reload re-prompts.** Your browser is dropping cookies. Check it accepts cookies from the project hostname — privacy modes and third-party-cookie blocks usually still allow first-party cookies, but extensions can interfere.
+**Logged in once, but every page reload re-prompts.** Your browser is dropping cookies. Check it accepts cookies from the project hostname, privacy modes and third-party-cookie blocks usually still allow first-party cookies, but extensions can interfere.
 
 **Authenticated for `staging.example.com`, but `app.example.com` re-prompts.** Cookies are per-hostname. Each hostname has its own session.
 
-**`curl -u user:pass` returns the password page.** That's expected — Brimble doesn't read Basic Auth headers. The browser's password page is the only login surface.
+**`curl -u user:pass` returns the password page.** That's expected, Brimble doesn't read Basic Auth headers. The browser's password page is the only login surface.
 
 ## Next steps
 
-- [Networking and the edge](../networking/overview.md) — how the edge enforces auth before requests reach your service.
-- [Custom domains](../domains/custom-domains.md) — password protection works on default and custom domains.
+- [Networking and the edge](../networking/overview.md), how the edge enforces auth before requests reach your service.
+- [Custom domains](../domains/custom-domains.md), password protection works on default and custom domains.

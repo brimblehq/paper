@@ -1,6 +1,6 @@
 # Environments
 
-An **environment** is a named set of configuration that a project deploys with. Brimble gives every project a `Production` environment by default. You can create more — typically `Preview`, `Staging`, or one per developer — and each holds its own environment variables.
+An **environment** is a named set of configuration that a project deploys with. Brimble gives every project a `Production` environment by default. You can create more, typically `Preview`, `Staging`, or one per developer, and each holds its own environment variables.
 
 ## Why environments exist
 
@@ -23,7 +23,7 @@ Two environments are always available:
 
 A pull request opened against the tracked branch builds with the Preview environment's variables. Once merged, the next build uses Production.
 
-You can create additional environments — for example, a `staging` environment tied to a specific branch — under **Environments** in the dashboard.
+You can create additional environments, for example, a `staging` environment tied to a specific branch, under **Environments** in the dashboard.
 
 ## Environment variables
 
@@ -49,7 +49,7 @@ Production  (DB_URL=prod, STRIPE_KEY=live, LOG_LEVEL=info)
 └── Preview (inherits from Production, overrides DB_URL=staging)
 ```
 
-When you create or edit an environment, you can pick a parent. Variables from the parent flow through unless you set the same key on the child — child values always win. Only variables marked `inheritable` are passed down; secrets you want to keep production-only stay there.
+When you create or edit an environment, you can pick a parent. Variables from the parent flow through unless you set the same key on the child, child values always win. Only variables marked `inheritable` are passed down; secrets you want to keep production-only stay there.
 
 To set up inheritance:
 
@@ -60,13 +60,13 @@ To set up inheritance:
 
 ## Build-time vs runtime
 
-Environment variables are visible **both** at build time and at runtime. If your build script needs a token to fetch a private package, set it in the environment — it'll be available during `npm install` and during your start command.
+Environment variables are visible **both** at build time and at runtime. If your build script needs a token to fetch a private package, set it in the environment, it'll be available during `npm install` and during your start command.
 
 If you specifically don't want a value present at build time (for example, secrets you only want available to the running container), there's no separate runtime-only namespace. Instead, fetch the secret at runtime from a vault or secret store using a token you set as a build-time variable.
 
 ## Editing variables
 
-You can add, edit, or delete variables in the dashboard under **Environment** on the project page. Editing a variable does **not** redeploy automatically — the new value applies on the next deployment. To pick it up immediately, click **Redeploy** on the latest deployment.
+You can add, edit, or delete variables in the dashboard under **Environment** on the project page. Editing a variable does **not** redeploy automatically, the new value applies on the next deployment. To pick it up immediately, click **Redeploy** on the latest deployment.
 
 ## Verification
 
@@ -76,10 +76,10 @@ To confirm a variable is set in the running container, log it from your app on s
 console.log("DATABASE_URL configured:", !!process.env.DATABASE_URL);
 ```
 
-Don't log the value itself — Brimble's runtime logs are not encrypted at rest the same way the variable store is, and any log output is visible to anyone with access to the project.
+Don't log the value itself, Brimble's runtime logs are not encrypted at rest the same way the variable store is, and any log output is visible to anyone with access to the project.
 
 ## Next steps
 
-- [Environment variables guide](environment-variables.md) — task-oriented walkthrough.
-- [System environment variables](system-variables.md) — what Brimble injects automatically.
-- [Deployments](deployments.md) — how environment variables flow into a deployment.
+- [Environment variables guide](environment-variables.md), task-oriented walkthrough.
+- [System environment variables](system-variables.md), what Brimble injects automatically.
+- [Deployments](deployments.md), how environment variables flow into a deployment.

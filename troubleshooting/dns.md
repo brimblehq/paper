@@ -1,6 +1,6 @@
 # DNS issues
 
-DNS is the layer between users typing your domain name and reaching your project. When DNS is wrong, the symptoms vary widely — domain stuck on "verifying," intermittent 404s, the wrong site loading, no connection at all. This page indexes the symptoms.
+DNS is the layer between users typing your domain name and reaching your project. When DNS is wrong, the symptoms vary widely, domain stuck on "verifying," intermittent 404s, the wrong site loading, no connection at all. This page indexes the symptoms.
 
 ## Quick triage
 
@@ -76,9 +76,9 @@ dig your-domain.com +short
 curl -I https://your-domain.com
 ```
 
-The `Server` and `X-Brimble-*` response headers tell you whether the edge served the response. If `X-Brimble-Host` shows a different domain than yours, the request was routed to the wrong project — typically because the domain was attached to a project elsewhere on Brimble.
+The `Server` and `X-Brimble-*` response headers tell you whether the edge served the response. If `X-Brimble-Host` shows a different domain than yours, the request was routed to the wrong project, typically because the domain was attached to a project elsewhere on Brimble.
 
-**Fix:** Open the domain in the dashboard. Confirm it's attached to your project. If it's attached elsewhere, contact support — domain ownership may need verification.
+**Fix:** Open the domain in the dashboard. Confirm it's attached to your project. If it's attached elsewhere, contact support, domain ownership may need verification.
 
 ## Apex (root) domain doesn't work
 
@@ -113,15 +113,15 @@ You're using Brimble's authoritative DNS (`ns1.brimble.io`, `ns2.brimble.io`) an
 dig your-domain.com NS +short
 ```
 
-You should see `ns1.brimble.io` and `ns2.brimble.io`. If you see something else, your domain is still using your old DNS provider — Brimble's dashboard records don't apply.
+You should see `ns1.brimble.io` and `ns2.brimble.io`. If you see something else, your domain is still using your old DNS provider, Brimble's dashboard records don't apply.
 
 **Step 2:** If nameservers are right, the record might be propagating. Brimble's authoritative DNS publishes within seconds, but resolvers cache the previous answer up to its TTL. Lower the TTL ahead of changes if you can.
 
 **Step 3:** Check that the record host is correct. `@` for the apex; bare subdomain (e.g. `api`) for `api.example.com`, **not** the full `api.example.com`.
 
-## Mixed DNS — some records at provider, some at Brimble
+## Mixed DNS, some records at provider, some at Brimble
 
-You can't mix authoritative DNS — your domain uses **either** Brimble's nameservers (and all records live in Brimble's dashboard) **or** an external provider (and you set CNAME/A records there). You can't have some records here and some there.
+You can't mix authoritative DNS, your domain uses **either** Brimble's nameservers (and all records live in Brimble's dashboard) **or** an external provider (and you set CNAME/A records there). You can't have some records here and some there.
 
 If you want some records managed by Brimble (for proxy routing) and some at an external provider (for mail), pick one as authoritative and add the others to it. There's no "merge" between authoritative DNS sources.
 
@@ -131,7 +131,7 @@ You pointed your domain at Brimble for web traffic and now mail isn't reaching y
 
 **Cause:** The MX records that pointed at your mail provider were lost when you delegated to Brimble's nameservers without copying them.
 
-**Fix:** Copy your mail provider's MX records into Brimble's DNS dashboard. Most mail providers (Google Workspace, Microsoft 365, Proton, Fastmail) publish their MX records on a setup page. Don't proxy MX records — they're for SMTP, not HTTP.
+**Fix:** Copy your mail provider's MX records into Brimble's DNS dashboard. Most mail providers (Google Workspace, Microsoft 365, Proton, Fastmail) publish their MX records on a setup page. Don't proxy MX records, they're for SMTP, not HTTP.
 
 ## Verification
 
@@ -150,10 +150,10 @@ For TLS:
 curl -I https://your-domain.com
 ```
 
-A 200 (or any response with a valid certificate) means TLS is working. A connection error or `SSL_ERROR_*` means the certificate isn't installed yet — wait, or check the dashboard.
+A 200 (or any response with a valid certificate) means TLS is working. A connection error or `SSL_ERROR_*` means the certificate isn't installed yet, wait, or check the dashboard.
 
 ## Next steps
 
-- [Custom domains](../domains/custom-domains.md) — full setup guide.
-- [DNS records](../domains/dns-records.md) — the supported record types and their fields.
-- [TLS issues](tls.md) — when DNS is right but the certificate is the problem.
+- [Custom domains](../domains/custom-domains.md), full setup guide.
+- [DNS records](../domains/dns-records.md), the supported record types and their fields.
+- [TLS issues](tls.md), when DNS is right but the certificate is the problem.
