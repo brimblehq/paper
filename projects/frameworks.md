@@ -2,7 +2,7 @@
 
 Brimble's build pipeline auto-detects most popular frameworks and pre-fills the install, build, and start commands. This page lists what's detected and what defaults you get.
 
-If your stack isn't listed, set the commands manually under **Settings → Build**. Anything that runs in a Linux container will work, detection is a convenience, not a requirement.
+If your stack isn't listed, set the commands manually under **Configuration**. Anything that runs in a Linux container will work, detection is a convenience, not a requirement.
 
 ## How detection works
 
@@ -14,54 +14,54 @@ Brimble inspects:
 
 A `Dockerfile` at the repo root takes precedence, Brimble uses it directly and skips framework detection.
 
-## Node.js
+## <img src="https://cdn.simpleicons.org/nodedotjs" alt="" width="20" height="20" /> Node.js
 
 Detected via `package.json`.
 
 | Framework | Service type | Default commands |
 |---|---|---|
-| **Next.js (server)** | Web service | `npm install`, `npm run build`, `npm start` |
-| **Next.js (export)** | Static site | `npm install`, `npm run build`, output `out/` |
-| **Nuxt 3** | Web service | `npm install`, `npm run build`, `node .output/server/index.mjs` |
-| **SvelteKit** | Web service | `npm install`, `npm run build`, `node build` |
-| **Remix** | Web service | `npm install`, `npm run build`, `npm start` |
-| **Vite** | Static site | `npm install`, `npm run build`, output `dist/` |
-| **Astro** | Static site or Web service | `npm install`, `npm run build`, output `dist/` |
-| **Express / Fastify / Koa** | Web service | `npm install`, no build, `npm start` |
-| **NestJS** | Web service | `npm install`, `npm run build`, `npm run start:prod` |
-| **Hono** | Web service | `npm install`, `npm run build`, `npm start` |
-| **AdonisJS** | Web service | `npm install`, `npm run build`, `node build/server.js` |
+| <img src="https://cdn.simpleicons.org/nextdotjs" alt="" width="14" height="14" /> **Next.js (server)** | Web service | `npm install`, `npm run build`, `npm start` |
+| <img src="https://cdn.simpleicons.org/nextdotjs" alt="" width="14" height="14" /> **Next.js (export)** | Static site | `npm install`, `npm run build`, output `out/` |
+| <img src="https://cdn.simpleicons.org/nuxt" alt="" width="14" height="14" /> **Nuxt 3** | Web service | `npm install`, `npm run build`, `node .output/server/index.mjs` |
+| <img src="https://cdn.simpleicons.org/svelte" alt="" width="14" height="14" /> **SvelteKit** | Web service | `npm install`, `npm run build`, `node build` |
+| <img src="https://cdn.simpleicons.org/remix" alt="" width="14" height="14" /> **Remix** | Web service | `npm install`, `npm run build`, `npm start` |
+| <img src="https://cdn.simpleicons.org/vite" alt="" width="14" height="14" /> **Vite** | Static site | `npm install`, `npm run build`, output `dist/` |
+| <img src="https://cdn.simpleicons.org/astro" alt="" width="14" height="14" /> **Astro** | Static site or Web service | `npm install`, `npm run build`, output `dist/` |
+| <img src="https://cdn.simpleicons.org/express" alt="" width="14" height="14" /> **Express / Fastify / Koa** | Web service | `npm install`, no build, `npm start` |
+| <img src="https://cdn.simpleicons.org/nestjs" alt="" width="14" height="14" /> **NestJS** | Web service | `npm install`, `npm run build`, `npm run start:prod` |
+| <img src="https://cdn.simpleicons.org/hono" alt="" width="14" height="14" /> **Hono** | Web service | `npm install`, `npm run build`, `npm start` |
+| <img src="https://cdn.simpleicons.org/adonisjs" alt="" width="14" height="14" /> **AdonisJS** | Web service | `npm install`, `npm run build`, `node build/server.js` |
 
-Package manager auto-detected from lockfile: `package-lock.json` → npm, `yarn.lock` → yarn, `pnpm-lock.yaml` → pnpm, `bun.lockb` → bun.
+Package manager auto-detected from lockfile: `package-lock.json` → <img src="https://cdn.simpleicons.org/npm" alt="" width="12" height="12" /> npm, `yarn.lock` → <img src="https://cdn.simpleicons.org/yarn" alt="" width="12" height="12" /> yarn, `pnpm-lock.yaml` → <img src="https://cdn.simpleicons.org/pnpm" alt="" width="12" height="12" /> pnpm, `bun.lockb` → <img src="https://cdn.simpleicons.org/bun" alt="" width="12" height="12" /> bun.
 
 Node version auto-detected from `engines.node` in `package.json` or a `.nvmrc` file. Latest LTS by default.
 
-## Python
+## <img src="https://cdn.simpleicons.org/python" alt="" width="20" height="20" /> Python
 
 Detected via `requirements.txt`, `pyproject.toml`, or `Pipfile`.
 
 | Framework | Service type | Default commands |
 |---|---|---|
-| **Django** | Web service | `pip install -r requirements.txt`, `gunicorn <project>.wsgi` |
-| **Flask** | Web service | `pip install -r requirements.txt`, `gunicorn app:app` |
-| **FastAPI** | Web service | `pip install -r requirements.txt`, `uvicorn main:app --host 0.0.0.0 --port $PORT` |
+| <img src="https://cdn.simpleicons.org/django" alt="" width="14" height="14" /> **Django** | Web service | `pip install -r requirements.txt`, `gunicorn <project>.wsgi` |
+| <img src="https://cdn.simpleicons.org/flask" alt="" width="14" height="14" /> **Flask** | Web service | `pip install -r requirements.txt`, `gunicorn app:app` |
+| <img src="https://cdn.simpleicons.org/fastapi" alt="" width="14" height="14" /> **FastAPI** | Web service | `pip install -r requirements.txt`, `uvicorn main:app --host 0.0.0.0 --port $PORT` |
 
 Python version detected from `.python-version`, `runtime.txt`, or `pyproject.toml`. Defaults to a recent stable version.
 
-Package manager: pip (requirements.txt), Poetry (pyproject.toml with `[tool.poetry]`), or pipenv (Pipfile).
+Package manager: <img src="https://cdn.simpleicons.org/pypi" alt="" width="12" height="12" /> pip (`requirements.txt`), <img src="https://cdn.simpleicons.org/poetry" alt="" width="12" height="12" /> Poetry (`pyproject.toml` with `[tool.poetry]`), or pipenv (`Pipfile`).
 
-## Ruby
+## <img src="https://cdn.simpleicons.org/ruby" alt="" width="20" height="20" /> Ruby
 
 Detected via `Gemfile`.
 
 | Framework | Service type | Default commands |
 |---|---|---|
-| **Rails** | Web service | `bundle install`, `bundle exec rails assets:precompile`, `bundle exec rails server -p $PORT -b 0.0.0.0` |
-| **Sinatra** | Web service | `bundle install`, no build, `bundle exec ruby app.rb -o 0.0.0.0 -p $PORT` |
+| <img src="https://cdn.simpleicons.org/rubyonrails" alt="" width="14" height="14" /> **Rails** | Web service | `bundle install`, `bundle exec rails assets:precompile`, `bundle exec rails server -p $PORT -b 0.0.0.0` |
+| <img src="https://cdn.simpleicons.org/ruby" alt="" width="14" height="14" /> **Sinatra** | Web service | `bundle install`, no build, `bundle exec ruby app.rb -o 0.0.0.0 -p $PORT` |
 
 Ruby version from `.ruby-version` or `Gemfile`.
 
-## Go
+## <img src="https://cdn.simpleicons.org/go" alt="" width="20" height="20" /> Go
 
 Detected via `go.mod`.
 
@@ -71,26 +71,26 @@ Detected via `go.mod`.
 
 Go version from `go.mod`.
 
-## PHP
+## <img src="https://cdn.simpleicons.org/php" alt="" width="20" height="20" /> PHP
 
 Detected via `composer.json`.
 
 | Framework | Service type | Default commands |
 |---|---|---|
-| **Laravel** | Web service | `composer install --no-dev`, `php artisan migrate --force`, `php artisan serve --host=0.0.0.0 --port=$PORT` |
-| **Symfony** | Web service | `composer install --no-dev`, `bin/console cache:clear`, `php -S 0.0.0.0:$PORT public/index.php` |
+| <img src="https://cdn.simpleicons.org/laravel" alt="" width="14" height="14" /> **Laravel** | Web service | `composer install --no-dev`, `php artisan migrate --force`, `php artisan serve --host=0.0.0.0 --port=$PORT` |
+| <img src="https://cdn.simpleicons.org/symfony" alt="" width="14" height="14" /> **Symfony** | Web service | `composer install --no-dev`, `bin/console cache:clear`, `php -S 0.0.0.0:$PORT public/index.php` |
 
-## Java / Kotlin
+## <img src="https://cdn.simpleicons.org/openjdk" alt="" width="20" height="20" /> Java / Kotlin
 
 Detected via `pom.xml` (Maven) or `build.gradle` / `build.gradle.kts` (Gradle).
 
 | Framework | Service type | Default commands |
 |---|---|---|
-| **Spring Boot** | Web service | `./mvnw package -DskipTests` (or Gradle equivalent), `java -jar target/*.jar` |
+| <img src="https://cdn.simpleicons.org/springboot" alt="" width="14" height="14" /> **Spring Boot** | Web service | `./mvnw package -DskipTests` (or Gradle equivalent), `java -jar target/*.jar` |
 
 JVM version from `pom.xml`'s `<java.version>` or Gradle's `targetCompatibility`.
 
-## Rust
+## <img src="https://cdn.simpleicons.org/rust" alt="" width="20" height="20" /> Rust
 
 Detected via `Cargo.toml`.
 
@@ -100,28 +100,28 @@ Detected via `Cargo.toml`.
 
 Rust toolchain from `rust-toolchain.toml` or stable.
 
-## Elixir
+## <img src="https://cdn.simpleicons.org/elixir" alt="" width="20" height="20" /> Elixir
 
 Detected via `mix.exs`.
 
 - Service type: Web service.
-- Build: `mix deps.get`, `mix compile`, asset compilation if Phoenix.
+- Build: `mix deps.get`, `mix compile`, asset compilation if <img src="https://cdn.simpleicons.org/phoenixframework" alt="" width="12" height="12" /> Phoenix.
 - Start: `mix phx.server` or `MIX_ENV=prod elixir --erl '-detached' -S mix run --no-halt`.
 
 ## Static-only frameworks
 
 | Framework | Default commands |
 |---|---|
-| **Hugo** | `hugo`, output `public/` |
-| **Jekyll** | `bundle install`, `bundle exec jekyll build`, output `_site/` |
-| **Eleventy (11ty)** | `npm install`, `npx eleventy`, output `_site/` |
-| **Gatsby** | `npm install`, `npm run build`, output `public/` |
-| **Docusaurus** | `npm install`, `npm run build`, output `build/` |
-| **MkDocs** | `pip install mkdocs`, `mkdocs build`, output `site/` |
+| <img src="https://cdn.simpleicons.org/hugo" alt="" width="14" height="14" /> **Hugo** | `hugo`, output `public/` |
+| <img src="https://cdn.simpleicons.org/jekyll" alt="" width="14" height="14" /> **Jekyll** | `bundle install`, `bundle exec jekyll build`, output `_site/` |
+| <img src="https://cdn.simpleicons.org/eleventy" alt="" width="14" height="14" /> **Eleventy (11ty)** | `npm install`, `npx eleventy`, output `_site/` |
+| <img src="https://cdn.simpleicons.org/gatsby" alt="" width="14" height="14" /> **Gatsby** | `npm install`, `npm run build`, output `public/` |
+| <img src="https://cdn.simpleicons.org/docusaurus" alt="" width="14" height="14" /> **Docusaurus** | `npm install`, `npm run build`, output `build/` |
+| <img src="https://cdn.simpleicons.org/markdown" alt="" width="14" height="14" /> **MkDocs** | `pip install mkdocs`, `mkdocs build`, output `site/` |
 
 For all of the above, Brimble creates a static site project (no runtime container).
 
-## Dockerfile
+## <img src="https://cdn.simpleicons.org/docker" alt="" width="20" height="20" /> Dockerfile
 
 If a `Dockerfile` exists at the project root, Brimble uses it directly:
 
@@ -136,7 +136,7 @@ The Dockerfile must:
 
 ## Custom commands
 
-For any framework, detected or not, you can override under **Settings → Build**:
+For any framework, detected or not, you can override under **Configuration**:
 
 - **Install command**, typically the package manager install step.
 - **Build command**, anything that compiles or bundles. Empty for runtime-only languages.
@@ -149,10 +149,14 @@ The commands run in `bash`. Standard shell features (pipes, redirects, `&&`) wor
 
 Most frameworks default to a recent stable version. Pin a specific version via the language's standard mechanism:
 
-- **Node:** `engines.node` in `package.json`, or `.nvmrc`.
-- **Python:** `.python-version`, `runtime.txt`, or `pyproject.toml`.
-- **Ruby:** `.ruby-version` or `Gemfile`.
-- **Go:** `go.mod`'s `go` directive.
-- **Java:** `pom.xml` `<java.version>` or Gradle `targetCompatibility`.
+- <img src="https://cdn.simpleicons.org/nodedotjs" alt="" width="12" height="12" /> **Node:** `engines.node` in `package.json`, or `.nvmrc`.
+- <img src="https://cdn.simpleicons.org/python" alt="" width="12" height="12" /> **Python:** `.python-version`, `runtime.txt`, or `pyproject.toml`.
+- <img src="https://cdn.simpleicons.org/ruby" alt="" width="12" height="12" /> **Ruby:** `.ruby-version` or `Gemfile`.
+- <img src="https://cdn.simpleicons.org/go" alt="" width="12" height="12" /> **Go:** `go.mod`'s `go` directive.
+- <img src="https://cdn.simpleicons.org/openjdk" alt="" width="12" height="12" /> **Java:** `pom.xml` `<java.version>` or Gradle `targetCompatibility`.
 
 If detection picks the wrong version, the deployment logs will show the chosen version under the **Detect** phase. Pin explicitly to fix.
+
+---
+
+*Brand icons by [Simple Icons](https://simpleicons.org), used per their license.*
