@@ -13,7 +13,7 @@ Three commands cover most DNS debugging:
 dig your-domain.com +short              # what's the current answer
 dig your-domain.com +trace              # where in the chain does it resolve
 dig your-domain.com CAA +short          # any CAA records blocking TLS
-```
+```bash
 
 Run them from a machine **not** on the same network as your DNS provider. Local network caches can show stale answers.
 
@@ -38,7 +38,7 @@ dig your-domain.com +short
 ```bash
 dig @8.8.8.8 your-domain.com +short
 dig @1.1.1.1 your-domain.com +short
-```
+```bash
 
 If the answer is right from public resolvers (Google's `8.8.8.8`, Cloudflare's `1.1.1.1`), Brimble will see it shortly. If the answer is right from your provider but wrong from public resolvers, the record was just published and hasn't propagated yet.
 
@@ -77,7 +77,7 @@ You point a domain at Brimble, but the site that loads belongs to someone else.
 ```bash
 dig your-domain.com +short
 curl -I https://your-domain.com
-```
+```bash
 
 The `Server` and `X-Brimble-*` response headers tell you whether the edge served the response. If `X-Brimble-Host` shows a different domain than yours, the request was routed to the wrong project, typically because the domain was attached to a project elsewhere on Brimble.
 
@@ -143,7 +143,7 @@ After making any DNS change, verify from public resolvers:
 ```bash
 dig @1.1.1.1 your-domain.com +short
 dig @8.8.8.8 your-domain.com +short
-```
+```bash
 
 If both return the expected answer, propagation is done.
 

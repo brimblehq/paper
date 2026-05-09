@@ -33,7 +33,7 @@ If status is **Failed**, the dashboard shows a reason, usually a CAA block, a do
 
 ```bash
 dig your-domain.com +short
-```
+```bash
 
 The answer must point at Brimble's edge, either `gateway.brimble.app` (CNAME) or the edge IP shown when you added the domain (A record).
 
@@ -113,7 +113,7 @@ Brimble renews certificates automatically, well before expiry. If you see an exp
 
 ```bash
 echo | openssl s_client -servername your-domain.com -connect your-domain.com:443 2>/dev/null | openssl x509 -noout -dates
-```
+```bash
 
 If the `notAfter` is in the past, the cert wasn't renewed. The most common cause is that DNS broke between issuance and renewal, the renewal couldn't validate the domain.
 

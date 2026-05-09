@@ -38,7 +38,7 @@ For pasting in a `.env` file:
 
 Each line of the form `KEY=value` becomes a variable. Quoted values are unquoted. Values containing `=`, `#`, or whitespace should be wrapped in single or double quotes:
 
-```
+```bash
 KEY=value
 QUOTED="value with spaces"
 COMMENT_INSIDE='it=is#fine'
@@ -78,7 +78,7 @@ If a variable is set on both the child and the parent, the child's value wins.
 
 A variable's value can include references to other variables, `{{shared.NAME}}` for a shared environment value, or `{{@project-slug.NAME}}` for a value from another project in the same workspace. Brimble resolves these at deploy time so the running container sees the final string.
 
-```
+```bash
 API_URL={{shared.BASE_URL}}/v1
 DATABASE_URL={{@acme-pg-prod.CONNECTION_STRING}}
 ```

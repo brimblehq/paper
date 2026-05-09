@@ -114,7 +114,7 @@ The most common reason is that the domain isn't actually using Brimble's nameser
 
 ```bash
 dig your-domain.com NS +short
-```
+```bash
 
 If you don't see `ns1.brimble.io` and `ns2.brimble.io`, your records live at whatever nameservers `dig` returned, not at Brimble. Either delegate the domain to Brimble's nameservers, or manage records at the external provider.
 

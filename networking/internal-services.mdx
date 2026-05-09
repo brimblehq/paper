@@ -46,7 +46,7 @@ The clean way to wire a web service to a database in the same workspace is via [
 
 In your **web service**, set:
 
-```
+```bash
 DATABASE_HOST = {{@my-postgres.PRIVATE_SERVICE_HOST}}
 DATABASE_PORT = {{@my-postgres.SERVICE_PORT}}
 DATABASE_USER = {{@my-postgres.DB_USER}}
@@ -58,7 +58,7 @@ Replace `my-postgres` with your database project's slug. Brimble resolves the re
 
 If you'd rather pass a single URL, build it from the parts:
 
-```
+```bash
 DATABASE_URL = postgres://{{@my-postgres.DB_USER}}:{{@my-postgres.DB_PASSWORD}}@{{@my-postgres.PRIVATE_SERVICE_HOST}}:{{@my-postgres.SERVICE_PORT}}/{{@my-postgres.DB_NAME}}
 ```
 

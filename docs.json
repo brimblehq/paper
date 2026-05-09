@@ -16,13 +16,13 @@
   "fonts": {
     "heading": {
       "family": "ABC Marfa",
-      "format": "truetype",
-      "src": "/fonts/ABCMarfaVariableVF-Trial.ttf"
+      "format": "woff2",
+      "src": "/fonts/ABCMarfaVariableVF-Trial.woff2"
     },
     "body": {
       "family": "ABC Marfa",
-      "format": "truetype",
-      "src": "/fonts/ABCMarfaVariableVF-Trial.ttf"
+      "format": "woff2",
+      "src": "/fonts/ABCMarfaVariableVF-Trial.woff2"
     }
   },
   "navigation": {
