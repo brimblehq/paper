@@ -17,12 +17,14 @@
     "heading": {
       "family": "ABC Marfa",
       "format": "woff2",
-      "src": "/fonts/ABCMarfaVariableVF-Trial.woff2"
+      "weight": 400,
+      "source": "/fonts/ABCMarfaVariableVF-Trial.woff2"
     },
     "body": {
       "family": "ABC Marfa",
       "format": "woff2",
-      "src": "/fonts/ABCMarfaVariableVF-Trial.woff2"
+      "weight": 400,
+      "source": "/fonts/ABCMarfaVariableVF-Trial.woff2"
     }
   },
   "navigation": {
