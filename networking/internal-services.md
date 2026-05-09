@@ -89,42 +89,6 @@ A few things to know:
 | Service in one workspace needs to call a service in a different workspace | **Public**, internal addresses don't cross workspace boundaries |
 | Production service in `fra1` calls a database in `nyc1` | **Public**, the internal network is region-scoped; cross-region must go through public endpoints |
 
-## Verification
-
-From a Brimble service, check resolution:
-
-```javascript
-import dns from "node:dns/promises";
-
-const host = process.env.PRIVATE_SERVICE_HOST; // resolved from {{@db.PRIVATE_SERVICE_HOST}}
-const records = await dns.lookup(host);
-console.log("resolved:", records);
-```
-
-A successful lookup returns an internal IP. From outside Brimble, the same lookup fails with `ENOTFOUND`, that's expected.
-
-```bash
-# In your service's runtime
-nslookup my-postgres.service.brimble.internal
-# Returns the internal IP
-
-# On your laptop
-nslookup my-postgres.service.brimble.internal
-# Server can't find ... NXDOMAIN
-```
-
-## Troubleshooting
-
-**`ENOTFOUND` or `DNS resolution failed` from a Brimble service.** Your container is in a different region from the target. Internal hostnames are region-scoped, co-locate the projects, or fall back to the public hostname.
-
-**Connection refused on the internal port.** The target project might not be listening yet (cold start), or its `replicas`/scaling state is `0`. Open the target's Observability tab to confirm it's healthy.
-
-**Works in development but not in production.** You're probably using the public hostname locally and trying to switch to internal in prod. Make sure the env var is the same name in both, but the value swaps. Use environment-specific configuration.
-
-**TLS handshake failed connecting to internal host.** Internal traffic is HTTP, not HTTPS. Drop the `https://` prefix.
-
-**Cross-workspace reference doesn't resolve.** Internal addresses are workspace-scoped and the env reference resolver also enforces workspace scope. If you need cross-workspace integration, use the public hostnames and proper auth.
-
 ## Next steps
 
 - [Reference shared and cross-project variables](../environments/env-references.md), `{{@slug.X}}` resolves variables across projects.

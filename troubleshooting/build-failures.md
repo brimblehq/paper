@@ -105,22 +105,16 @@ Note `0.0.0.0` (not `localhost` and not `127.0.0.1`), Brimble's edge can't reach
 
 **Port collision.** Your code logs "address already in use." Almost always a leftover from local development hardcoding port 3000 or 8080. Read `process.env.PORT`, Brimble assigns the port at deploy time.
 
-## Diagnostic snippets
+## Pin your language version
 
-### Confirm `PORT` is being read
+A common cause of "works on my machine, fails on Brimble" is the build runner picking a different language version than you use locally. Pin explicitly:
 
-In your start code, log it:
+* **Node:** `engines.node` in `package.json`, or `.nvmrc`.
+* **Python:** `.python-version`, `runtime.txt`, or `pyproject.toml`.
+* **Go:** the `go` directive in `go.mod`.
+* **Ruby:** `.ruby-version` or `Gemfile`.
 
-```javascript
-console.log("PORT from env:", process.env.PORT);
-console.log("Listening on port:", port);
-```
-
-These should match.
-
-### Pin language version
-
-If the build picks a version different from your local environment, results diverge. Pin explicitly via `engines` (Node), `.python-version` (Python), or `go.mod` (Go).
+The detect phase in the deployment logs shows which version Brimble actually picked.
 
 ## Still stuck
 

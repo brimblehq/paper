@@ -58,20 +58,6 @@ A few operations require step-up 2FA before running:
 
 The 2FA prompt allows 5 wrong attempts per challenge, then locks for a cooling-off period.
 
-## Rate limit headers
-
-When a request is rate-limited at the edge, the response includes:
-
-```
-HTTP/2 429
-X-RateLimit-Limit: 500
-X-RateLimit-Remaining: 0
-X-RateLimit-Reset: 1715168400
-Retry-After: 247
-```
-
-`X-RateLimit-Reset` is a Unix timestamp; `Retry-After` is seconds until you can retry.
-
 ## Higher limits
 
 For workloads that need more than the default public traffic limit (high-traffic public APIs, large file ingest, etc.), contact support. Custom rate limit policies, custom body size limits, and per-project carve-outs are available on Pro and Team plans.
