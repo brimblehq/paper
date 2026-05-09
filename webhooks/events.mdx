@@ -1,70 +1,46 @@
 ---
 title: "Webhook events reference"
-description: "Every event Brimble emits, with the exact payload type your endpoint receives."
+description: "Every event Brimble's webhook delivery sends, with the exact payload shape your endpoint receives."
 ---
 
-Every event Brimble emits, with the exact payload type your endpoint receives. To configure delivery, see [Webhooks](overview).
+To configure delivery, see [Webhooks](overview).
 
 ## Envelope
 
-Every webhook delivery is a `POST` with `Content-Type: application/json`. Every event uses the same envelope:
+Every webhook delivery is a `POST` with `Content-Type: application/json`. The body has this shape:
 
 ```typescript
 interface WebhookPayload<T> {
   event: WebhookEvent;
-  subscription_id?: string;   // ID of the Brimble subscription that owns the resource
-  data: T;                    // event-specific — see each event below
+  data: T;            // shape depends on the event, see below
 }
 ```
 
-There is no top-level `timestamp`, `project`, or `team`. Resource information lives inside `data`.
-
-## Headers Brimble sends
-
-| Header | Value |
-|---|---|
-| `Content-Type` | `application/json` |
-| `X-Brimble-Webhook` | HMAC-SHA256 of the raw request body, hex-encoded. |
-| `X-Brimble-Test` | `true`, only present on test events. |
+There is no `subscription_id`, no `timestamp`, no `project` field at the top level. Resource information lives inside `data`.
 
 ## Common types
 
-These types are referenced from multiple events.
+These are referenced from multiple events.
 
 ```typescript
-// ISO 8601 strings, never Date objects on the wire
+type ID = string;
 type ISODate = string;
 
-enum ServiceType {
-  WebService = "web-service",
-  Static = "static",
-  Worker = "worker",
-  Database = "database",
-  Mcp = "mcp"
-}
+type ServiceType = "web-service" | "static" | "worker" | "database" | "mcp";
 
-enum ProjectStatus {
-  Pending = "PENDING",
-  InProgress = "INPROGRESS",
-  Active = "ACTIVE",
-  Failed = "FAILED",
-  Cancelled = "CANCELLED",
-  Inactive = "INACTIVE",
-  Degraded = "DEGRADED",
-  Payment = "PAYMENT"
-}
+type ProjectStatus =
+  | "PENDING"
+  | "INPROGRESS"
+  | "ACTIVE"
+  | "FAILED"
+  | "CANCELLED"
+  | "INACTIVE"
+  | "DEGRADED"
+  | "PAYMENT";
 
-enum Environment {
-  Production = "PRODUCTION",
-  Preview = "PREVIEW"
-}
+type Environment = "PRODUCTION" | "PREVIEW";
 
-enum GitType {
-  GitHub = "github",
-  GitLab = "gitlab",
-  Bitbucket = "bitbucket",
-  Docker = "docker"
-}
+type GitType = "github" | "gitlab" | "bitbucket" | "docker";
 
 interface Repo {
   name: string;
@@ -75,374 +51,242 @@ interface Repo {
   git: GitType;
 }
 
-interface Specs {
-  memory: number;     // MB
-  cpu: number;        // vCPU (fractional)
-  storage: number;    // MB
-  region: string;
+interface Compute {
+  cpu: number;          // vCPU (fractional)
+  memory: number;       // GB
+  storage: number;      // GB
 }
 
-interface Committer {
+interface Region {
+  id: ID;
   name: string;
-  email: string;
-  username: string;
+  continent: string;
 }
 ```
 
-## Project payload type
+## Deployment events
 
-`IProject` is shared by `project.created`, `project.updated`, `project.deleted`, and `deployment.started`.
-
-```typescript
-interface ProjectPayload {
-  id: string;
-  name: string;
-  uuid: number;                       // numeric project ID, stable across renames
-  serviceType?: ServiceType;
-  framework: string;
-  status: ProjectStatus;
-  description: string;
-
-  // Build configuration
-  installCommand: string;
-  buildCommand: string;
-  startCommand: string;
-  preStartCommand?: string;
-  outputDirectory: string;
-  rootDir?: string;
-  watchPaths: string[];
-  buildCacheEnabled?: boolean;
-  healthCheckPath?: string;
-
-  // Source
-  repo: Repo | null;
-
-  // Compute
-  specs: Specs;
-  diskSize?: number;                  // GB, when a persistent disk is attached
-  autoscaling_group?: string;         // ID of the attached scaling group, if any
-
-  // Operational state
-  maintenance: boolean;
-  disabled: boolean;
-  isPaused: boolean;
-
-  // Ownership and references
-  user_id: string;
-  team: string;
-  domains: string[];                  // attached domain IDs
-
-  createdAt: ISODate;
-  updatedAt: ISODate;
-}
-```
-
-The payload mirrors Brimble's project document, so additional fields may be present in practice. Only the fields above are part of the public webhook contract; treat anything not listed as undocumented and unstable.
-
-## Log payload type
-
-Used by `deployment.success` and `deployment.failed`.
+Sent for `deployment.success` and `deployment.failed`.
 
 ```typescript
-interface LogPayload {
-  id: string;
-  name: string;            // branch name
-  key: string;             // unique deployment key
-  status: ProjectStatus;   // ACTIVE on success, FAILED on failure
-
-  commit: {
-    sha: string;
-    branch: string;
-    message: string;
-    committer: Committer;
+{
+  event: "deployment.success" | "deployment.failed";
+  data: {
+    name: string;            // branch name
+    status: ProjectStatus;
+    user_id: ID;
+    project_id: ID;
+    team_id: ID | null;
+    type: ServiceType;
+    git: Repo | null;
+    compute: Compute;
+    message: string;         // commit message
   };
+}
+```
 
-  project: string;
-  user?: string;
-  team?: string;
-  preview?: string;       // set for PR-triggered preview deploys
-  environment: Environment;
+## Project events
 
-  jobs: Array<{
-    id: number;
+Sent for `project.created`, `project.updated`, and `project.deleted`.
+
+```typescript
+{
+  event: "project.created" | "project.updated" | "project.deleted";
+  data: {
     name: string;
-  }>;
-
-  startTime: ISODate;
-  endTime: ISODate;
-  createdAt: ISODate;
-  updatedAt: ISODate;
-  deleted: boolean;
-}
-```
-
-## Domain payload type
-
-Used by `domain.created`, `domain.purchased`, `domain.transfer_initiated`, and (with extra merged fields) `domain.renewed` and `domain.renewal_failed`.
-
-```typescript
-interface DomainPayload {
-  id: string;
-  name: string;
-  project: string;
-  user_id: string;
-  team_id?: string;
-  primary: boolean;
-
-  provider: string;                    // domain registrar identifier
-  purchased: boolean;
-  auto_renewal: boolean;
-  renewal_duration: number;            // years
-  renewal_date: string;                // ISO date string
-  renewal_price: number;
-  privacy_enabled: boolean;
-
-  nameservers: string[];
-  dns: string[];                       // attached DNS record IDs
-  is_pending_verification: boolean;
-
-  redirect?: {
-    url: string;
-    status?: 301 | 302 | 307 | 308;
-  };
-
-  createdAt: ISODate;
-  updatedAt: ISODate;
-}
-```
-
-As with the project payload, additional internal fields may appear on the wire. Only the fields above are part of the public contract.
-
-For `domain.renewed`, the payload merges in the new expiry:
-
-```typescript
-interface DomainRenewedPayload extends DomainPayload {
-  renewal_date: string;     // updated to the new expiry
-  auto_renewal: boolean;    // current auto-renewal setting
-}
-```
-
-For `domain.transfer_failed` and `domain.transfer_out_completed`, only the domain name is sent:
-
-```typescript
-interface DomainTransferLitePayload {
-  domain_name: string;
-}
-```
-
-## DNS payload type
-
-Used by `dns.record.created`, `dns.record.updated`, and `dns.record.deleted`.
-
-```typescript
-interface DnsPayload {
-  id: string;
-  name: string;             // host portion ("api", "@", "www")
-  type: string;             // "A" | "AAAA" | "CNAME" | "MX" | "NS" | "TXT" | "SPF"
-  value: string;            // the record's answer/value
-  ttl: number;              // seconds
-  domain: string;         // parent domain ID
-  isProxied?: boolean;      // only meaningful for A and CNAME
-  createdAt: ISODate;
-  updatedAt: ISODate;
-}
-```
-
-## Environment variable payload type
-
-Used by `environment.variables.added`, `environment.variables.updated`, and `environment.variables.deleted`.
-
-```typescript
-interface EnvPayload {
-  id: string;
-  name: string;             // variable name (e.g. "DATABASE_URL")
-  value: string;            // see note below
-  project: string;
-  user: string;
-  environment: Environment | string;
-  is_system?: boolean;
-  createdAt: ISODate;
-  updatedAt: ISODate;
-}
-```
-
-**About `value`.** The variable's value is included in the payload. Brimble stores secrets in an encrypted secret store; the `value` field on the webhook payload is the encrypted form for variables that have been written through the secret store (the typical path), and may be plaintext for variables created in legacy flows. Treat the field as sensitive in either case, log handlers should never write `value` to disk or to a log aggregator.
-
-When a bulk import adds many variables in one operation, Brimble emits one `environment.variables.added` event per variable, not a single batched event.
-
-## Autoscaling group payload type
-
-Used by `autoscaling.group.created`, `autoscaling.group.updated`, and `autoscaling.group.deleted`.
-
-```typescript
-interface AutoScalingGroupPayload {
-  id: string;
-  name: string;
-  user_id?: string;
-  team_id?: string;
-  subscription_id: string;
-
-  min_containers: number;
-  max_containers: number;
-  replicas: number;          // current count managed by Brimble
-  max_cpu: number;
-  max_memory: number;        // MB
-  active: boolean;
-
-  meta: Record<string, any>;
-  createdAt: ISODate;
-  updatedAt: ISODate;
-}
-```
-
-## Subscription payload type
-
-Used by every `subscription.*` event.
-
-```typescript
-interface SubscriptionEventData {
-  subscription: {
-    id: string;
-    stripe_id: string;
-    stripe_status: string;          // "active" | "past_due" | "unpaid" | ...
-    plan_type: string;              // "free-plan" | "hacker-plan" | ...
-    type: string;                   // subscription "name" — usually "default"
-    ends_at?: ISODate;              // present on subscription.canceled
-    previous_plan?: string;         // present on subscription.upgraded
-    current_plan?: string;          // present on subscription.upgraded
-    previous_price?: string;        // present on subscription.downgraded
-  };
-  user: {
-    id: string;
-    email: string;
-  };
-  team: {
-    id: string;
-  } | null;                         // null for personal subscriptions
-
-  cancellation_reason?: string | null;   // subscription.canceled
-  failure_reason?: string | null;        // subscription.renewal_failed
-  invoice?: {                            // subscription.renewed, subscription.renewal_failed
-    stripe_invoice_id: string;
-    amount_paid?: number;
-    amount_due?: number;
-    currency?: string;
-    attempt_count?: number;
+    user_id: ID;
+    project_id: ID;
+    team_id: ID | null;
+    type: ServiceType;
+    region: Region;
+    git: Repo | null;
+    compute: Compute;
+    created_at: ISODate;
   };
 }
 ```
 
-## Payment payload type
+## Project domain updated
 
-Used by `payment.successful` and `payment.failed`.
+Sent for `project.domain.updated`.
 
 ```typescript
-interface PaymentEventData {
-  invoice: {
-    stripe_invoice_id: string;
-    amount_paid?: number;            // payment.successful
-    amount_due?: number;             // payment.failed
-    currency: string;                // "usd", "ngn", etc.
-    status: string;                  // "paid" | "open" | ...
-    paid?: boolean;                  // payment.successful
-    attempt_count?: number;          // payment.failed
+{
+  event: "project.domain.updated";
+  data: {
+    name: string;
+    user_id: ID;
+    project_id: ID;
+    team_id: ID | null;
+    domain: { new: string };
+    domain_id: ID;
+    updated_at: ISODate;
   };
-  user: {
-    id: string;
-    email: string;
-  };
-  subscription: {
-    id: string;
-    stripe_id: string;
-    plan_type: string;
-    stripe_status: string;
-  };
-  team: {
-    id: string;
-  } | null;
-
-  failure_reason?: string | null;    // payment.failed
 }
 ```
 
-## Event index
+## Domain events
 
-### Deployment events
+Sent for `domain.created`, `domain.purchased`, and `domain.renewed`.
 
-| Event | `data` type |
-|---|---|
-| `deployment.started` | `ProjectPayload` |
-| `deployment.success` | `LogPayload` (status === ACTIVE) |
-| `deployment.failed` | `LogPayload` (status === FAILED) |
+```typescript
+{
+  event: "domain.created" | "domain.purchased" | "domain.renewed";
+  data: {
+    domain: string;            // the domain name
+    domain_id: ID;
+    user_id: ID;
+    project_id: ID;
+    team_id: ID | null;
+    registrar: "Brimble Inc";
+    purchased: boolean;
+    price: number;             // renewal price
+    expires_at: ISODate;
+    purchased_at?: ISODate;    // present on domain.purchased
+    created_at?: ISODate;      // present on domain.created
+  };
+}
+```
 
-### Project events
+## DNS record events
 
-| Event | `data` type |
-|---|---|
-| `project.created` | `ProjectPayload` (also fires when a database project finishes provisioning) |
-| `project.updated` | `ProjectPayload` |
-| `project.deleted` | `ProjectPayload` |
+Sent for `dns.record.created`, `dns.record.updated`, and `dns.record.deleted`.
 
-### Domain events
+```typescript
+{
+  event: "dns.record.created" | "dns.record.updated" | "dns.record.deleted";
+  data: {
+    user_id: ID;
+    domain: string;            // parent domain name
+    domain_id: ID;
+    team_id: ID | null;
+    record: {
+      id: ID;
+      name: string;            // host portion
+      type: string;            // "A" | "AAAA" | "CNAME" | "MX" | "NS" | "TXT" | "SRV" | "CAA"
+      value: string;
+      ttl: number;             // seconds
+      isProxied?: boolean;
+    };
+    created_at?: ISODate;      // present on dns.record.created
+    updated_at?: ISODate;      // present on dns.record.updated
+  };
+}
+```
 
-| Event | `data` type |
-|---|---|
-| `domain.created` | `DomainPayload` |
-| `domain.purchased` | `DomainPayload` |
-| `domain.renewed` | `DomainRenewedPayload` |
-| `domain.renewal_failed` | `DomainPayload` |
-| `domain.transfer_initiated` | `DomainPayload` |
-| `domain.transfer_completed` | `DomainPayload` |
-| `domain.transfer_failed` | `DomainTransferLitePayload` |
-| `domain.transfer_out_completed` | `DomainTransferLitePayload` |
-| `project.domain.updated` | `DomainPayload` |
+## Environment variable events
 
-### Environment variable events
+Sent for `environment.variables.added`, `environment.variables.updated`, and `environment.variables.deleted`.
 
-| Event | `data` type |
-|---|---|
-| `environment.variables.added` | `EnvPayload` |
-| `environment.variables.updated` | `EnvPayload` |
-| `environment.variables.deleted` | `EnvPayload` |
+```typescript
+{
+  event: "environment.variables.added" | "environment.variables.updated" | "environment.variables.deleted";
+  data: {
+    user_id: ID;
+    project_id: ID;
+    team_id: ID | null;
+    environment: Environment | string;
+    variable: string;          // the variable name only — value is never sent
+    created_at?: ISODate;
+    updated_at?: ISODate;
+  };
+}
+```
 
-### DNS record events
+The variable's **value is not included** in the payload. Only the variable name. Webhook handlers can react to "this variable changed" without seeing the secret.
 
-| Event | `data` type |
-|---|---|
-| `dns.record.created` | `DnsPayload` |
-| `dns.record.updated` | `DnsPayload` |
-| `dns.record.deleted` | `DnsPayload` |
+## Autoscaling events
 
-### Autoscaling events
+Sent for `autoscaling.group.created`, `autoscaling.group.updated`, and `autoscaling.group.deleted`.
 
-| Event | `data` type |
-|---|---|
-| `autoscaling.group.created` | `AutoScalingGroupPayload` |
-| `autoscaling.group.updated` | `AutoScalingGroupPayload` |
-| `autoscaling.group.deleted` | `AutoScalingGroupPayload` |
+```typescript
+{
+  event: "autoscaling.group.created" | "autoscaling.group.updated" | "autoscaling.group.deleted";
+  data: {
+    name: string;
+    autoscaling_group_id: ID;
+    user_id: ID;
+    team_id: ID | null;
+    status: boolean;             // active flag
+    min_instances: number;
+    max_instances: number;
+    desired_instances: number;
+    scaling_policy: {
+      cpu_threshold: number;
+      memory_threshold: number;
+    };
+    created_at?: ISODate;
+    updated_at?: ISODate;
+  };
+}
+```
 
-### Subscription events
+## Subscription events
 
-| Event | `data` type |
-|---|---|
-| `subscription.created` | `SubscriptionEventData` |
-| `subscription.upgraded` | `SubscriptionEventData` |
-| `subscription.downgraded` | `SubscriptionEventData` |
-| `subscription.renewed` | `SubscriptionEventData` |
-| `subscription.renewal_failed` | `SubscriptionEventData` |
-| `subscription.past_due` | `SubscriptionEventData` |
-| `subscription.unpaid` | `SubscriptionEventData` |
-| `subscription.paused` | `SubscriptionEventData` |
-| `subscription.reactivated` | `SubscriptionEventData` |
-| `subscription.canceled` | `SubscriptionEventData` |
-| `subscription.incomplete_expired` | `SubscriptionEventData` |
+Sent for `subscription.created`, `subscription.upgraded`, `subscription.downgraded`, `subscription.renewed`, `subscription.renewal_failed`, `subscription.past_due`, `subscription.unpaid`, `subscription.paused`, `subscription.reactivated`, `subscription.canceled`, and `subscription.incomplete_expired`.
 
-### Payment events
+```typescript
+{
+  event: `subscription.${string}`;
+  data: {
+    subscription: {
+      id: ID;
+      stripe_id: string;
+      stripe_status: string;            // "active" | "past_due" | "unpaid" | ...
+      plan_type: string;                // "free-plan" | "hacker-plan" | ...
+      type: string;                     // subscription "name", usually "default"
+      ends_at?: ISODate;                // on subscription.canceled
+      previous_plan?: string;           // on subscription.upgraded
+      current_plan?: string;            // on subscription.upgraded
+      previous_price?: string;          // on subscription.downgraded
+    };
+    user: {
+      id: ID;
+      email: string;
+    };
+    team: { id: ID } | null;            // null for personal subscriptions
+    cancellation_reason?: string | null;
+    failure_reason?: string | null;
+    invoice?: {
+      stripe_invoice_id: string;
+      amount_paid?: number;
+      amount_due?: number;
+      currency?: string;
+      attempt_count?: number;
+    };
+  };
+}
+```
 
-| Event | `data` type |
-|---|---|
-| `payment.successful` | `PaymentEventData` |
-| `payment.failed` | `PaymentEventData` |
+## Payment events
+
+Sent for `payment.successful` and `payment.failed`.
+
+```typescript
+{
+  event: "payment.successful" | "payment.failed";
+  data: {
+    invoice: {
+      stripe_invoice_id: string;
+      amount_paid?: number;          // payment.successful
+      amount_due?: number;           // payment.failed
+      currency: string;              // "usd", "ngn", etc.
+      status: string;                // "paid" | "open" | ...
+      paid?: boolean;                // payment.successful
+      attempt_count?: number;        // payment.failed
+    };
+    user: { id: ID; email: string };
+    subscription: {
+      id: ID;
+      stripe_id: string;
+      plan_type: string;
+      stripe_status: string;
+    };
+    team: { id: ID } | null;
+    failure_reason?: string | null;  // payment.failed
+  };
+}
+```
 
 ## Subscribing
 
@@ -450,6 +294,6 @@ Pass the events you want when configuring a webhook, or `["*"]` to receive every
 
 ## Delivery model
 
-- **At-least-once.** A delivery may be retried after a failed response. Make handlers idempotent, keying on `data.id` plus `event` works for most resources.
-- **Order is not guaranteed.** Two events from the same project can arrive out of order. Use `createdAt` / `updatedAt` / `startTime` / `endTime` from `data` to reconcile.
-- **Best-effort.** After repeated delivery failures, a single delivery is dropped. Your webhook itself stays enabled and continues to receive subsequent events.
+* **At-least-once.** A delivery may be retried after a failed response. Make handlers idempotent. Keying on `data.project_id` (or `data.domain_id`, etc.) plus `event` plus the relevant timestamp works for most resources.
+* **Order is not guaranteed.** Two events from the same project can arrive out of order. Use `created_at` / `updated_at` from `data` to reconcile.
+* **Best-effort.** After repeated delivery failures, a single delivery is dropped. Your webhook itself stays enabled and continues to receive subsequent events.
