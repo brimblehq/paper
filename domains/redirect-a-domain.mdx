@@ -64,7 +64,7 @@ After clearing, the domain falls back to whichever project is attached to it, or
 dig your-domain.com +short
 ```
 
-Expected: an A record pointing to Brimble's edge or a CNAME to `gateway.brimble.app`. If DNS points elsewhere, traffic never reaches Brimble's edge and the redirect can't run.
+Expected: an A record at `157.90.225.125`, an ALIAS/flattened CNAME, or a CNAME to `gateway.brimble.app`. If DNS points elsewhere, traffic never reaches Brimble's edge and the redirect can't run.
 
 **Browser shows the destination but the URL bar shows my domain.** That's a frame, not a redirect. Brimble doesn't do frame-based redirects, only HTTP-status redirects with a `Location` header. If you see the URL stay the same, something else is in front (a browser extension, a proxy, a cached service worker).
 

@@ -106,6 +106,10 @@ When you create a project, you pick CPU and memory from sliders. Available sizes
 
 The smallest size you can pick (0.5 of each) is **higher** than what's included on Free and matches what's included on Hacker. So a Free-plan project at 0.5 vCPU / 0.5 GB pays metered overage on the 0.25 above its plan default for both. To stay fully inside Free's included compute, you'd need to provision below the slider's smallest stop, which the dashboard doesn't currently expose.
 
+<Warning>
+  **Free-plan projects can quietly meter overage.** Because the smallest slider stop (0.5 vCPU / 0.5 GB) is double the Free-plan baseline (0.25 / 0.25), every Free-plan project provisioned at the slider's minimum is paying metered compute on the 0.25-unit gap. Watch **Billing → Usage** if you didn't expect a charge.
+</Warning>
+
 Database projects on Free are capped at 0.1 vCPU / 0.25 GB memory / 10 GB storage. The sliders are locked to those values; you can't pick a higher tier on Free for databases. Other plans get the full slider range for databases.
 
 ### How metering actually works
@@ -120,7 +124,9 @@ The dashboard's **Billing → Usage** view shows the running cost for the curren
 
 Persistent disks are billed by the GB-month at $0.25/GB at the base rate. Some regions carry a small multiplier; the actual monthly cost for each disk size is shown in the dropdown when you provision a disk.
 
-The **Persistent disk max** in the plan tables is the largest disk you can provision on that plan. It's not "GB included free." Persistent disks meter from the first GB.
+<Note>
+  **Persistent disks meter from the first GB.** The **Persistent disk max** column in the plan tables is the largest disk you can provision, not GB included free. There is no free disk allowance on any plan, every GB of attached disk is billed at $0.25/GB-month.
+</Note>
 
 ### Bandwidth
 
@@ -135,7 +141,11 @@ Each plan includes a monthly build-minute allowance. A build minute is wall-cloc
 When you exhaust the allowance:
 
 * **Free plan:** new builds queue indefinitely until the cycle resets.
-* **Paid plans:** overage bills at $0.002/min and rolls into the next invoice. You can also top up with credits that never expire, see [Build minutes](build-minutes).
+* **Paid plans:** overage bills at $0.002/min and rolls into the next invoice. You can also top up with credits, see [Build minutes](build-minutes).
+
+<Tip>
+  **Top-up credits never expire.** Unlike monthly build-minute allowance, top-up credits roll over indefinitely until you use them. Buying ahead of a busy push week is safe.
+</Tip>
 
 ## Cycles, prorating, and changes
 
@@ -143,6 +153,10 @@ When you exhaust the allowance:
 * **Upgrades.** Take effect immediately. The new plan and new features apply right away. You're not charged extra immediately; the new price kicks in on the next billing date. Compute meters keep accumulating against your usage, billed at cycle end.
 * **Downgrades.** Don't take effect immediately. The current plan and features stay until the end of the current cycle. After the cycle, the lower limits apply. If you have more projects than the new plan allows, they aren't deleted; you keep them but can't create new ones over the limit.
 * **Compute scaling within a cycle.** Resource changes (scaling up CPU, adding a disk, switching regions) are tracked as separate segments. You're billed for the time at each configuration, not whichever was in effect at the end of the month.
+
+<Warning>
+  **Downgrades are not refunded.** If you downgrade mid-cycle, you keep the higher plan's features until the cycle ends, but you don't get a partial refund of the difference. Time the change near the end of the cycle if money matters.
+</Warning>
 
 ## Payment retries
 
@@ -152,6 +166,10 @@ When a charge fails, Brimble doesn't run its own retry schedule, **Stripe Smart 
 2. **Three or more failed attempts.** Builds are disabled for the workspace. Existing deployments keep serving traffic. You'll get an additional in-app message that builds were disabled because of repeated payment failures.
 3. **Stripe exhausts its retry attempts.** The subscription moves to `unpaid` and **projects are suspended**. Brimble emits a `subscription.unpaid` webhook and shows a banner asking you to settle the open invoice. The full window (typically up to 4 weeks, exact length is whatever you have configured on the Stripe side) is governed by Stripe.
 4. **Thirty days after going unpaid.** Brimble cancels the subscription with reason `stale_unpaid_30_days`. The workspace drops to the Free plan. Projects above the Free plan limits stay in place but you can't create new ones over the limit.
+
+<Warning>
+  **Projects are suspended once Stripe stops retrying.** Once your subscription is `unpaid`, all projects in the workspace stop serving traffic until you settle the open invoice. After 30 days unpaid, the subscription is canceled outright. Keep a working card on file.
+</Warning>
 
 To recover, open **Billing → Invoices**, click the open invoice, and pay it (or update the payment method first under **Billing → Payment methods**). As soon as the invoice settles, the subscription leaves `unpaid`, projects come back online, and builds re-enable.
 
@@ -219,9 +237,17 @@ When pricing changes, current customers are notified via email and dashboard ban
 
 **Does Brimble add a markup on domain purchases?** Yes. The displayed price for a domain is the registrar's price plus a percentage charge from Brimble. The price you see in the buy flow is the final price you pay. Bringing an existing domain you already own (instead of buying through Brimble) doesn't trigger the markup, since you're not buying anything.
 
+<Note>
+  **Bring-your-own-domain is free.** If you already own a domain at another registrar, attaching it to a Brimble project costs nothing. The markup only applies to domains you purchase or transfer in through Brimble.
+</Note>
+
 **Are there startup credits or promo codes?** The workspace-creation flow has a **Startup Promo Code** field, enter and verify the code before creating the workspace.
 
 **What happens if I exhaust bandwidth mid-cycle?** On paid plans, you're billed $0.25/GB for everything above the included amount. On the free plan, projects start returning 503 once you've used your included amount, until the cycle resets.
+
+<Warning>
+  **Free-plan projects auto-pause after 30 minutes of inactivity.** A request after that wakes the project, but the first request takes a cold-start hit (a few seconds for most stacks). Team and paid-plan projects are never idled this way. If you're hosting something a user might hit at any time, put it on Hacker or Pro.
+</Warning>
 
 **Are free-plan projects ever idled?** Yes. Free-plan, non-team projects that haven't received a request in 30 minutes are auto-paused. The next incoming request unpauses the project automatically. Team and paid-plan projects are not idled this way.
 

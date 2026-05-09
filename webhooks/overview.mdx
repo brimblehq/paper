@@ -100,6 +100,10 @@ You can configure all three URLs at once. The same event delivers to each indepe
 * **Best-effort delivery.** After repeated failures, a delivery is dropped. Your webhook stays enabled and continues to receive future events.
 * **No automatic disable.** If your endpoint has been broken for hours, deliveries are dropped, but new events keep being attempted.
 
+<Warning>
+  **Always return `200` quickly, then process asynchronously.** Returning a non-2xx status, or taking too long to respond, triggers retries and surfaces as duplicate deliveries. Acknowledge first, queue the work, then run downstream calls outside the request handler.
+</Warning>
+
 ## Test a webhook
 
 Click **Send test event** on the webhook in the dashboard. The dashboard fires a synthetic event of the type you pick at the URL you've configured. Test events use the same envelope as real events.

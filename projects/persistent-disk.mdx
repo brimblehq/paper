@@ -5,6 +5,10 @@ description: "Attach durable storage to a project so files survive restarts and 
 
 Attach durable storage to a project so files survive restarts and redeployments. Without a persistent disk, anything your service writes to the filesystem is lost on every redeploy. The new container starts from a fresh image.
 
+<Warning>
+  **Files written outside the mount path don't persist.** Only writes under the configured mount (e.g. `/data`) survive. Anything your service writes elsewhere, the working directory, `/tmp`, the home directory, is gone the moment the container restarts.
+</Warning>
+
 Use a persistent disk for:
 
 * SQLite databases (small apps, single-instance).

@@ -81,6 +81,10 @@ const apiBase = `http://project-b.service.brimble.internal`;
 const res = await fetch(`${apiBase}/v1/items`);
 ```
 
+<Warning>
+  **Use `http://`, not `https://`, for internal hostnames.** The internal network is already encrypted at the WireGuard layer, so there's no TLS termination on `*.service.brimble.internal`. A client that tries `https://` will fail to handshake.
+</Warning>
+
 A few things to know:
 
 - The connection is **HTTP, not HTTPS**. There's no TLS on the internal hostname; the underlying network is already encrypted (see [How it's built](#how-its-built)). Don't try to negotiate TLS to an internal hostname; you'll fail to connect.

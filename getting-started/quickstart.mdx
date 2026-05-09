@@ -37,6 +37,10 @@ Brimble auto-detects most frameworks. Review the detected settings or override t
 | **Region** | The datacenter where your project runs. Pick one near your users. |
 | **Compute size** | Memory and CPU. Start small, you can scale later. |
 
+<Warning>
+  **Read `PORT` from the environment and bind to `0.0.0.0`.** Brimble assigns the port at runtime, so a hardcoded port returns 502. Binding to `localhost` or `127.0.0.1` returns 502 too, the gateway can't reach a loopback-only listener.
+</Warning>
+
 Your app must read its HTTP port from the `PORT` environment variable. Brimble assigns the port at runtime; if your server listens on a hardcoded port, requests will fail with a 502.
 
 ## Step 3: Deploy

@@ -36,9 +36,15 @@ Use this for any subdomain like `app.example.com`, `api.example.com`, or `www.ex
 
 ### Option B, A record (for apex domains)
 
-Most DNS providers don't allow CNAMEs at the root (`example.com`). For an apex, use the **A record** value shown in the dashboard.
+Most DNS providers don't allow CNAMEs at the root (`example.com`). For an apex, point an **A record** at Brimble's edge IP:
 
-If your DNS provider supports CNAME flattening or ALIAS records (Cloudflare, Route 53, DNSimple, and others), point an `ALIAS` or flattened `CNAME` at `gateway.brimble.app`, that's preferable to a hardcoded A record because it tracks edge IP changes automatically.
+| Type | Name | Value |
+|------|------|----------------|
+| A    | `@`  | `157.90.225.125` |
+
+`@` is the standard placeholder for the apex; some providers use a blank name field or your domain itself instead, follow your provider's convention.
+
+If your DNS provider supports CNAME flattening or ALIAS records (Cloudflare, Route 53, DNSimple, and others), an `ALIAS` or flattened `CNAME` to `gateway.brimble.app` works too and is preferable when available, it tracks edge IP changes automatically.
 
 ## Step 3: Wait for verification
 
@@ -49,6 +55,10 @@ Once DNS propagates, Brimble:
 3. Marks the domain as **active** in the dashboard.
 
 Propagation usually takes a few minutes but can take up to 24 hours, depending on your DNS provider's TTL.
+
+<Warning>
+  **A `CAA` record can block Let's Encrypt.** If TLS issuance gets stuck and you have a `CAA` record at the apex, it must list `letsencrypt.org`, otherwise the cert never issues. Check with `dig your-domain.com CAA +short` and add `letsencrypt.org` or remove the record entirely.
+</Warning>
 
 ## Troubleshooting
 
