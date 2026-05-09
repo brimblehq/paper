@@ -18,10 +18,12 @@ There are four plans. Free, Hacker, and Pro are personal plans, one per user. Te
 | - | ---- | ------ | --- |
 | Base price | $0/mo | $5/mo | $15/mo |
 | Projects | 3 | 10 | Unlimited |
+| **CPU included per project** | 0.25 vCPU | 0.5 vCPU | 1 vCPU |
+| **Memory included per project** | 0.25 GB | 0.5 GB | 1 GB |
 | Build minutes/mo | 100 | 400 | 1,000 |
 | Concurrent builds | 1 | 1 | 3 |
 | Bandwidth/mo | 10 GB | 100 GB | 400 GB |
-| Storage included | 1 GB | 5 GB | 20 GB |
+| Persistent disk max | 1 GB | 5 GB | 20 GB |
 | Log retention | 1 day | 7 days | 14 days |
 | Custom domain | No | Yes | Yes |
 | Webhooks | No | No | Yes |
@@ -33,6 +35,8 @@ There are four plans. Free, Hacker, and Pro are personal plans, one per user. Te
 | Database memory max | 0.25 GB | Unlimited | Unlimited |
 | Database storage max | 10 GB | Unlimited | Unlimited |
 | Support | Community | Email | Priority |
+
+The **CPU included** and **Memory included** rows are the per-project compute baseline; you only pay metered overage above these amounts. See [Compute metering](#compute-metering) below.
 
 ### Team plan
 
@@ -49,10 +53,12 @@ Team specs:
 | | Team |
 | - | ---- |
 | Projects | Unlimited |
+| **CPU included per project** | 1 vCPU |
+| **Memory included per project** | 1 GB |
 | Build minutes/mo | 2,000 |
 | Concurrent builds | 5 default, configurable |
 | Bandwidth/mo | 1,000 GB |
-| Storage included | 50 GB |
+| Persistent disk max | 50 GB |
 | Log retention | 30 days |
 | Custom domain | Yes |
 | Webhooks | Yes |
@@ -76,15 +82,28 @@ The dashboard says **Pro**; the API and webhooks say `DEVELOPER_PLAN`. They're t
 
 ## Compute metering
 
-Plans include a baseline of CPU and memory at no extra charge. Anything you provision above that baseline is metered.
+Each plan includes a per-project baseline of CPU and memory at no extra charge (see the **CPU included** and **Memory included** rows in the plan tables). Anything you provision above that baseline is metered.
 
-| Resource | Plan default included | Overage rate |
-| -------- | --------------------- | ------------ |
-| CPU | Free 0.25, Hacker 0.5, Pro 1, Team 1 (vCPU equivalents) | $4 / GB-month above default |
-| Memory | Free 0.25, Hacker 0.5, Pro 1, Team 1 (GB) | $4 / GB-month above default |
-| Persistent storage | None included for persistent disks | $0.25 / GB-month |
-| Bandwidth | Per the table above | $0.25 / GB above plan |
-| Build minutes | Per the table above | $0.002 / min above plan |
+| Resource | Overage rate |
+| -------- | ------------ |
+| CPU above plan default | $4 / GB-month |
+| Memory above plan default | $4 / GB-month |
+| Persistent storage | $0.25 / GB-month (no plan default) |
+| Bandwidth above plan | $0.25 / GB |
+| Build minutes above plan | $0.002 / min |
+
+### Choosing a compute size
+
+When you create a project, you pick CPU and memory from sliders. Available sizes:
+
+| Resource | Available sizes |
+| -------- | --------------- |
+| CPU | 0.5, 1, 2, 4, 8 vCPU |
+| Memory | 0.5, 1, 1.5, 2, 4, 8, 12, 16 GB |
+
+The smallest size you can pick (0.5 of each) is **higher** than what's included on Free and matches what's included on Hacker. So a Free-plan project at 0.5 vCPU / 0.5 GB pays metered overage on the 0.25 above its plan default for both. To stay fully inside Free's included compute, you'd need to provision below the slider's smallest stop, which the dashboard doesn't currently expose.
+
+Database projects on Free are capped at 0.1 vCPU / 0.25 GB memory / 10 GB storage. The sliders are locked to those values; you can't pick a higher tier on Free for databases. Other plans get the full slider range for databases.
 
 ### How metering actually works
 
@@ -98,7 +117,7 @@ The dashboard's **Billing → Usage** view shows the running cost for the curren
 
 Persistent disks are billed by the GB-month at $0.25/GB at the base rate. Some regions carry a small multiplier; the actual monthly cost for each disk size is shown in the dropdown when you provision a disk.
 
-The `storage` quota in the plan table above is the **maximum disk size** you can provision on that plan. It's not "GB included free." Persistent disk storage meters from the first GB.
+The **Persistent disk max** in the plan tables is the largest disk you can provision on that plan. It's not "GB included free." Persistent disks meter from the first GB.
 
 ### Bandwidth
 

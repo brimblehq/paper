@@ -15,7 +15,6 @@ This site is for developers using Brimble. If you're new, start with the quickst
 | Surface | URL |
 |---------|-----|
 | Dashboard | `https://app.brimble.io` |
-| API | `https://api.brimble.io` |
 | Status | `https://status.brimble.io` |
 | Default project domain | `https://<project-name>.brimble.app` |
 
