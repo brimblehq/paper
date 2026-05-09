@@ -146,13 +146,14 @@ When you exhaust the allowance:
 
 ## Payment retries
 
-Brimble retries failed charges automatically. The escalation:
+When a charge fails, Brimble doesn't run its own retry schedule, **Stripe Smart Retries** drives the retry cadence. Stripe picks the retry times based on its own machine-learning signals, so the exact gap between attempts varies, but the user-visible escalation is:
 
-1. **Days 1 to 7 after a failed charge:** Brimble retries the card. Builds and runtime keep working.
-2. **After 7 days of failures:** new builds are disabled. Existing deployments keep serving.
-3. **After 14 days (or 14 attempts):** the subscription deactivates. Projects on it are paused.
+1. **First two failed attempts.** Stripe retries the card on its own schedule. Brimble emits a `payment.failed` webhook and an in-app warning on each failed attempt. Builds and runtime keep working.
+2. **Three or more failed attempts.** Builds are disabled for the workspace. Existing deployments keep serving traffic. You'll get an additional in-app message that builds were disabled because of repeated payment failures.
+3. **Stripe exhausts its retry attempts.** The subscription moves to `unpaid` and **projects are suspended**. Brimble emits a `subscription.unpaid` webhook and shows a banner asking you to settle the open invoice. The full window (typically up to 4 weeks, exact length is whatever you have configured on the Stripe side) is governed by Stripe.
+4. **Thirty days after going unpaid.** Brimble cancels the subscription with reason `stale_unpaid_30_days`. The workspace drops to the Free plan. Projects above the Free plan limits stay in place but you can't create new ones over the limit.
 
-To recover, add a working card under **Billing → Payment methods** and click **Retry**. Once payment goes through, builds and projects come back online.
+To recover, open **Billing → Invoices**, click the open invoice, and pay it (or update the payment method first under **Billing → Payment methods**). As soon as the invoice settles, the subscription leaves `unpaid`, projects come back online, and builds re-enable.
 
 You can hold up to three cards on file; one is the default. Cards are added through redirects to the payment provider's hosted form (Stripe in most regions, Paystack for African markets); Brimble never sees card numbers.
 

@@ -9,12 +9,13 @@ A **build** turns your source code into something Brimble can run. This page cov
 
 Brimble runs every build on its **remote builder fleet**, a pool of ephemeral build machines kept warm with a persistent layer cache. The fleet is separate from where your code eventually runs, and the machine that runs your build is fresh every time.
 
-Two things matter to you here:
+Three things matter to you here:
 
+* **Builders run in the same region as your project.** Brimble keeps builder pools in every region. When you trigger a deploy, the dispatcher picks a healthy, least-loaded builder from the pool in your project's region. That keeps the source code, the layer cache, and the destination host close together, so push and orchestrate phases don't pay a cross-region round-trip.
 * **Builders are ephemeral.** A build machine doesn't survive the build. State written to the local filesystem during a build is gone the moment the build ends.
 * **The cache is persistent.** Even though the machine is fresh, the layer cache attached to your project survives. The next build pulls cached layers from object storage and skips the work it already did.
 
-That combination means cold builds get a clean machine every time (no surprise state from previous runs) while warm builds reuse layers and finish in a fraction of the time.
+That combination, regional, ephemeral, persistent-cache, means cold builds get a clean machine every time (no surprise state from previous runs) while warm builds reuse layers and finish in a fraction of the time.
 
 ## The build pipeline
 
@@ -28,20 +29,21 @@ If your repo is private, the runner authenticates using the Git provider integra
 
 ### 2. Detect
 
-The runner inspects the repo to decide which **builder** to use:
+The runner inspects the repo to decide which **builder** to use. Brimble has two builders plus straight Docker, and which one runs depends on what's in the repo:
 
-* **A `Dockerfile` at the project root.** The runner uses your Dockerfile directly.
-* **A static-site framework** (Vite, Astro, Next.js export, Hugo, and similar). The runner uses the static builder, which produces a directory of files served from the edge.
-* **A backend stack** (Node, Python, Ruby, Go, Java, PHP, Rust, Elixir, and similar). The runner uses **Railpack** to detect the framework, install dependencies, and build a container image without you writing a Dockerfile.
-* **A Nix-based project** (a `flake.nix` or `default.nix`). The runner uses Nix to materialize the dependency closure.
+* **`Dockerfile` at the project root → Docker (BuildKit).** The runner uses your Dockerfile directly. You're in full control of the image; Brimble doesn't inspect or rewrite it.
+* **A backend stack (Node, Python, Ruby, Go, Java, PHP, Rust, Elixir, and similar) → [Railpack](https://railpack.com/).** The runner uses Railpack to detect the framework, materialize the toolchain, run install and build, and produce a runnable container image without you writing a Dockerfile. See [Frameworks supported](frameworks) for the full list of stacks Railpack handles.
+* **A static-site or frontend framework (Vite, Astro, Next.js export, Hugo, SvelteKit static, Remix static, Gatsby, Docusaurus, MkDocs, Eleventy, and similar) → Brimble's frontend builder.** This is a purpose-built builder for frontend apps. It runs your install and build commands, captures the output directory, and ships the assets to the edge. No container is produced for static sites; the artifact is plain files.
 
-The detected stack, version, and chosen builder are logged. If the auto-detection picks the wrong thing, override the build command, start command, or framework under **Configuration**.
+The detected stack, version, and chosen builder are logged at the top of the build output. If the auto-detection picks the wrong thing, override the framework, install command, build command, or start command under **Configuration**.
 
 ### 3. Inject secrets
 
-Before the install or build runs, the runner pulls your environment variables from Brimble's secret store and exposes them to the build environment. They're available to every command that runs from this point forward, including install scripts, build scripts, and your code.
+Before install or build runs, the runner pulls your environment variables from **Vault** and exposes them to the build environment. Brimble uses HashiCorp Vault as the secret store: every value you set under **Environment** is encrypted at rest, scoped to your project, and only readable by a build that has been issued a short-lived Vault token for that project. The dashboard, the API, and the runner never persist plaintext secrets to disk.
 
-Secrets you've set in the active environment (Production, Preview, etc.) are present.
+Once injected, the variables are available to every command that runs from this point forward, install scripts, build scripts, your code, and any pre-start command. Variables set in the active environment (Production, Preview, etc.) are the ones loaded.
+
+For BuildKit and Railpack builds, secrets are passed as build secrets (`--secret`), not as plain `--build-arg`, so they don't end up baked into image layers.
 
 ### 4. Install
 
@@ -57,36 +59,84 @@ For Railpack-based builds, Railpack assembles a base image, applies the language
 
 For static sites, this is the only phase that produces output; no container is built afterwards.
 
-### 6. Pre-start
-
-If you've set a **pre-start command** under **Configuration**, it runs once after the build, before the artifact is pushed. A common use is running database migrations against the production database before flipping traffic. The pre-start command runs in the build runner with the same environment variables as the build phase.
-
-If pre-start exits non-zero, the deployment fails. Traffic does not switch.
-
-### 7. Push
+### 6. Push
 
 The runner pushes the finished artifact (a container image, or a directory of static assets) to Brimble's internal storage. For container images, the runner pushes only the layers that don't already exist; unchanged base layers don't transfer.
 
 While the push happens, the new layers are added to the project's persistent cache so the next build can reuse them.
 
-### 8. Orchestrate
+### 7. Orchestrate
 
 The runner hands the artifact off to the orchestration layer, which schedules the container in your project's region. Brimble uses Nomad for scheduling and Consul for service discovery and health checking.
 
-The orchestration layer:
+For each deployment, the orchestration layer:
 
-* Allocates a slot on a host with capacity for your project's CPU, memory, and storage.
-* Pulls the image (or unpacks the static bundle).
-* Starts the container with your start command and the runtime environment variables.
-* Registers the service in Consul with health checks defined by your `healthCheckPath`.
+1. Allocates a slot on a host with capacity for your project's CPU, memory, and storage.
+2. Pulls the image (or unpacks the static bundle).
+3. **If you've set a pre-start command, runs it first** in a small Alpine task with your project's environment variables. The main task only starts if pre-start exits cleanly. See [Pre-start command](#pre-start-command) for the full behavior.
+4. Starts the main container with your start command and the runtime environment variables.
+5. Registers the service in Consul with health checks defined by your `healthCheckPath`.
 
-### 9. Health check
+### 8. Health check
 
 For web services, Brimble sends a GET to your `healthCheckPath` (default `/`). For workers, the check is process liveness. For static sites, no probe; the artifact is served directly from the edge.
 
 Once the check passes, the edge flips traffic to the new deployment. The previous deployment continues running for a short drain window so in-flight requests finish, then it's stopped.
 
 If the health check never passes, the deployment is marked **degraded** and traffic stays on the previous deployment. After repeated failures the deployment moves to **failed**.
+
+## Pre-start command
+
+A **pre-start command** is an optional one-shot script that runs after the artifact is pulled but before your main container starts. It's the right place for work that has to happen on every deploy and has to finish before the app accepts traffic, things like running database migrations, seeding a schema, warming a cache, or fetching a config blob from elsewhere.
+
+Configure it in two places:
+
+* **New project flow,** when you deploy from a Docker image, the **Pre-start command** field appears under **Runtime Settings**.
+* **Project Configuration tab,** the **PreStart command** field is available for any project regardless of source type (Git or Docker image).
+
+### Where it runs
+
+Pre-start runs as a Nomad lifecycle task with the `prestart` hook, in its own short-lived Alpine container scheduled on the same host as your main task. The command is invoked via `sh -c`, so you can chain it with `&&`, pipe it, or wrap it in any shell construct Alpine's `sh` understands.
+
+The pre-start task has:
+
+* **Your project's environment variables.** All Vault-backed secrets and plain env vars set under **Environment** are loaded the same way the main container loads them. So `DATABASE_URL`, `REDIS_URL`, etc. work exactly as they do in your app.
+* **Your volume mount,** if the project has one. Useful for seeding a persistent disk before the app reads from it.
+* **A small resource budget.** The pre-start task is capped at 128 MB of memory and a fraction of a vCPU regardless of your project's tier. It's meant for short bootstrap work, not heavy lifting.
+* **The same isolation as your main container** (gVisor in production, identical capability and ulimit posture).
+
+The pre-start task does **not** have your main container's image, your build artifacts, or anything you wrote during the build phase. If you need the migration tool from your image, install it inline in the pre-start command (for example, `apk add --no-cache postgresql-client && psql ...`) or run the migration through your app, not through pre-start.
+
+### When it succeeds and fails
+
+* **Exit 0:** Nomad starts your main container. Health checks proceed as usual.
+* **Non-zero exit:** Nomad marks the deployment failed. Your main container never starts and traffic stays on the previous deployment.
+
+The pre-start command's stdout and stderr are streamed into the deployment logs alongside your main task, so you can tail them while a deploy runs and see exactly what failed.
+
+### Examples
+
+```bash
+# Run database migrations before serving requests (Node + Prisma)
+npx prisma migrate deploy
+```
+
+```bash
+# Install a CLI in the pre-start container, then use it
+apk add --no-cache postgresql-client && \
+  psql "$DATABASE_URL" -c "SELECT 1"
+```
+
+```bash
+# Bootstrap a config file onto the persistent disk on first deploy
+[ -f /data/config.json ] || curl -sSL "$CONFIG_URL" -o /data/config.json
+```
+
+### When not to use pre-start
+
+* **Long-running setup.** Pre-start blocks the main container start. Anything that takes more than a minute or two will trip your deploy's start timeout. Move long work into a one-shot Brimble worker or a cron service instead.
+* **Build-time work.** If the work doesn't need production secrets or production network access, do it during the **Build** phase. Build output is cached; pre-start runs every deploy.
+* **State that should survive a deploy.** Pre-start runs every time. If you only want something to happen once per environment, gate it on a marker file on the persistent disk or on a row in your database.
 
 ## Build cache
 
