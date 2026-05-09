@@ -12,7 +12,7 @@ Every webhook delivery is a `POST` with `Content-Type: application/json`. Every 
 ```typescript
 interface WebhookPayload<T> {
   event: WebhookEvent;
-  subscription_id?: string;   // ObjectId of the Brimble subscription that owns the resource
+  subscription_id?: string;   // ID of the Brimble subscription that owns the resource
   data: T;                    // event-specific — see each event below
 }
 ```
@@ -32,9 +32,6 @@ There is no top-level `timestamp`, `project`, or `team`. Resource information li
 These types are referenced from multiple events.
 
 ```typescript
-// Mongo ObjectIds are always 24-char hex strings on the wire
-type ObjectId = string;
-
 // ISO 8601 strings, never Date objects on the wire
 type ISODate = string;
 
@@ -82,7 +79,7 @@ interface Specs {
   memory: number;     // MB
   cpu: number;        // vCPU (fractional)
   storage: number;    // MB
-  region: ObjectId;   // populated to a Region object on the wire
+  region: string;
 }
 
 interface Committer {
@@ -98,10 +95,9 @@ interface Committer {
 
 ```typescript
 interface ProjectPayload {
-  _id: ObjectId;
+  id: string;
   name: string;
-  uuid: number;
-  pid: number;
+  uuid: number;                       // numeric project ID, stable across renames
   serviceType?: ServiceType;
   framework: string;
   status: ProjectStatus;
@@ -118,68 +114,30 @@ interface ProjectPayload {
   buildCacheEnabled?: boolean;
   healthCheckPath?: string;
 
-  // Runtime
-  port: number;
-  ip: string;
-  dir: string;
-  tlsEnabled: boolean;
-  passwordEnabled: boolean;
-  authEnabled: boolean;
-  password: string | null;
-  isPrivate: boolean;
-  maintenance: boolean;
-  disabled: boolean;
-  isPaused: boolean;
-  isPaid: boolean;
-  billable: boolean;
-  hasUpdates?: boolean;
-
-  // Persistence
-  diskSize?: number;
-  volumeMount: string;
-  backupEnabled: boolean;
-  last_backup_url?: string;
-  last_backup_at?: ISODate;
-
   // Source
   repo: Repo | null;
-  user_id: ObjectId;
-  team: ObjectId;
 
   // Compute
   specs: Specs;
-  server: ObjectId;
-  nomadJobId: string;
-  deployedInCluster: boolean;
-  replica_ready: boolean;
-  replicas: number;
-  autoscaling_group?: ObjectId;
+  diskSize?: number;                  // GB, when a persistent disk is attached
+  autoscaling_group?: string;         // ID of the attached scaling group, if any
 
-  // Database-specific (when serviceType === Database)
-  dbImage?: ObjectId;
-  whiteListedIps?: string[];
+  // Operational state
+  maintenance: boolean;
+  disabled: boolean;
+  isPaused: boolean;
 
-  // Free-tier
-  free_tier_expires_at?: ISODate | null;
-  free_tier_expiry_notified_at?: ISODate | null;
-
-  // Misc
-  domains: ObjectId[];
-  monitor_id: string;
-  tracking_token: string;
-  from: string;
-  inherit_environment_vars: boolean;
-  screenshot: { image: string; public_id: string };
-  last_requested: ISODate;
-  lastProcessed: number;
-  container_stats_schedule_id: string | null;
+  // Ownership and references
+  user_id: string;
+  team: string;
+  domains: string[];                  // attached domain IDs
 
   createdAt: ISODate;
   updatedAt: ISODate;
 }
 ```
 
-`password`, `vaultPath`, and `vaultToken` are present in the database model but stripped from webhook payloads.
+The payload mirrors Brimble's project document, so additional fields may be present in practice. Only the fields above are part of the public webhook contract; treat anything not listed as undocumented and unstable.
 
 ## Log payload type
 
@@ -187,7 +145,7 @@ Used by `deployment.success` and `deployment.failed`.
 
 ```typescript
 interface LogPayload {
-  _id: ObjectId;
+  id: string;
   name: string;            // branch name
   key: string;             // unique deployment key
   status: ProjectStatus;   // ACTIVE on success, FAILED on failure
@@ -199,10 +157,10 @@ interface LogPayload {
     committer: Committer;
   };
 
-  project: ObjectId;
-  user?: ObjectId;
-  team?: ObjectId;
-  preview?: ObjectId;       // set for PR-triggered preview deploys
+  project: string;
+  user?: string;
+  team?: string;
+  preview?: string;       // set for PR-triggered preview deploys
   environment: Environment;
 
   jobs: Array<{
@@ -224,33 +182,23 @@ Used by `domain.created`, `domain.purchased`, `domain.transfer_initiated`, and (
 
 ```typescript
 interface DomainPayload {
-  _id: ObjectId;
+  id: string;
   name: string;
-  project: ObjectId;
-  user_id: ObjectId;
-  team_id?: ObjectId;
+  project: string;
+  user_id: string;
+  team_id?: string;
   primary: boolean;
-  preview?: ObjectId;
 
   provider: string;                    // domain registrar identifier
-  subscription: ObjectId;
-  cashier_subscription_id: string | null;
-
   purchased: boolean;
   auto_renewal: boolean;
   renewal_duration: number;            // years
   renewal_date: string;                // ISO date string
   renewal_price: number;
-  is_discounted: boolean;
   privacy_enabled: boolean;
 
-  job_identifier: string;
-  trigger_created: boolean;
-  trigger_created_at: string;
-
   nameservers: string[];
-  dns: ObjectId[];                     // referenced DNS record IDs
-
+  dns: string[];                       // attached DNS record IDs
   is_pending_verification: boolean;
 
   redirect?: {
@@ -258,11 +206,12 @@ interface DomainPayload {
     status?: 301 | 302 | 307 | 308;
   };
 
-  project_environment?: ObjectId;
   createdAt: ISODate;
   updatedAt: ISODate;
 }
 ```
+
+As with the project payload, additional internal fields may appear on the wire. Only the fields above are part of the public contract.
 
 For `domain.renewed`, the payload merges in the new expiry:
 
@@ -287,12 +236,12 @@ Used by `dns.record.created`, `dns.record.updated`, and `dns.record.deleted`.
 
 ```typescript
 interface DnsPayload {
-  _id: ObjectId;
+  id: string;
   name: string;             // host portion ("api", "@", "www")
   type: string;             // "A" | "AAAA" | "CNAME" | "MX" | "NS" | "TXT" | "SPF"
   value: string;            // the record's answer/value
   ttl: number;              // seconds
-  domain: ObjectId;         // parent domain ID
+  domain: string;         // parent domain ID
   isProxied?: boolean;      // only meaningful for A and CNAME
   createdAt: ISODate;
   updatedAt: ISODate;
@@ -305,11 +254,11 @@ Used by `environment.variables.added`, `environment.variables.updated`, and `env
 
 ```typescript
 interface EnvPayload {
-  _id: ObjectId;
+  id: string;
   name: string;             // variable name (e.g. "DATABASE_URL")
   value: string;            // see note below
-  project: ObjectId;
-  user: ObjectId;
+  project: string;
+  user: string;
   environment: Environment | string;
   is_system?: boolean;
   createdAt: ISODate;
@@ -327,11 +276,11 @@ Used by `autoscaling.group.created`, `autoscaling.group.updated`, and `autoscali
 
 ```typescript
 interface AutoScalingGroupPayload {
-  _id: ObjectId;
+  id: string;
   name: string;
-  user_id?: ObjectId;
-  team_id?: ObjectId;
-  subscription_id: ObjectId;
+  user_id?: string;
+  team_id?: string;
+  subscription_id: string;
 
   min_containers: number;
   max_containers: number;
@@ -353,7 +302,7 @@ Used by every `subscription.*` event.
 ```typescript
 interface SubscriptionEventData {
   subscription: {
-    id: ObjectId;
+    id: string;
     stripe_id: string;
     stripe_status: string;          // "active" | "past_due" | "unpaid" | ...
     plan_type: string;              // "free-plan" | "hacker-plan" | ...
@@ -364,11 +313,11 @@ interface SubscriptionEventData {
     previous_price?: string;        // present on subscription.downgraded
   };
   user: {
-    id: ObjectId;
+    id: string;
     email: string;
   };
   team: {
-    id: ObjectId;
+    id: string;
   } | null;                         // null for personal subscriptions
 
   cancellation_reason?: string | null;   // subscription.canceled
@@ -399,17 +348,17 @@ interface PaymentEventData {
     attempt_count?: number;          // payment.failed
   };
   user: {
-    id: ObjectId;
+    id: string;
     email: string;
   };
   subscription: {
-    id: ObjectId;
+    id: string;
     stripe_id: string;
     plan_type: string;
     stripe_status: string;
   };
   team: {
-    id: ObjectId;
+    id: string;
   } | null;
 
   failure_reason?: string | null;    // payment.failed
@@ -501,6 +450,6 @@ Pass the events you want when configuring a webhook, or `["*"]` to receive every
 
 ## Delivery model
 
-- **At-least-once.** A delivery may be retried after a failed response. Make handlers idempotent, keying on `data._id` plus `event` works for most resources.
+- **At-least-once.** A delivery may be retried after a failed response. Make handlers idempotent, keying on `data.id` plus `event` works for most resources.
 - **Order is not guaranteed.** Two events from the same project can arrive out of order. Use `createdAt` / `updatedAt` / `startTime` / `endTime` from `data` to reconcile.
 - **Best-effort.** After repeated delivery failures, a single delivery is dropped. Your webhook itself stays enabled and continues to receive subsequent events.

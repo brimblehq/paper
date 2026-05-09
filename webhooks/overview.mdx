@@ -65,7 +65,7 @@ X-Brimble-Test: true         ← only on test events
   "event": "deployment.success",
   "subscription_id": "65a1f4c2b8d9e7f3a2b1c0d4",
   "data": {
-    "_id": "65a2b3c4d5e6f7a8b9c0d1e2",
+    "id": "65a2b3c4d5e6f7a8b9c0d1e2",
     "status": "ACTIVE",
     "sha": "a1b2c3d4e5f6...",
     "branch": "main",
@@ -203,7 +203,7 @@ You can configure all three URLs at once. The same event delivers to each indepe
 
 ## Delivery semantics
 
-- **At-least-once.** A delivery may be retried if your endpoint fails or times out. Make your handler idempotent, keying on `data._id` + `event` works for most resources.
+- **At-least-once.** A delivery may be retried if your endpoint fails or times out. Make your handler idempotent, keying on `data.id` + `event` works for most resources.
 - **Order is not guaranteed.** Two events from the same project can arrive out of order. Use `createdAt`/`updatedAt`/`startTime`/`endTime` from `data` to reconcile.
 - **Best-effort delivery.** After repeated failures, a delivery is dropped, your webhook stays enabled and continues to receive future events.
 - **No webhook is automatically disabled** by Brimble. If your endpoint has been broken for hours, deliveries are dropped, but new events keep being attempted.
@@ -222,7 +222,7 @@ curl -X POST https://api.brimble.io/v1/webhooks/test \
     "payload": {
       "event": "deployment.success",
       "subscription_id": "65a1f4c2b8d9e7f3a2b1c0d4",
-      "data": { "_id": "test-deployment", "status": "ACTIVE" }
+      "data": { "id": "test-deployment", "status": "ACTIVE" }
     }
   }'
 ```
