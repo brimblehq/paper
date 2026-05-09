@@ -54,6 +54,7 @@
 ## Observability
 
 * [Project metrics](observability/metrics.md)
+* [Logs](observability/logs.md)
 
 ## Analytics
 

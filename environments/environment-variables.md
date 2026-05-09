@@ -82,62 +82,15 @@ DATABASE_URL={{@acme-pg-prod.CONNECTION_STRING}}
 
 See [Reference shared and cross-project variables](env-references.md) for the full syntax, scoping rules, and chaining behavior.
 
-## Use variables in your code
+## Build-time vs runtime
 
-Variables show up as standard process environment variables:
-
-```javascript
-// Node
-const dbUrl = process.env.DATABASE_URL;
-```
-
-```python
-# Python
-import os
-db_url = os.environ["DATABASE_URL"]
-```
-
-```go
-// Go
-import "os"
-dbUrl := os.Getenv("DATABASE_URL")
-```
-
-```ruby
-# Ruby
-db_url = ENV.fetch("DATABASE_URL")
-```
-
-## Use variables in build commands
-
-Variables are injected into the build runner too. Reference them in install scripts, build scripts, or `package.json`:
-
-```json
-{
-  "scripts": {
-    "build": "NODE_ENV=$NODE_ENV next build"
-  }
-}
-```
+Variables are injected into the build runner and into the running container. Anything you set is available during `install`, `build`, and `start` commands, and your code at runtime reads them like any other process environment variable.
 
 For private package registries, set the auth token as a variable and reference it in `.npmrc` or `pip.conf`:
 
 ```
 //registry.npmjs.org/:_authToken=${NPM_TOKEN}
 ```
-
-## Verification
-
-After redeploying, log a non-secret variable on startup:
-
-```javascript
-console.log("Boot config:", {
-  hasDb: !!process.env.DATABASE_URL,
-  region: process.env.BRIMBLE_REGION
-});
-```
-
-Don't log the value of a secret. Logs are visible to anyone with project access.
 
 ## Troubleshooting
 

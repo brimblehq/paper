@@ -1,103 +1,189 @@
 # Plans and pricing
 
-Brimble has four plans. Pick one based on how many projects you run, how much traffic you serve, and how many concurrent builds you need.
+Brimble pricing has three pieces:
 
-## Plan summary
+1. A **base plan price** you pay every month for the plan's features and included quotas.
+2. **Metered overage** for any compute, storage, or bandwidth above what your plan includes.
+3. Optional **build minute top-ups** when you burn through your monthly allowance.
 
-| Plan | Monthly | Projects | Bandwidth | Concurrent builds | Regions |
-|---|---|---|---|---|---|
-| **Free** | $0 | 5 | 10 GB | 0 (queued only) | Free regions |
-| **Hacker** | $7 | 10 | 30 GB | 1 | All |
-| **Pro** | $19 | 150 | 150 GB | 2 | All |
-| **Team** | Variable | 500 | 500 GB | Variable | All |
+There's no hidden line. Every charge above the base plan price is a unit price times an amount, and the dashboard shows what's included, what's metered, and what you've used.
 
-The team plan is metered per member ($5/member/month) plus per concurrent build ($7.50/build/month). A 5-person team needing 3 concurrent builds is $5 × 5 + $7.50 × 3 = $47.50/month.
+## Plans
 
-## What's included on every plan
+There are four plans. Free, Hacker, and Pro are personal plans, one per user. Team is a separate workspace plan with its own billing, sized by member count and concurrent builds.
 
-- Automatic HTTPS with Let's Encrypt for default and custom domains.
-- Git-triggered deploys.
-- Real-time logs.
-- Webhooks (Hacker and above).
-- Managed databases (provisioned separately, billed by size).
-- Custom domains.
-- Brimble's authoritative DNS for managed domains.
+### Personal plans
 
-## Compute and storage
+| | Free | Hacker | Pro |
+| - | ---- | ------ | --- |
+| Base price | $0/mo | $5/mo | $15/mo |
+| Projects | 3 | 10 | Unlimited |
+| Build minutes/mo | 100 | 400 | 1,000 |
+| Concurrent builds | 1 | 1 | 3 |
+| Bandwidth/mo | 10 GB | 100 GB | 400 GB |
+| Storage included | 1 GB | 5 GB | 20 GB |
+| Log retention | 1 day | 7 days | 14 days |
+| Custom domain | No | Yes | Yes |
+| Webhooks | No | No | Yes |
+| Autoscaling | No | No | Yes |
+| Web analytics | No | No | Yes |
+| PR previews | No | Yes | Yes |
+| Org Git deploy | No | Yes | Yes |
+| Database CPU max | 0.1 vCPU | Unlimited | Unlimited |
+| Database memory max | 0.25 GB | Unlimited | Unlimited |
+| Database storage max | 10 GB | Unlimited | Unlimited |
+| Support | Community | Email | Priority |
 
-CPU, memory, and storage are billed per project, on top of the plan price. Each plan includes a default amount; usage above the default is metered:
+### Team plan
+
+Team is dynamic. The base price comes from how the workspace is configured:
+
+```
+monthly = (members × $5) + (concurrent_builds × $8)
+```
+
+A 5-member workspace with 2 concurrent builds is `5 × $5 + 2 × $8 = $41/mo`. Adjust either lever and the cost recalculates. Both are editable from **Workspace settings → Billing**.
+
+Team specs:
+
+| | Team |
+| - | ---- |
+| Projects | Unlimited |
+| Build minutes/mo | 2,000 |
+| Concurrent builds | 5 default, configurable |
+| Bandwidth/mo | 1,000 GB |
+| Storage included | 50 GB |
+| Log retention | 30 days |
+| Custom domain | Yes |
+| Webhooks | Yes |
+| Autoscaling | Yes |
+| Web analytics | Yes |
+| PR previews | Yes |
+| Support | Dedicated |
+
+A user can be on a personal plan and be a member of one or more teams at the same time. Personal subscriptions and team subscriptions are billed independently.
+
+### Plan name mapping
+
+The dashboard says **Pro**; the API and webhooks say `DEVELOPER_PLAN`. They're the same thing.
+
+| Dashboard | API value |
+| --------- | --------- |
+| Free | `FREE_PLAN` |
+| Hacker | `HACKER_PLAN` |
+| Pro | `DEVELOPER_PLAN` |
+| Team | `TEAM_PLAN` |
+
+## Compute metering
+
+Plans include a baseline of CPU and memory at no extra charge. Anything you provision above that baseline is metered.
 
 | Resource | Plan default included | Overage rate |
-|---|---|---|
-| **CPU** | Plan-specific | $4 / GB-month |
-| **Memory** | Plan-specific | $4 / GB-month |
-| **Storage** | None included | $0.25 / GB-month |
-| **Bandwidth** | Plan limit | $0.25 / GB |
-| **Build minutes** | Plan limit | $0.002 / minute |
+| -------- | --------------------- | ------------ |
+| CPU | Free 0.25, Hacker 0.5, Pro 1, Team 1 (vCPU equivalents) | $4 / GB-month above default |
+| Memory | Free 0.25, Hacker 0.5, Pro 1, Team 1 (GB) | $4 / GB-month above default |
+| Persistent storage | None included for persistent disks | $0.25 / GB-month |
+| Bandwidth | Per the table above | $0.25 / GB above plan |
+| Build minutes | Per the table above | $0.002 / min above plan |
 
-Storage is always metered, no included amount on any plan. CPU and memory are included up to a plan-specific cap, then billed.
+### How metering actually works
 
-## Free plan limits
+Compute is billed by the **GB-hour**. Brimble tracks a project's resources as a sequence of segments, each with a start time, an end time, and the resources allocated during that segment. Two examples:
 
-The free plan has hard limits that don't overflow:
+**A web service running at 0.5 GB CPU and 1 GB memory on the Hacker plan, all month.** Hacker default is 0.5 GB CPU and 0.5 GB memory.
 
-- **5 projects max.** Trying to create a 6th prompts an upgrade.
-- **10 GB bandwidth.** Once exhausted, projects return 503 until the cycle resets.
-- **No concurrent builds.** Builds queue and run one at a time, indefinitely.
-- **Free regions only.** A subset of the full region list.
-- **No webhooks.**
+```
+CPU excess     = max(0.5 - 0.5, 0) = 0 GB → $0
+Memory excess  = max(1.0 - 0.5, 0) = 0.5 GB
+Memory cost    = 0.5 GB × $4 / GB-month = $2.00
+Total compute  = $2.00 for the month
+```
 
-## Trial
+**The same service scaled up to 2 GB memory at the 15th of the month.** Brimble closes the first segment (`0.5 / 1.0` for ~360 hours) and opens a new one (`0.5 / 2.0` for ~360 hours).
 
-New accounts come with a 14-day free trial of paid features. After the trial, if you haven't added a payment method, the account drops to the free plan and projects exceeding free limits are paused (not deleted) until you upgrade.
+```
+First half:    0.5 GB excess × ($4 / 720h) × 360h ≈ $1.00
+Second half:   1.5 GB excess × ($4 / 720h) × 360h ≈ $3.00
+Total memory:  $4.00 for the month
+```
 
-## Payment
+This is exactly how Brimble computes it under the hood. There's no rounding to whole hours, and no surprise floor.
 
-Payment methods supported:
+### Persistent storage
 
-- **Credit/debit card** via Stripe (US, EU, most countries).
-- **Card** via Paystack (African markets).
+Persistent disks are billed by the GB-month, every GB, no plan default. A 50 GB disk costs `50 × $0.25 = $12.50/mo` at the base rate.
 
-You can hold up to 3 cards on file. One is the default; you can change it in **Billing → Payment methods**. Card management opens at the provider's hosted form, Brimble doesn't see card numbers.
+The base rate is multiplied by a **regional storage factor** for some regions. Most regions are at the base; a few high-cost regions are higher. The actual rate per region is shown in the disk size dropdown when you provision a disk, for example `50 GB ($12.50/month)`.
 
-## Billing cycle
+The `storage` quota in the plan table above is the **maximum disk size** you can provision on that plan. It's not "GB included free." Storage you provision always meters from byte one.
 
-Plans bill monthly. Compute, storage, bandwidth, and build-minute overages from the previous month are added to the current month's invoice.
+### Bandwidth
 
-If a charge fails, Brimble retries the card. After **7 days** of failed retries, builds are disabled (existing deployments keep serving). After **14 days**, the subscription deactivates and projects on it pause.
+Bandwidth is your project's total outbound traffic from Brimble's edge for the cycle. Up to your plan's included bandwidth is free. Above that, you're charged $0.25/GB.
 
-To prevent disruption, keep a card on file with sufficient credit and headroom on the limit.
+You can see usage on the home page's **Bandwidth** tile, and the per-project breakdown on each project's **Observability** tab under Network Egress.
 
-## Pause vs delete
+### Build minutes
 
-- A **paused** project is offline (returns 503) but retained. Re-activating it brings it back without rebuild.
-- A **deleted** project is gone, including its data. Databases are deleted with the project. Custom domains detach.
+Each plan includes a monthly build-minute allowance. A build minute is wall-clock time inside the build runner, from clone start to push end. See [Builds](../projects/builds.md) for what counts and what doesn't.
 
-Pausing happens automatically when payment fails for too long, or manually via **Settings → Pause project**. Deletion is always explicit and requires 2FA for projects on a paid plan.
+When you exhaust the allowance:
 
-## Switching plans
+* **Free plan:** new builds queue indefinitely until the cycle resets.
+* **Paid plans:** overage bills at $0.002/min and rolls into the next invoice. You can also top up with credits that never expire, see [Build minutes](build-minutes.md).
 
-Upgrade in **Billing → Plan**. Upgrades take effect immediately and prorate the remainder of the current cycle.
+## Cycles, prorating, and changes
 
-Downgrades take effect at the end of the current cycle, so you don't get refunded for time already paid. If the new plan's limits are below your current usage (more projects than the new cap, more concurrent builds than allowed), you'll need to bring usage under the limit before the downgrade applies.
+* **Billing cycle.** Monthly. The cycle starts on the date you first subscribed.
+* **Upgrades.** Take effect immediately. The new plan and new features apply right away. You're not charged extra immediately; the new price kicks in on the next billing date. Compute meters keep accumulating against your usage, billed at cycle end.
+* **Downgrades.** Don't take effect immediately. The current plan and features stay until the end of the current cycle. After the cycle, the lower limits apply. If you have more projects than the new plan allows, they aren't deleted; you keep them but can't create new ones over the limit.
+* **Compute scaling within a cycle.** Resource changes (scaling up CPU, adding a disk, switching regions) are tracked as separate segments. You're billed for the time at each configuration, not whichever was in effect at the end of the month.
 
-## Personal vs team billing
+## Payment retries
 
-A user account can be on one personal plan, which covers projects under that user. Each team has its own plan. A user can be in many teams, each on a different plan, and the team's plan covers projects under that team.
+Brimble retries failed charges automatically. The escalation:
 
-Personal usage and team usage are billed separately on separate invoices.
+1. **Days 1 to 7 after a failed charge:** Brimble retries the card. Builds and runtime keep working.
+2. **After 7 days of failures:** new builds are disabled. Existing deployments keep serving.
+3. **After 14 days (or 14 attempts):** the subscription deactivates. Projects on it are paused.
 
-## Viewing usage
+To recover, add a working card under **Billing → Payment methods** and click **Retry**. Once payment goes through, builds and projects come back online.
 
-In **Billing → Usage**, the dashboard shows the current cycle's:
+You can hold up to three cards on file; one is the default. Cards are added through redirects to the payment provider's hosted form (Stripe in most regions, Paystack for African markets); Brimble never sees card numbers.
 
-- Bandwidth used / limit.
-- Build minutes used / limit.
-- CPU-hours, memory-hours, storage GB-hours per project.
-- Estimated overage, if any.
+## Currency
 
-Refreshes every few minutes. The final invoice number is computed at cycle end.
+Pricing is set in USD. Some regions display equivalent local-currency amounts on the checkout page (set by the payment provider), but the underlying amounts are USD.
+
+## Where to see usage
+
+| What you want | Where it lives |
+| ------------- | -------------- |
+| Current cycle's bandwidth, build minutes, compute estimate | **Billing** in workspace or account settings |
+| Per-project compute usage in real time | The project's **Observability** tab |
+| Workspace-wide bandwidth chart | Home page → **Bandwidth** tile |
+| Past invoices and Stripe receipts | **Billing → Invoices** |
+| Pending downgrade or plan change | **Billing → Plan** |
+
+## Changing plans
+
+1. Open the dashboard.
+2. Go to **Billing → Plan**.
+3. Pick the new plan. The page shows the price difference and what changes.
+4. Confirm.
+
+Upgrades go through immediately. Downgrades are queued for the end of the current cycle. You can cancel a queued downgrade before it takes effect.
+
+## Workspace billing vs. personal billing
+
+Personal plans cover projects under your personal workspace. Team plans cover projects under their team workspace. The two are independent invoices. Compute, bandwidth, and build-minute usage on a team's projects bill against the team subscription, never your personal one.
 
 ## Pricing changes
 
 When pricing changes, current customers are notified via email and dashboard banner with at least 30 days' notice. Existing subscriptions stay at their current rate until the change takes effect.
+
+## Next steps
+
+* [Build minutes](build-minutes.md), top-ups and the included allowance.
+* [Persistent disk](../projects/persistent-disk.md), how disk pricing scales.
+* [Project metrics](../observability/metrics.md), the live usage view per project.

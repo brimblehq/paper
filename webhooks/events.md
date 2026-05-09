@@ -492,45 +492,6 @@ interface PaymentEventData {
 | `payment.successful` | `PaymentEventData` |
 | `payment.failed` | `PaymentEventData` |
 
-## Discriminated union for handlers
-
-If you handle multiple events in one TypeScript handler, you can switch on `event` cleanly:
-
-```typescript
-type WebhookDelivery =
-  | { event: "deployment.started"; subscription_id?: string; data: ProjectPayload }
-  | { event: "deployment.success" | "deployment.failed"; subscription_id?: string; data: LogPayload }
-  | { event: "project.created" | "project.updated" | "project.deleted"; subscription_id?: string; data: ProjectPayload }
-  | { event: "domain.created" | "domain.purchased" | "domain.transfer_initiated" | "domain.transfer_completed" | "project.domain.updated" | "domain.renewal_failed"; subscription_id?: string; data: DomainPayload }
-  | { event: "domain.renewed"; subscription_id?: string; data: DomainRenewedPayload }
-  | { event: "domain.transfer_failed" | "domain.transfer_out_completed"; subscription_id?: string; data: DomainTransferLitePayload }
-  | { event: "environment.variables.added" | "environment.variables.updated" | "environment.variables.deleted"; subscription_id?: string; data: EnvPayload }
-  | { event: "dns.record.created" | "dns.record.updated" | "dns.record.deleted"; subscription_id?: string; data: DnsPayload }
-  | { event: "autoscaling.group.created" | "autoscaling.group.updated" | "autoscaling.group.deleted"; subscription_id?: string; data: AutoScalingGroupPayload }
-  | { event: `subscription.${string}`; subscription_id?: string; data: SubscriptionEventData }
-  | { event: "payment.successful" | "payment.failed"; subscription_id?: string; data: PaymentEventData };
-
-function handle(payload: WebhookDelivery) {
-  switch (payload.event) {
-    case "deployment.success":
-    case "deployment.failed":
-      // payload.data: LogPayload — narrowed
-      console.log(payload.data.commit.sha, payload.data.status);
-      break;
-
-    case "environment.variables.added":
-      // payload.data: EnvPayload — narrowed
-      console.log("env added:", payload.data.name);
-      break;
-
-    case "payment.failed":
-      // payload.data: PaymentEventData — narrowed
-      alertOps(payload.data.failure_reason);
-      break;
-  }
-}
-```
-
 ## Subscribing
 
 Pass the events you want when configuring a webhook, or `["*"]` to receive everything. Pass `[]` to disable delivery without removing the configuration.

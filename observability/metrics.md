@@ -88,15 +88,16 @@ Metrics auto-refresh when you change the time range. They don't auto-tick within
 
 There's no manual refresh button on the Observability tab. The data behind it has a few-seconds lag from the source.
 
-## What's not shown here
+## Where to find error and request data
 
-A few things observability doesn't cover, intentionally:
+Errors and request volume don't live on the Observability tab. They're under **Logs**:
 
-- **Request count / RPS over time.** For request volume, the request logs tab on the project shows individual requests with timestamps; aggregate from there.
-- **Per-endpoint metrics.** All metrics are project-aggregate. To see latency on a specific endpoint, instrument your code (Sentry, OpenTelemetry, custom metrics).
-- **Error rate.** Inferable from request logs (filter on 5xx) but not surfaced as a chart on Observability.
+* **Error rates over time** appear in the application-logs trend chart, with stacked counts for error, warn, and info levels across your selected window.
+* **HTTP errors** appear in the request-logs view, with a status filter (`2xx`, `4xx`, `5xx`) and a detail drawer per request.
 
-For deeper application instrumentation, ship telemetry to a third-party service (Sentry, Datadog, Grafana Cloud, etc.), Brimble's metrics are about platform health, not full APM.
+See [Logs](logs.md) for the full breakdown.
+
+For per-endpoint latency, error attribution, traces, or anything close to full APM, ship telemetry to a third-party service (Sentry, Datadog, Grafana Cloud, and similar). Brimble's metrics tab covers platform health.
 
 ## Troubleshooting
 
