@@ -38,7 +38,7 @@ A variable set in one environment is **not** visible in another unless you opt i
 | **Environment** | Which environment this value belongs to. |
 | **Inheritable** | Whether child environments can inherit this value. |
 
-System variables Brimble injects automatically (like `PORT`) live in a separate namespace and override nothing. See [System environment variables](system-variables.md).
+For web services and MCP servers, Brimble assigns the listening port via `PORT` at runtime. Don't set `PORT` yourself, it'll be ignored.
 
 ## Inheritance
 
@@ -81,5 +81,4 @@ Don't log the value itself, Brimble's runtime logs are not encrypted at rest the
 ## Next steps
 
 - [Environment variables guide](environment-variables.md), task-oriented walkthrough.
-- [System environment variables](system-variables.md), what Brimble injects automatically.
-- [Deployments](deployments.md), how environment variables flow into a deployment.
+- [Reference shared and cross-project variables](env-references.md), the `{{shared.X}}` and `{{@slug.X}}` syntax.

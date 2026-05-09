@@ -4,12 +4,12 @@ A variable's value can include references to other variables. References resolve
 
 Two kinds of references exist:
 
-- **`{{shared.NAME}}`**, pulls a value from a **shared environment** the project inherits from.
-- **`{{@project-slug.NAME}}`**, pulls a value from another project in the same workspace.
+* `{{shared.NAME}}` pulls a value from a **shared environment** the project inherits from.
+* `{{@project-slug.NAME}}` pulls a value from another project in the same workspace.
 
 References are useful when the same value (an API base URL, a feature-flag key, a third-party token) needs to be in many projects without copy-pasting and rotating in N places.
 
-## Shared variables, `{{shared.NAME}}`
+## Shared variables
 
 A workspace can have a **shared environment**, a set of variables defined once and inherited by any project that opts in.
 
@@ -37,7 +37,7 @@ API_URL=https://api.example.com
 
 If the shared variable doesn't exist, the reference is left as-is in the resolved value (`{{shared.MISSING}}` stays literal). The deployment logs a warning so you can spot it.
 
-## Cross-project references, `{{@project-slug.NAME}}`
+## Cross-project references
 
 You can pull a variable from another project in the same workspace by prefixing the slug with `@`:
 
@@ -68,28 +68,6 @@ ENDPOINT=https://api.example.com/v1
 ```
 
 The resolver guards against cycles, if `A` references `B` and `B` references `A`, both resolve to their last-known string instead of looping.
-
-## When references don't resolve
-
-A reference that can't be resolved stays as the literal `{{...}}` string in the deployed value, and the deployment logs a warning. Common causes:
-
-- **Shared variable doesn't exist.** Check the spelling, and that the project actually inherits from the shared environment (`Environments → Inherit from`).
-- **Project slug doesn't match.** The slug is the lowercase, dash-form of the project name. Confirm by opening the source project, the slug appears in URLs.
-- **Cross-workspace reference.** A team project can't read variables from a personal project (or vice versa). Move the variable into the right workspace, or duplicate it.
-- **Referenced project doesn't have the variable.** The variable name doesn't exist on the source project. Add it there first.
-
-To inspect resolved values for a deployment, check the deployment logs or open a debug endpoint in your service that prints the relevant variables:
-
-```javascript
-app.get("/debug/env", (req, res) => {
-  res.json({
-    apiUrl: process.env.API_URL,
-    region: process.env.REGION
-  });
-});
-```
-
-Don't expose this endpoint in production for sensitive variables, gate it behind auth or remove it before going live.
 
 ## Why use references instead of duplicating
 

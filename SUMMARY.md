@@ -38,7 +38,6 @@
 * [Overview](environments/overview.md)
 * [Manage environment variables](environments/environment-variables.md)
 * [Reference shared and cross-project variables](environments/env-references.md)
-* [System environment variables](environments/system-variables.md)
 
 ## Networking
 

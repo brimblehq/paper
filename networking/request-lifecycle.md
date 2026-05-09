@@ -156,44 +156,18 @@ For gRPC (`Content-Type: application/grpc*`), the gateway forwards using HTTP/2 
 
 ## 11. Your service handles the request
 
-Your code runs. It has access to:
+Your code runs and returns a response. The gateway forwards it back, with two transformations:
 
-- All your environment variables (resolved, `{{shared.X}}` and `{{@slug.X}}` references are already substituted).
-- The injected headers from step 8.
-- The standard `process.env.PORT` to bind to.
-
-The response goes back through the gateway, which:
-
-- Sets `Cache-Control: no-store` for HTML document responses.
-- Strips `etag` and `last-modified` on document responses.
-- Forwards everything else as-is.
-
-Static assets keep their cache headers untouched, which lets Cloudflare cache them on the way out.
+* `Cache-Control: no-store` is set on HTML document responses, and `etag` / `last-modified` are stripped, so the next page load gets the freshest deployment.
+* Static assets (JS, CSS, images, fonts) pass through with their cache headers intact, so Cloudflare can cache them on the way back out.
 
 ## 12. Back to the user
 
-The response travels back: gateway → Cloudflare tunnel → Cloudflare's edge → user's browser. Cloudflare may cache cacheable responses (static assets) at the edge so the next user gets it without round-tripping to Brimble.
+The response travels back: gateway → Cloudflare tunnel → Cloudflare's edge → user's browser. Cacheable responses sit on Cloudflare's edge so the next user gets them without round-tripping to Brimble.
 
-Total round trip: typically tens to hundreds of milliseconds, dominated by:
+## The correlation header
 
-- **User-to-Cloudflare latency**, short, since Cloudflare has anycast presence near most users.
-- **Cloudflare-to-Brimble**, depends on the Brimble region.
-- **Your service's processing time**, the only thing you fully control.
-- **Edge-to-container traffic**, generally microseconds for in-region traffic.
-
-## Debugging request flow
-
-When a request behaves unexpectedly, work through the layers in order:
-
-1. **DNS first.** `dig your-domain.com +short`, does it resolve to Cloudflare's edge?
-2. **TLS.** `curl -I https://your-domain.com`, does it return any HTTP response, or fail at the connection level?
-3. **Cloudflare interception.** A response with `Server: cloudflare` and a Cloudflare error page (1xxx codes) means Cloudflare blocked or couldn't reach Brimble.
-4. **Brimble hostname match.** Does the response say "not connected" or render a Brimble error page? Check the project's domain attachment.
-5. **Ingress rules.** Look at the response, 401 (auth), 403 (disabled), 200 maintenance page (maintenance), 3xx redirect (redirect rule).
-6. **Backend.** Open the project in the dashboard. Is it deployed? Active? Are runtime logs flowing?
-7. **Application.** If the request reaches your service, the answer is in your application logs.
-
-The `x-brimble-id` header on every response is a unique ID for the request, log it on your side and Brimble's side correlates the same request across both.
+Every response Brimble produces includes an `x-brimble-id` header with a unique ID for the request. Log it from your service if you want a single ID that correlates a user-visible request to the run on Brimble's side, useful when reporting an issue to support.
 
 ## Next steps
 

@@ -105,4 +105,4 @@ For private package registries, set the auth token as a variable and reference i
 ## Next steps
 
 - [Environments concept](overview.md), how environments and inheritance work.
-- [System environment variables](system-variables.md), what Brimble injects automatically.
+- [Reference shared and cross-project variables](env-references.md), the `{{shared.X}}` and `{{@slug.X}}` syntax.
