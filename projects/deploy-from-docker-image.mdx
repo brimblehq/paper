@@ -1,0 +1,96 @@
+---
+title: "Deploy from a Docker image"
+description: "Deploy a project from a pre-built Docker image instead of building from source."
+---
+
+Deploy a project from a pre-built Docker image instead of building from source. Useful when:
+
+- Your image is already built by a separate CI pipeline.
+- You're deploying a third-party image (databases, tools, MCP servers published as images).
+- You want a simple no-build path: pull and run.
+
+## Prerequisites
+
+- A Docker image hosted somewhere Brimble can pull from. Public registries (Docker Hub, GHCR, Quay) work without credentials. Private registries need a username and a token.
+- A Brimble account.
+
+## Create the project
+
+1. In the dashboard, click **New project**.
+2. Pick **Docker image** as the source.
+3. Enter the image reference. Examples:
+   - `nginx:latest`
+   - `ghcr.io/org/app:v1.2.3`
+   - `myteam/my-image:abc123` (Docker Hub)
+   - `registry.example.com/team/image:tag` (custom registry)
+4. If the image is private, expand **Registry credentials** and enter:
+   - **Username**, the registry username.
+   - **Password / token**, a password or access token. For GHCR, this is a personal access token with `read:packages`. For Docker Hub, a personal access token works better than your password.
+
+<Info>
+  **Image needed:** screenshot of the new-project flow with "Docker image" selected and the registry credentials section expanded
+</Info>
+
+5. Configure the runtime:
+   - **Service type**, usually **Web service**. Pick **Worker** if the image isn't an HTTP server.
+   - **Region**, datacenter to deploy in.
+   - **Compute size**, CPU and memory.
+6. Set environment variables your image needs.
+7. Click **Deploy**.
+
+Brimble pulls the image, starts a container with your environment variables, and (for web services) routes traffic to it once it passes the health check.
+
+## What Brimble passes to the container
+
+When the container starts, Brimble injects:
+
+- All environment variables you configured for the active environment.
+- `PORT`, the port Brimble assigns. Your image must read this and listen on it for web services. (Workers don't need to listen.)
+- `BRIMBLE_*` system variables (`BRIMBLE_REGION`, `BRIMBLE_COMMIT_SHA` is empty since there's no commit, `BRIMBLE_PROJECT`, etc.).
+
+The container's command is whatever the image defines (`CMD` or `ENTRYPOINT`). To override, set a custom start command under **Settings → Build**.
+
+## Image requirements
+
+Your image should:
+
+- **Listen on `0.0.0.0:$PORT`** for web services. Don't listen on `127.0.0.1`, Brimble's edge can't reach localhost-only services.
+- **Run a foreground process.** A container that exits is treated as crashed and restarted (or marked failed after repeated restarts).
+- **Have a `CMD` or `ENTRYPOINT`** that doesn't depend on a TTY. Brimble runs containers non-interactively.
+
+Common adjustment for off-the-shelf images: pass `PORT` through to the existing config. Many images take a port via env var (`-e PORT=8080`); some take it via flag (`--port=$PORT`).
+
+## Pulling private images
+
+For private images, the credentials you entered are stored encrypted and used only when pulling. Rotate them by editing the project's **Build → Registry credentials**.
+
+If a credential expires, the next pull will fail with a deployment error. Update the credential and click **Redeploy**.
+
+## Updating the image
+
+There's no auto-deploy hook for image registries, pushing a new tag doesn't redeploy automatically.
+
+To update:
+
+- **For mutable tags (e.g. `:latest`).** Click **Redeploy**. Brimble re-pulls the tag and starts the new image.
+- **For immutable tags (e.g. `:v1.2.4`).** Open **Settings → Build**, change the image reference to the new tag, and save. The next deploy uses the new tag.
+
+For automation, integrate with your CI: have CI call out to Brimble's API to trigger a redeploy after a successful push.
+
+## Troubleshooting
+
+**Pull fails: "no such image" or "manifest unknown."** Triple-check the image reference (registry, namespace, name, tag). Tags are case-sensitive. For private images, confirm the credentials work locally with `docker login` + `docker pull`.
+
+**Pull fails: "unauthorized."** Credentials are wrong or expired. For GHCR, the token needs `read:packages` scope. For Docker Hub, free accounts have rate limits, use an authenticated pull.
+
+**Container starts but immediately exits.** The image's `CMD` ran to completion. Override with a long-running command under **Settings → Build → Start command**, or fix the image's entrypoint.
+
+**Health check fails (502).** The image isn't listening on `$PORT`, or it's listening on `127.0.0.1` instead of `0.0.0.0`. Pass the port through whatever mechanism the image expects, and make sure the bind address is `0.0.0.0`.
+
+**Image is huge and pulls slowly.** First pull is uncached. Subsequent pulls of the same image (within the same region) are fast. For very large images, consider splitting your build to ship a thinner runtime layer.
+
+## Next steps
+
+- [Service types](service-types), picking the right type for your image.
+- [Manage environment variables](environment-variables), wiring config into your container.
+- [Builds](builds), the alternative path: building from source.

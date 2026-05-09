@@ -1,0 +1,133 @@
+---
+title: "Build failures"
+description: "Your deployment failed during build."
+---
+
+Your deployment failed during build. The previous deployment is still serving, nothing's down, but the new code isn't live. This page walks the common failure modes.
+
+## Read the logs first
+
+Open the failed deployment in the dashboard. Logs stream by phase: clone → detect → install → build → package → push → deploy.
+
+**Read from the bottom up.** The first error in the logs is the real one; everything after it is fallout. Don't focus on the last line, focus on the first stack trace, exit code, or "error:" message.
+
+The phase that failed is shown in the deployment header. Match it to the sections below.
+
+## Phase: clone
+
+The clone phase fetches your commit from your Git provider.
+
+**"Repository not found" or "Authentication failed."** Brimble's connection to your Git provider expired or was revoked. Re-authorize under **Account settings → Git providers**.
+
+**"Branch not found."** The branch the project is tracking was renamed or deleted. Update the branch under **Settings → Repository**.
+
+**"Submodule failed to clone."** Your repo references a submodule using a SSH or HTTPS URL Brimble can't authenticate against. Make sure submodules use HTTPS URLs reachable with the same credentials as the parent repo.
+
+## Phase: detect
+
+The detect phase picks a builder and framework.
+
+**"No framework detected" or "Could not determine builder."** Brimble couldn't infer your stack. Set the framework, build, and start commands manually under **Settings → Build**. Or add a `Dockerfile` at the repo root and Brimble will use it directly.
+
+**"Multiple builders matched."** A repo with multiple framework signals (e.g. both `package.json` and `requirements.txt` at the root). Pick one explicitly under **Settings → Build → Framework**.
+
+## Phase: install
+
+The install phase runs your install command (`npm install`, `pip install`, `bundle install`, etc.).
+
+**"E404: package not found."** A dependency in your manifest doesn't exist or is private. For private packages, set the registry token as an env var and configure the package manager:
+
+```
+//registry.npmjs.org/:_authToken=${NPM_TOKEN}
+```
+
+**"ETIMEDOUT" or network errors during install.** Transient. Click **Redeploy**.
+
+**"npm ERR! peer dependency."** Your dependency tree has unsatisfiable peer requirements. Either update dependencies, or use the package manager's option to ignore peer conflicts (`npm install --legacy-peer-deps`).
+
+**Lockfile out of sync.** `npm ci` (and `pip --require-hashes`, `pnpm --frozen-lockfile`, `yarn --frozen-lockfile`) fails if the lockfile doesn't match the manifest. Run the install locally, commit the updated lockfile, push.
+
+**Build cache producing stale results.** Clear the cache under **Settings → Build → Clear cache** and redeploy.
+
+## Phase: build
+
+The build phase runs your build command.
+
+**Out of memory.** Large frontend builds (Next.js, Webpack, large bundles) can exceed default memory. Bump the project's compute size temporarily for the build, or tune your build config (e.g. `NODE_OPTIONS=--max-old-space-size=4096`).
+
+**Type errors / lint errors.** A pre-deploy commit has a type or lint failure. Either fix the failure, or relax the build script (e.g. `next build --no-lint`).
+
+**"Cannot find module 'X'."** The module is in `devDependencies` but the install ran with `--production`. Either move it to `dependencies`, or remove the `--production` flag.
+
+**Build script not found.** The script you set as the build command doesn't exist in `package.json` (or equivalent). Check **Settings → Build** matches the actual script name.
+
+**Asset compilation fails (Rails, Phoenix).** Asset precompile needs the right tools. Make sure Node/Yarn are installed (Brimble installs them automatically for Rails projects).
+
+**Database migration fails during pre-start.** A migration script set as your pre-start command fails, usually because the database schema is in a state the migration didn't expect. Run migrations locally against a copy of the production DB to confirm before pushing.
+
+## Phase: package
+
+Packaging takes the build output and wraps it as a deployable artifact.
+
+**"No output directory."** Brimble expected a directory at the path configured under **Settings → Build → Output directory**. Either the build didn't create it, or it created a different path. Check your build's actual output and update the setting.
+
+**"Artifact too large."** Builds capped at a generous limit. If you hit it, you're probably bundling unnecessary files. Add a `.brimbleignore` (same syntax as `.gitignore`) to exclude `node_modules/.cache/`, test fixtures, and other non-runtime files.
+
+## Phase: push
+
+The push phase uploads the artifact to Brimble's internal registry. Failures here are almost always transient, click **Redeploy**.
+
+If push fails repeatedly, contact support; this typically indicates a Brimble-side issue.
+
+## Phase: deploy
+
+The deploy phase schedules the container in your region.
+
+**"No capacity in region."** The region is at capacity. Wait a few minutes and redeploy, or move to a different region.
+
+**"Image pull failed."** Internal Brimble issue. Click **Redeploy**; if it persists, contact support.
+
+## Phase: health
+
+The container started but isn't responding to health checks.
+
+**"Health check timeout."** Your service either isn't listening on `$PORT`, isn't listening on `0.0.0.0`, or is taking longer than the health check timeout to respond.
+
+Confirm:
+
+```javascript
+const port = Number(process.env.PORT) || 3000;
+app.listen(port, "0.0.0.0", () => console.log(`listening on ${port}`));
+```
+
+Note `0.0.0.0` (not `localhost` and not `127.0.0.1`), Brimble's edge can't reach localhost-only listeners.
+
+**Health check returns non-2xx.** Your `healthCheckPath` (default `/`) returns an error. Either fix the route, or set `healthCheckPath` to a working endpoint under **Settings → Configuration**.
+
+**Database connection times out at startup.** Your app boots, tries to connect to the database, and hangs. Verify `DATABASE_URL` is set and the database is in the same region.
+
+**Port collision.** Your code logs "address already in use." Almost always a leftover from local development hardcoding port 3000 or 8080. Read `process.env.PORT`, Brimble assigns the port at deploy time.
+
+## Pin your language version
+
+A common cause of "works on my machine, fails on Brimble" is the build runner picking a different language version than you use locally. Pin explicitly:
+
+* **Node:** `engines.node` in `package.json`, or `.nvmrc`.
+* **Python:** `.python-version`, `runtime.txt`, or `pyproject.toml`.
+* **Go:** the `go` directive in `go.mod`.
+* **Ruby:** `.ruby-version` or `Gemfile`.
+
+The detect phase in the deployment logs shows which version Brimble actually picked.
+
+## Still stuck
+
+If the logs don't make the cause obvious:
+
+1. Click **Redeploy** once, transient errors do happen.
+2. If it fails the same way, copy the first error and the phase name.
+3. Open a support ticket with the deployment ID. Brimble's logs include extra context not visible in the dashboard.
+
+## Next steps
+
+- [Deployments](../projects/deployments), full deployment lifecycle.
+- [Builds](../projects/builds), what happens during each build phase.

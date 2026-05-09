@@ -1,0 +1,88 @@
+---
+title: "Projects and services"
+description: "A project is the top-level unit you deploy on Brimble."
+---
+
+A **project** is the top-level unit you deploy on Brimble. Every project has a type, a region, a build configuration, and zero or more environments. This page covers the project model and the service types you can create.
+
+## Project
+
+A project groups everything related to a single deployable thing: source code, environment variables, deployments, domains, and metrics. A project belongs to either you (a personal project) or a team.
+
+Each project has:
+
+| Field | What it is |
+|------|----|
+| **Name** | The slug used in URLs and the dashboard. Becomes part of `<name>.brimble.app`. |
+| **Service type** | What kind of workload this project runs. See below. |
+| **Region** | The datacenter where the project runs. |
+| **Repo** | Git provider, repository, branch, and root directory. |
+| **Build commands** | Install, build, and start commands. Auto-detected for most stacks. |
+| **Compute size** | CPU, memory, and storage allocation. |
+| **Environment** | The active environment (Production, Preview, or any custom one you've created). |
+
+## Service types
+
+When you create a project, you pick a service type. The type determines how the project is built, run, and exposed.
+
+### Web service
+
+Long-running HTTP servers. Brimble assigns a port through the `PORT` environment variable; your server must listen on it. The edge terminates TLS and routes traffic to the running container.
+
+Use for: Express, Fastify, Next.js (server mode), Django, Rails, FastAPI, Spring Boot, Phoenix, anything that listens on a port.
+
+### Static site
+
+Pre-built HTML, CSS, and JS bundles served directly from the edge. There's no runtime container, no `PORT`, no start command. You configure a build command and an output directory; Brimble serves the contents of that directory.
+
+Use for: Next.js (static export), Vite, Astro, Hugo, plain HTML, anything where the build produces files and nothing needs to run after.
+
+### Worker
+
+A long-running process with no HTTP port. Workers are not exposed to the internet, they're for queue consumers, schedulers, message handlers, or any background process that does its own work.
+
+Use for: BullMQ workers, Celery workers, Sidekiq, custom queue consumers, long-polling scripts.
+
+### Database
+
+A managed data service. Brimble provisions the engine you choose, runs it, and gives you a connection string. You don't push code to a database project, Brimble manages the image, the version, backups, and the volume.
+
+Supported engines: PostgreSQL, MySQL, MariaDB, MongoDB, Redis, Valkey, RabbitMQ, Neo4j, ClickHouse.
+
+See [Deploy a database](deploy-a-database) for the full list of versions and sizing options.
+
+### MCP server
+
+A Model Context Protocol server, deployed and exposed over HTTP for AI clients (Claude, Cursor, IDE extensions, agents) to connect to. Brimble runs it the same way as a web service but exposes it under a path or hostname suitable for MCP clients.
+
+Use for: connecting an MCP server to a model or agent without running it on your laptop.
+
+## Project hierarchy
+
+```
+Account or Team
+└── Project (web-service, static, worker, database, mcp)
+    ├── Environments (Production, Preview, custom)
+    │   └── Environment variables
+    ├── Deployments (one per build)
+    ├── Domains (default + custom)
+    └── Metrics, logs, webhooks
+```
+
+<Info>
+  **Image needed:** screenshot of the Projects list view in the dashboard, showing a few project cards with status chips, framework logos, branch labels, last commit message, deployed-by avatar, and tags
+</Info>
+
+A team can hold many projects. A project can hold many environments. Each environment has its own set of environment variables. Each deployment ships from a specific environment.
+
+## Naming and limits
+
+- Project names must be unique within your account or team. They appear in URLs, so use lowercase, dashes, and digits.
+- Plan limits cap the number of projects per account. The free plan allows 5; paid plans go higher. See [Plans and pricing](../billing/plans).
+- Region availability depends on plan tier. Some regions are paid-only.
+
+## Next steps
+
+- [Deployments](deployments), how a build becomes a running service.
+- [Environments](environments), Production, Preview, and how env vars flow.
+- [Service types reference](service-types), every service type, side-by-side.

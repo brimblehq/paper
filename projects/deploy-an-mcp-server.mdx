@@ -1,0 +1,131 @@
+---
+title: "Deploy an MCP server"
+description: "Deploy a Model Context Protocol server on Brimble so AI clients (Claude, Cursor, IDE agents) can connect to it over the internet, without it running on your laptop."
+---
+
+Deploy a Model Context Protocol server on Brimble so AI clients (Claude, Cursor, IDE agents) can connect to it over the internet, without it running on your laptop.
+
+If you want a ready-made MCP server from a marketplace, see [Discover MCP servers](discover-mcp-servers). This guide covers deploying your own custom MCP code.
+
+## Prerequisites
+
+- A Git repository containing an MCP server. The MCP SDK is available for TypeScript, Python, and other languages.
+- A Brimble account.
+- The MCP server should expose itself over HTTP (Streamable HTTP, SSE, or WebSocket transport). MCP servers that only speak stdio don't work for remote deployment.
+
+After deploy, the server is reachable at `https://<project-name>.brimble.app/mcp`. The `/mcp` path is conventional, you can serve on any path your code listens to.
+
+## Step 1: Make sure the server speaks HTTP
+
+Verify your MCP server uses an HTTP-based transport and reads its port from the `PORT` environment variable.
+
+Example, TypeScript MCP server:
+
+```typescript
+import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
+import { StreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/streamableHttp.js";
+import express from "express";
+
+const server = new McpServer({ name: "acme-mcp", version: "1.0.0" });
+// ... register tools, resources, prompts ...
+
+const app = express();
+app.use(express.json());
+app.post("/mcp", async (req, res) => {
+  const transport = new StreamableHTTPServerTransport({});
+  res.on("close", () => transport.close());
+  await server.connect(transport);
+  await transport.handleRequest(req, res, req.body);
+});
+
+const port = Number(process.env.PORT) || 3000;
+app.listen(port, "0.0.0.0", () => console.log(`MCP listening on ${port}`));
+```
+
+The path can be anything (`/mcp` is conventional). Whatever you pick, your MCP clients connect to that path.
+
+## Step 2: Create the project
+
+1. In the dashboard, click **New project**.
+2. Connect your repository.
+3. Under **Service type**, choose **MCP server**.
+4. Brimble auto-detects the install, build, and start commands. Override under **Settings → Build** if needed.
+5. Pick a region close to your primary clients.
+
+<Info>
+  **Image needed:** screenshot of the new-project flow with "MCP server" selected as the service type, and the MCP authentication toggle visible
+</Info>
+
+## Step 3: Choose authentication
+
+MCP servers usually shouldn't be open to the internet. Brimble has a built-in auth toggle for MCP projects.
+
+1. In **Settings → Configuration** (or during project creation), find **MCP authentication**.
+2. Toggle it on.
+3. Save.
+
+When MCP authentication is on, Brimble requires every request to include an `x-brimble-key` header with your project's MCP key. The key is shown in **Settings → Configuration**; click the eye icon to reveal it. Rotate the key from the same panel.
+
+If you'd rather implement auth in your application code (per-user tokens, rotation logic, etc.), leave the toggle off and validate auth headers yourself in your handler. Don't enable both, clients would have to satisfy two layers.
+
+## Step 4: Deploy
+
+Click **Deploy**. The build runs the same as any web service. Once active, your MCP server is live at the project URL.
+
+## Step 5: Connect from a client
+
+In Claude Desktop, edit `claude_desktop_config.json`:
+
+```json
+{
+  "mcpServers": {
+    "acme": {
+      "url": "https://acme-mcp.brimble.app/mcp",
+      "headers": {
+        "x-brimble-key": "<your-mcp-key>"
+      }
+    }
+  }
+}
+```
+
+If MCP authentication is off, drop the `headers` block.
+
+In Cursor and other clients, add the server URL under the client's MCP configuration. Pass the `x-brimble-key` header if auth is on.
+
+Restart the client. The MCP tools, resources, and prompts you registered should appear.
+
+## Verification
+
+```bash
+curl -X POST https://<project-name>.brimble.app/mcp \
+  -H "Content-Type: application/json" \
+  -H "x-brimble-key: <your-mcp-key>" \
+  -d '{"jsonrpc":"2.0","id":1,"method":"tools/list"}'
+```
+
+Expected: a JSON-RPC response listing the tools your server registered.
+
+## Logging
+
+The dashboard streams stdout and stderr from the MCP server in real time. Useful when debugging which tools an agent is calling and with what arguments.
+
+If your server's logging is verbose, log selectively, runtime logs accumulate and are visible to anyone with project access.
+
+## Troubleshooting
+
+**Client can't connect.** Confirm the server is listening on `process.env.PORT`, binds to `0.0.0.0`, and that the path in the URL matches what your code handles.
+
+**`401 Unauthorized` on every request.** MCP authentication is on and the `x-brimble-key` header is missing or wrong. Pull the current key from **Settings → Configuration** and update the client.
+
+**Client connects but no tools appear.** Tools are registered before `server.connect()` is called. Make sure registration runs at module-load time, not lazily inside a handler.
+
+**502 from the MCP path.** Your server isn't responding within Brimble's timeout. Check runtime logs for crashes or hangs during request handling.
+
+**Works locally but fails when deployed.** The local-only stdio transport doesn't work for remote MCP. Use HTTP/SSE or Streamable HTTP transport for production.
+
+## Next steps
+
+- [Discover MCP servers](discover-mcp-servers), deploy a ready-made MCP server from Brimble's marketplace.
+- [Custom domains](../domains/custom-domains), give your MCP server a stable URL.
+- [Networking](../networking/overview), how the edge handles HTTP, headers, and WebSockets.

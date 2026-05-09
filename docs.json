@@ -1,0 +1,172 @@
+{
+  "$schema": "https://mintlify.com/docs.json",
+  "theme": "mint",
+  "name": "Brimble",
+  "description": "Brimble documentation. Deploy applications, manage domains, scale services, and ship without operating infrastructure.",
+  "colors": {
+    "primary": "#006fff",
+    "light": "#4879f8",
+    "dark": "#006fff"
+  },
+  "favicon": "/favicon.svg",
+  "logo": {
+    "light": "/logo/light.svg",
+    "dark": "/logo/dark.svg"
+  },
+  "navigation": {
+    "tabs": [
+      {
+        "tab": "Documentation",
+        "groups": [
+          {
+            "group": "Getting started",
+            "pages": [
+              "index",
+              "getting-started/introduction",
+              "getting-started/quickstart"
+            ]
+          },
+          {
+            "group": "Projects",
+            "pages": [
+              "projects/overview",
+              "projects/service-types",
+              "projects/frameworks",
+              "projects/regions",
+              "projects/builds",
+              "projects/deployments",
+              "projects/git-integrations",
+              "projects/deploy-a-worker",
+              "projects/deploy-a-database",
+              "projects/deploy-an-mcp-server",
+              "projects/deploy-from-docker-image",
+              "projects/discover-mcp-servers",
+              "projects/persistent-disk",
+              "projects/rollback-a-deployment",
+              "projects/password-protect"
+            ]
+          },
+          {
+            "group": "Domains",
+            "pages": [
+              "domains/custom-domains",
+              "domains/buy-a-domain",
+              "domains/transfer-a-domain",
+              "domains/manage-dns-records",
+              "domains/redirect-a-domain",
+              "domains/dns-records"
+            ]
+          },
+          {
+            "group": "Environments",
+            "pages": [
+              "environments/overview",
+              "environments/environment-variables",
+              "environments/env-references"
+            ]
+          },
+          {
+            "group": "Networking",
+            "pages": [
+              "networking/overview",
+              "networking/request-lifecycle",
+              "networking/internal-services",
+              "networking/rate-limits"
+            ]
+          },
+          {
+            "group": "Scaling",
+            "pages": [
+              "scaling/overview"
+            ]
+          },
+          {
+            "group": "Observability",
+            "pages": [
+              "observability/metrics",
+              "observability/logs"
+            ]
+          },
+          {
+            "group": "Analytics",
+            "pages": [
+              "analytics/web-analytics"
+            ]
+          },
+          {
+            "group": "Workspaces and teams",
+            "pages": [
+              "workspaces-and-teams/create-a-workspace",
+              "workspaces-and-teams/manage-teams"
+            ]
+          },
+          {
+            "group": "Security",
+            "pages": [
+              "security/two-factor-authentication"
+            ]
+          },
+          {
+            "group": "Billing",
+            "pages": [
+              "billing/plans",
+              "billing/build-minutes"
+            ]
+          },
+          {
+            "group": "Notifications",
+            "pages": [
+              "notifications/overview"
+            ]
+          },
+          {
+            "group": "Webhooks",
+            "pages": [
+              "webhooks/overview",
+              "webhooks/events"
+            ]
+          },
+          {
+            "group": "Troubleshooting",
+            "pages": [
+              "troubleshooting/build-failures",
+              "troubleshooting/502-errors",
+              "troubleshooting/dns",
+              "troubleshooting/tls",
+              "troubleshooting/deployment-stuck"
+            ]
+          },
+          {
+            "group": "Reference",
+            "pages": [
+              "glossary"
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  "navbar": {
+    "links": [
+      {
+        "label": "Dashboard",
+        "href": "https://app.brimble.io"
+      },
+      {
+        "label": "Status",
+        "href": "https://status.brimble.io"
+      }
+    ],
+    "primary": {
+      "type": "button",
+      "label": "Sign up",
+      "href": "https://app.brimble.io/signup"
+    }
+  },
+  "footer": {
+    "socials": {
+      "x": "https://x.com/brimbleio",
+      "github": "https://github.com/brimblehq"
+    }
+  }
+}
