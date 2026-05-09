@@ -89,6 +89,57 @@ Once the check passes, the edge flips traffic to the new deployment. The previou
 
 If the health check never passes, the deployment is marked **degraded** and traffic stays on the previous deployment. After repeated failures the deployment moves to **failed**.
 
+## Recovery and restart
+
+Once a deployment is live, three policies decide what happens when something goes wrong with your running container. You don't configure these, they apply to every project automatically. The point is to keep your service available without you having to do anything.
+
+### Restart in place
+
+If your container exits, Brimble restarts it on the same host:
+
+- Up to **10 attempts** in any **5-minute window**.
+- A **20-second delay** between attempts, so a fast crash loop doesn't burn the host.
+- After 10 attempts in a window, Brimble waits out the rest of the window and starts counting again. The policy never permanently "gives up", it backs off and keeps trying.
+
+A clean exit (status 0) and a crash exit are treated the same: the container is restarted. If your start command is supposed to run forever and it exits, that counts as a failure.
+
+### Reschedule onto another host
+
+If restarts in place keep failing (the host can't run the container at all, or it's hitting a host-local issue), Brimble reschedules the allocation onto a **different host** in the same region:
+
+- The first reschedule attempt happens **30 seconds** after the in-place restarts give up.
+- Subsequent attempts back off **exponentially** (30 s → 1 min → 2 min → 4 min → ...).
+- The backoff is **capped at 60 minutes**, even after many failures.
+- There is **no attempt limit**, Brimble keeps trying to find a healthy host indefinitely. If capacity comes back, the workload comes back.
+
+In practice, you'll see a deploy that was passing health checks suddenly start "moving" hosts in the events feed if a host is degrading; that's the reschedule policy at work.
+
+### Host disconnect (lost allocations)
+
+If the Nomad cluster can't reach the host running your container, network partition, host hung, control plane can't talk to it, the host is considered "lost" after **15 minutes**. What happens next depends on the service type:
+
+- **Web service, MCP server, database.** Brimble starts a **replacement** allocation on a healthy host immediately. If the original host comes back online later, the replacement keeps running and the original is stopped, that way traffic goes to one canonical instance.
+- **Worker.** Brimble does **not** start a replacement. The original allocation is kept and Brimble waits for it to come back. This avoids double-processing of jobs and queue work in the case the original host was alive and just couldn't be reached, you'd get the same job processed twice if both ran simultaneously. If the original host is truly gone for good, the worker stays unscheduled until the operations layer marks the host dead, then the worker is rescheduled per the reschedule policy.
+
+### Putting it together
+
+```text
+Container exits → restart on same host (up to 10 attempts, 20s delay)
+   │
+   │  still failing
+   ▼
+Reschedule onto another host (exponential backoff, no limit)
+   │
+   │  host stops responding entirely
+   ▼
+After 15 min unreachable → mark allocation lost
+   │
+   ├── Web/MCP/DB → start a replacement immediately, keep replacement
+   └── Worker     → wait for original (no double-up); reschedule if host is confirmed dead
+```
+
+For the things you can configure, autoscaling, replicas, regions, see [Scaling](../scaling/overview).
+
 ## Edge caching
 
 Brimble sits behind **Cloudflare**. Every public request to a `*.brimble.app` URL or a verified custom domain hits Cloudflare's global edge first, and only the requests Cloudflare can't serve from cache are tunneled into Brimble's gateway. That's where most of the perceived speed of a Brimble-hosted app comes from, especially for static sites.

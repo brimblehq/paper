@@ -32,12 +32,12 @@ This step sets the workspace's monthly cost.
 | Setting | Description |
 |---|---|
 | **Team size** | Number of seats. Pick from 3, 5, 10, 15, 25, or 50. Each seat costs **$5/month**. |
-| **Concurrent builds** | How many builds can run in parallel. Each concurrent build container costs **$7.50/month**. |
+| **Concurrent builds** | How many builds can run in parallel. Minimum **2**. Each concurrent build slot costs **$8/month**. |
 | **Startup promo code** | Optional. If you have one, enter it and click **Verify**. Valid codes apply a discount; invalid ones show an error. |
 
-The page shows a running total: `seats × $5 + builds × $7.50 = $X/month`.
+The page shows a running total: `seats × $5 + builds × $8 = $X/month`.
 
-A workspace with 5 seats and 2 concurrent builds is `5 × $5 + 2 × $7.50 = $40/month`.
+A workspace with **3 seats and 2 concurrent builds** is `3 × $5 + 2 × $8 = $31/month`.
 
 You can change both values later under **Workspace settings → Billing**, but you can't go below the seats currently in use without removing members first.
 
@@ -109,7 +109,7 @@ Switching context filters the project list, the dashboard home, and most setting
 
 **Invitee never got the email.** Check spam. Revoke the pending invite from **Settings → Members** and re-invite to the right address. Typos are the most common cause.
 
-**Want to start small.** Pick 3 seats and 0 concurrent builds. You can upgrade later as the team grows. Note: 0 concurrent builds means workspace projects queue builds indefinitely, like the personal free plan, generally pick at least 1.
+**Want to start small.** Pick 3 seats and the minimum 2 concurrent builds, that's the floor. You can bump either later as the team grows.
 
 ## Next steps
 

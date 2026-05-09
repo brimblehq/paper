@@ -102,11 +102,61 @@ CPU, memory, and storage can be scaled up at any time. Storage can only grow, no
 
 Scaling causes a short restart (typically under 30 seconds). Connections drop and reconnect, so make sure your client has reconnect logic.
 
-## Backups
+## Storage and durability
 
-Backups can be enabled on any database from **Settings → Backups**. When enabled, Brimble takes a snapshot **every hour, on the hour**, and retains them for the period configured on the project. You can also take an on-demand backup with **Back up now**.
+Every Brimble database is backed by **two independent layers** so your data isn't on one disk that one outage can take with it:
 
-Restoring from a backup happens via support today. Open a ticket with the database project and the snapshot timestamp.
+### 1. Persistent volume (primary storage)
+
+Each database container has a **persistent volume** mounted at the engine's data directory (`/var/lib/postgresql/data` for Postgres, `/data/db` for MongoDB, the equivalent for the engine you picked). The volume lives on Brimble's storage layer, not on the local disk of the host running the container.
+
+What that means in practice:
+
+- **Container restarts keep the data.** If the container restarts (a crash, a resize, a manual redeploy), it remounts the same volume on the way back up. No data loss; the engine sees the exact same disk it left.
+- **Host failures keep the data.** If the host running your database goes down, Nomad reschedules the container onto another host in the region and remounts the same volume. The data follows the workload.
+- **Deploys keep the data.** A version bump or a config change replaces the container, not the volume. The new container picks up the existing data.
+- **Storage grows, doesn't shrink.** You can scale storage up at any time from **Settings → Sizing**. Going down is not supported, the volume is your project's source of truth.
+
+You don't see the volume directly. You see the database, you connect to it, and the volume is what makes the connection's state survive between sessions.
+
+### 2. Backups (independent copy)
+
+On top of the volume, Brimble runs **periodic backups** to an independent storage system, separate from the volume that holds your live data. Backups protect against the rare cases the volume can't, accidental deletes, table-level corruption, application bugs that wipe data, or the worst-case event where the volume itself is unrecoverable.
+
+| Question | Answer |
+|---|---|
+| **Schedule** | Hourly. A snapshot is taken at the top of every hour. |
+| **What's captured** | A consistent dump of the database's logical contents (a `pg_dump` for Postgres, equivalent tools for the other engines). |
+| **Where it's stored** | Object storage in a different storage layer than the volume, in the same region. |
+| **Retention** | Brimble keeps the **latest snapshot per database**. Each new hourly snapshot replaces the previous one. |
+| **Cost** | Backups are included for paid plans and team workspaces; they're not billed per snapshot. |
+
+Backups are automatically enabled for:
+
+- **Team workspaces.** Any database in a team workspace has hourly backups, no toggle.
+- **Paid personal accounts.** Databases on a paid personal plan have hourly backups.
+
+Backups are **not** taken for free personal accounts. If you're on the free tier and need backup coverage, upgrade the personal account or move the project into a team workspace.
+
+### Downtime: what actually happens
+
+Putting it together, here's the user-visible picture for the kinds of events people worry about:
+
+- **Container crashes.** New container comes up on the same volume. The engine replays its WAL (Postgres) or oplog (Mongo) and reaches a consistent state. **No data lost.**
+- **Host goes down.** Nomad reschedules onto another host, remounts the volume. **No data lost.**
+- **Region-wide incident affecting hosts but not the storage layer.** The volume is still intact. When the region recovers, the database comes back with all data.
+- **Volume corruption or unrecoverable failure.** Restore from the latest backup. Data written between the most recent backup and the failure may be lost (up to ~1 hour, depending on when the failure happened relative to the last hourly snapshot).
+- **You dropped the wrong table.** Restore from the latest backup.
+
+### Restoring from a backup
+
+Restores go through support today. Open a ticket with:
+
+- The database project's name and ID.
+- The approximate timestamp you want to restore to (the latest hourly snapshot is what's available; we'll confirm the exact one).
+- Whether you want the restore in-place or as a new database project.
+
+A self-serve restore flow is on the roadmap. Until then, support can complete most restores within a few hours.
 
 ## Rotate the password
 
