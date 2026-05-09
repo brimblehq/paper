@@ -20,6 +20,7 @@
         "groups": [
           {
             "group": "Getting started",
+            "icon": "rocket",
             "pages": [
               "index",
               "getting-started/introduction",
@@ -28,6 +29,7 @@
           },
           {
             "group": "Projects",
+            "icon": "cube",
             "pages": [
               "projects/overview",
               "projects/service-types",
@@ -48,6 +50,7 @@
           },
           {
             "group": "Domains",
+            "icon": "globe",
             "pages": [
               "domains/custom-domains",
               "domains/buy-a-domain",
@@ -59,6 +62,7 @@
           },
           {
             "group": "Environments",
+            "icon": "layer-group",
             "pages": [
               "environments/overview",
               "environments/environment-variables",
@@ -67,6 +71,7 @@
           },
           {
             "group": "Networking",
+            "icon": "network-wired",
             "pages": [
               "networking/overview",
               "networking/request-lifecycle",
@@ -76,18 +81,22 @@
           },
           {
             "group": "Scaling",
+            "icon": "arrows-up-down",
             "pages": ["scaling/overview"]
           },
           {
             "group": "Observability",
+            "icon": "gauge",
             "pages": ["observability/metrics", "observability/logs"]
           },
           {
             "group": "Analytics",
+            "icon": "chart-line",
             "pages": ["analytics/web-analytics"]
           },
           {
             "group": "Workspaces and teams",
+            "icon": "users",
             "pages": [
               "workspaces-and-teams/create-a-workspace",
               "workspaces-and-teams/manage-teams"
@@ -95,22 +104,27 @@
           },
           {
             "group": "Security",
+            "icon": "shield-halved",
             "pages": ["security/two-factor-authentication"]
           },
           {
             "group": "Billing",
+            "icon": "receipt",
             "pages": ["billing/plans", "billing/build-minutes"]
           },
           {
             "group": "Notifications",
+            "icon": "bell",
             "pages": ["notifications/overview"]
           },
           {
             "group": "Webhooks",
+            "icon": "bolt",
             "pages": ["webhooks/overview", "webhooks/events"]
           },
           {
             "group": "Troubleshooting",
+            "icon": "wrench",
             "pages": [
               "troubleshooting/build-failures",
               "troubleshooting/502-errors",
@@ -121,6 +135,7 @@
           },
           {
             "group": "Reference",
+            "icon": "book",
             "pages": ["glossary"]
           }
         ]
