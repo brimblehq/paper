@@ -68,6 +68,10 @@ Start narrow. Widen the range once you have data on what your traffic actually l
 
 If your service has steady, predictable traffic, fixed mode with 2 or 3 instances is simpler, autoscaling adds complexity that only pays off when traffic varies meaningfully.
 
+<Warning>
+  **Each running container is billed for its compute size.** If your project is provisioned at 2 vCPU / 4 GB and the autoscaler runs five containers, you're paying for 10 vCPU and 20 GB of running compute for the time those containers are alive. Set a maximum that reflects what you're willing to spend during a traffic spike, not just what your service can technically handle.
+</Warning>
+
 ## Workers
 
 For background workers, scaling adjusts the number of consumer containers. Four containers means four copies of your worker run at once, each consuming from the queue. Make sure your queue protocol distributes work safely (Redis BLPOP, RabbitMQ work queues, BullMQ workers, all of these distribute correctly).

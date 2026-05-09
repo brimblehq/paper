@@ -45,6 +45,10 @@ Once injected, the variables are available to every command that runs from this 
 
 For BuildKit and Railpack builds, secrets are passed as build secrets (`--secret`), not as plain `--build-arg`, so they don't end up baked into image layers.
 
+<Check>
+  **Secrets stay encrypted at rest and out of image layers.** Vault holds plaintext only in memory, the runner reads them with a short-lived token scoped to your project, and BuildKit's `--secret` mount keeps them out of layer history. There's no path that writes plaintext secrets to disk on the build host or into the image you ship.
+</Check>
+
 ### 4. Install
 
 The runner runs your install command (`npm ci`, `pip install -r requirements.txt`, `bundle install`, `go mod download`, whatever the framework needs). The default install command is auto-detected; override it under **Configuration**.
@@ -242,6 +246,10 @@ How it works in practice:
 ### Cache lifetime
 
 A project's build cache **clears automatically after 15 days** of inactivity. If you don't deploy a project for two weeks, the next deploy is a cold build. Active projects keep their cache indefinitely.
+
+<Note>
+  **A cold build after a quiet period is normal, not a regression.** If you redeploy a project that hasn't been touched in over 15 days and the build takes much longer than usual, the cache was reaped. The next deploy will be warm again.
+</Note>
 
 ### Clearing the cache manually
 

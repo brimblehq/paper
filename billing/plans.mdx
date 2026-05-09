@@ -104,6 +104,10 @@ When you create a project, you pick CPU and memory from sliders. Available sizes
 | CPU | 0.5, 1, 2, 4, 8 vCPU |
 | Memory | 0.5, 1, 1.5, 2, 4, 8, 12, 16 GB |
 
+<Warning>
+  **Picking a size above your plan's included compute is metered, not blocked.** The sliders let you go all the way up to 8 vCPU / 16 GB on every plan. Brimble doesn't stop you, the gap above your plan's included CPU/memory is billed at $4/GB-month for each, prorated for the time you ran at that size. Bump the slider deliberately, and watch **Billing → Usage** for the live estimate.
+</Warning>
+
 The smallest size you can pick (0.5 of each) is **higher** than what's included on Free and matches what's included on Hacker. So a Free-plan project at 0.5 vCPU / 0.5 GB pays metered overage on the 0.25 above its plan default for both. To stay fully inside Free's included compute, you'd need to provision below the slider's smallest stop, which the dashboard doesn't currently expose.
 
 <Warning>
