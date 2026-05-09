@@ -88,34 +88,17 @@ Plans include a baseline of CPU and memory at no extra charge. Anything you prov
 
 ### How metering actually works
 
-Compute is billed by the **GB-hour**. Brimble tracks a project's resources as a sequence of segments, each with a start time, an end time, and the resources allocated during that segment. Two examples:
+Compute is billed by the **GB-hour**. Brimble tracks each project's resources as a series of time segments. When you scale up CPU, change memory, or attach a disk, Brimble closes the current segment and opens a new one with the new values.
 
-**A web service running at 0.5 GB CPU and 1 GB memory on the Hacker plan, all month.** Hacker default is 0.5 GB CPU and 0.5 GB memory.
+You're billed for the time at each configuration, not whichever was in effect at month-end. Scaling up halfway through the month means the second half is billed at the higher rate; the first half stays at the lower one. There's no rounding to whole hours.
 
-```
-CPU excess     = max(0.5 - 0.5, 0) = 0 GB → $0
-Memory excess  = max(1.0 - 0.5, 0) = 0.5 GB
-Memory cost    = 0.5 GB × $4 / GB-month = $2.00
-Total compute  = $2.00 for the month
-```
-
-**The same service scaled up to 2 GB memory at the 15th of the month.** Brimble closes the first segment (`0.5 / 1.0` for ~360 hours) and opens a new one (`0.5 / 2.0` for ~360 hours).
-
-```
-First half:    0.5 GB excess × ($4 / 720h) × 360h ≈ $1.00
-Second half:   1.5 GB excess × ($4 / 720h) × 360h ≈ $3.00
-Total memory:  $4.00 for the month
-```
-
-This is exactly how Brimble computes it under the hood. There's no rounding to whole hours, and no surprise floor.
+The dashboard's **Billing → Usage** view shows the running cost for the current cycle so you can see what you'll owe before the invoice lands.
 
 ### Persistent storage
 
-Persistent disks are billed by the GB-month, every GB, no plan default. A 50 GB disk costs `50 × $0.25 = $12.50/mo` at the base rate.
+Persistent disks are billed by the GB-month at $0.25/GB at the base rate. Some regions carry a small multiplier; the actual monthly cost for each disk size is shown in the dropdown when you provision a disk.
 
-The base rate is multiplied by a **regional storage factor** for some regions. Most regions are at the base; a few high-cost regions are higher. The actual rate per region is shown in the disk size dropdown when you provision a disk, for example `50 GB ($12.50/month)`.
-
-The `storage` quota in the plan table above is the **maximum disk size** you can provision on that plan. It's not "GB included free." Storage you provision always meters from byte one.
+The `storage` quota in the plan table above is the **maximum disk size** you can provision on that plan. It's not "GB included free." Persistent disk storage meters from the first GB.
 
 ### Bandwidth
 
@@ -151,6 +134,25 @@ To recover, add a working card under **Billing → Payment methods** and click *
 
 You can hold up to three cards on file; one is the default. Cards are added through redirects to the payment provider's hosted form (Stripe in most regions, Paystack for African markets); Brimble never sees card numbers.
 
+## Refunds
+
+Refunds fall into two buckets.
+
+**Automatic refunds** happen when Brimble couldn't deliver something you paid for:
+
+* A domain purchase fails at the registrar, the charge is refunded automatically.
+* A domain transfer-in fails or is rejected, the charge is refunded automatically.
+* A renewal race produces a duplicate charge, Brimble issues the refund without you needing to ask.
+
+These refunds go back to the original card via Stripe and you'll get a `Payment Reversed` email. The dashboard surfaces the reversal in **Billing → Invoices**.
+
+**Manual refunds** for one-off charges (build-minute top-ups, accidental upgrades, anything else) go through support. Open a ticket with the transaction reference from **Billing → Invoices** and the reason. Eligibility:
+
+* The charge must have settled successfully (pending or already-refunded charges can't be refunded again).
+* You must be the user the charge was billed to.
+
+Subscription fees behave differently from one-off charges; see [the FAQ](#faq) below for what happens when you downgrade or cancel mid-cycle.
+
 ## Currency
 
 Pricing is set in USD. Some regions display equivalent local-currency amounts on the checkout page (set by the payment provider), but the underlying amounts are USD.
@@ -181,6 +183,24 @@ Personal plans cover projects under your personal workspace. Team plans cover pr
 ## Pricing changes
 
 When pricing changes, current customers are notified via email and dashboard banner with at least 30 days' notice. Existing subscriptions stay at their current rate until the change takes effect.
+
+## FAQ
+
+**If I downgrade mid-cycle, do I get money back?** No. Downgrades are queued for the end of the current cycle. You keep the higher plan's features until the cycle ends, then drop to the lower one.
+
+**If I upgrade mid-cycle, am I charged immediately?** No. Upgrades take effect right away (new features unlock, new metering rates apply going forward), but the new plan price is charged on the next billing date.
+
+**Why was I charged more than the plan price this month?** Compute above plan defaults, persistent disks, bandwidth overage, or build-minute overage. Open **Billing → Invoices** and click the invoice; line items break the charge down by category.
+
+**Can I get an invoice for accounting?** Every charge produces a Stripe invoice. They're all in **Billing → Invoices** with downloadable PDFs.
+
+**Does Brimble add a markup on domain purchases?** Yes. The displayed price for a domain is the registrar's price plus a percentage charge from Brimble. The price you see in the buy flow is the final price you pay. Bringing an existing domain you already own (instead of buying through Brimble) doesn't trigger the markup, since you're not buying anything.
+
+**Are there startup credits or promo codes?** The workspace-creation flow has a **Startup Promo Code** field, enter and verify the code before creating the workspace.
+
+**What happens if I exhaust bandwidth mid-cycle?** On paid plans, you're billed $0.25/GB for everything above the included amount. On the free plan, projects start returning 503 once you've used your included amount, until the cycle resets.
+
+**Are free-plan projects ever idled?** Yes. Free-plan, non-team projects that haven't received a request in 30 minutes are auto-paused. The next incoming request unpauses the project automatically. Team and paid-plan projects are not idled this way.
 
 ## Next steps
 

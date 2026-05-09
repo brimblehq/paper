@@ -15,6 +15,7 @@
 * [Regions](projects/regions.md)
 * [Builds](projects/builds.md)
 * [Deployments](projects/deployments.md)
+* [Git integrations](projects/git-integrations.md)
 * [Deploy a worker](projects/deploy-a-worker.md)
 * [Deploy a database](projects/deploy-a-database.md)
 * [Deploy an MCP server](projects/deploy-an-mcp-server.md)
