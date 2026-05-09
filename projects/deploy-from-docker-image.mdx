@@ -27,9 +27,13 @@ Deploy a project from a pre-built Docker image instead of building from source. 
    - **Username**, the registry username.
    - **Password / token**, a password or access token. For GHCR, this is a personal access token with `read:packages`. For Docker Hub, a personal access token works better than your password.
 
-<Info>
-  **Image needed:** screenshot of the new-project flow with "Docker image" selected and the registry credentials section expanded
-</Info>
+<Frame caption="The Docker source step, image reference and registry credentials.">
+  <img src="/images/projects/deploy-docker-first-page.jpeg" alt="New-project flow with Docker image selected and registry credentials expanded" />
+</Frame>
+
+<Frame caption="The Docker source step, runtime configuration.">
+  <img src="/images/projects/deploy-docker-second-page.jpeg" alt="Second page of the Docker deploy flow showing service type, region, and compute size" />
+</Frame>
 
 5. Configure the runtime:
    - **Service type**, usually **Web service**. Pick **Worker** if the image isn't an HTTP server.

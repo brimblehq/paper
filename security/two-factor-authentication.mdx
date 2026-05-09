@@ -25,6 +25,10 @@ If your authenticator app doesn't support QR codes, copy the **manual setup key*
 
 Click **Continue**.
 
+<Frame caption="The TOTP setup screen with QR code and manual setup key.">
+  <img src="/images/security/add-2fa-screen.jpeg" alt="QR code for adding Brimble to a TOTP authenticator app, with the manual setup key shown below" />
+</Frame>
+
 ### Step 2, Verify
 
 Enter the 6-digit code your authenticator app shows.
@@ -32,6 +36,10 @@ Enter the 6-digit code your authenticator app shows.
 If the code is rejected, you have a clock-drift problem on the device generating it. Sync the device's clock and try the next code.
 
 Click **Verify**.
+
+<Frame caption="Verifying the 6-digit code from the authenticator app.">
+  <img src="/images/security/verify-2fa-setup.jpeg" alt="Verify step with a 6-digit OTP input" />
+</Frame>
 
 ### Step 3, Save your recovery codes
 
@@ -44,9 +52,9 @@ You have two options on this screen:
 
 Tick **I have saved my recovery codes** and click **Done** to close the modal. Brimble blocks the close action until the box is ticked, on purpose, losing both your authenticator and your recovery codes means a manual support recovery.
 
-<Info>
-  **Image needed:** screenshot of the "Save your recovery codes" step showing the recovery codes grid, Copy all and Download buttons, and the "I have saved my recovery codes" checkbox
-</Info>
+<Frame caption="Recovery codes are shown once during setup.">
+  <img src="/images/security/save-recovery-code.jpeg" alt="Recovery codes grid with Copy all and Download buttons and an acknowledgement checkbox" />
+</Frame>
 
 After this, the Security panel shows **2FA is enabled** with the count of recovery codes remaining.
 

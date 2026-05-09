@@ -38,9 +38,13 @@ Versions available per engine are shown in the dashboard during provisioning.
 
 Provisioning typically takes 60 to 120 seconds. The dashboard shows the status moving from `provisioning` to `active`.
 
-<Info>
-  **Image needed:** the database provisioning dialog with engine, version, region, and size all selected, ready to click **Provision**.
-</Info>
+<Frame caption="The database provisioning flow, top.">
+  <img src="/images/projects/deploy-database-top.jpeg" alt="Top of the database provisioning dialog with engine and version selected" />
+</Frame>
+
+<Frame caption="The database provisioning flow, sizing and confirm.">
+  <img src="/images/projects/deploy-database-bottom.jpeg" alt="Bottom of the database provisioning dialog showing region, size, and the Provision button" />
+</Frame>
 
 ## Get the connection string
 
@@ -100,7 +104,7 @@ Scaling causes a short restart (typically under 30 seconds). Connections drop an
 
 ## Backups
 
-Backups can be enabled on any database from **Settings → Backups**. When enabled, Brimble takes scheduled snapshots and retains them for the period configured on the project. You can also take an on-demand backup with **Back up now**.
+Backups can be enabled on any database from **Settings → Backups**. When enabled, Brimble takes a snapshot **every hour, on the hour**, and retains them for the period configured on the project. You can also take an on-demand backup with **Back up now**.
 
 Restoring from a backup happens via support today. Open a ticket with the database project and the snapshot timestamp.
 

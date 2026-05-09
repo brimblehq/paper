@@ -61,7 +61,6 @@ References can be embedded in a longer string and can chain, a referenced value 
 
 ```bash
 SHARED_API=https://api.{{shared.BASE_DOMAIN}}
-PROJECT_A.ENDPOINT={{shared.SHARED_API}}/v1
 ```
 
 Deploying a project that reads `ENDPOINT` and inherits from the shared environment gives:
