@@ -98,11 +98,9 @@ A few cheap wins:
 
 ## Troubleshooting
 
-**"Add a payment method before topping up."** Add a card under **Billing → Payment methods**, then retry.
+**Top-up confirmed but credits not visible.** Refresh the page. If still missing after a minute, check **Billing → Invoices** for the transaction status, SCA-protected cards sometimes take an extra step to clear.
 
-**Top-up confirmed but credits not visible.** Refresh the page. If still not visible after a minute, the payment is still being verified, Stripe sometimes takes a moment for SCA-protected cards. Check **Billing → Invoices** for the transaction status.
-
-**My usage looks higher than expected.** Failed builds still count for the time they ran before failing. Likewise builds that pass health checks but stay in `in progress` until timeout. Check **Deployment history** for any unusually long deployments and investigate why they took that long.
+**My usage looks higher than expected.** Failed builds still count for the time they ran before failing, and builds that hit the build timeout count for the full timeout. Check **Deployment history** for any unusually long deployments and investigate what made them slow.
 
 ## Next steps
 

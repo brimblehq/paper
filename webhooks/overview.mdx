@@ -110,7 +110,7 @@ Click **Send test event** on the webhook in the dashboard. The dashboard fires a
 
 **Some events arrive, others don't.** The events you're missing aren't in your subscription list. Add them, or pass `["*"]` to subscribe to everything.
 
-**Discord/Slack worked once, now silent.** Discord and Slack rotate or revoke incoming webhook URLs. Generate a new URL and update it in webhook settings.
+**Discord/Slack worked once, now silent.** The incoming-webhook URL was regenerated or removed at Discord/Slack (someone with admin on the channel did it, or the integration was reinstalled). Generate a new URL there and paste it back into Brimble's webhook settings.
 
 **Endpoint times out under load.** Acknowledge fast (return 200 immediately), then process asynchronously. Don't run downstream calls inside the request handler.
 

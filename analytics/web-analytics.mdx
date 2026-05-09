@@ -104,19 +104,21 @@ After deploying with the snippet in place:
 
 If it doesn't, open your browser's Network tab and check that requests to `analytics.brimble.io` are going through (no 404, no CORS error, no ad-blocker rule).
 
-## Troubleshooting
+## Custom events
 
-**Snippet loaded but no data.** Most ad-blockers and privacy extensions don't block Brimble analytics by default, but some do. Try a fresh browser profile to confirm. If it works there, your prod traffic is just being filtered by some users, the analytics dashboard will still show real visitors.
-
-**Wrong numbers.** Bot traffic is filtered automatically (known crawlers, headless browsers without proper UAs). If you're comparing to server-side request logs, expect a gap, server logs include bots and prefetches that the analytics dashboard hides.
-
-**SPA route changes don't count.** The snippet listens for History API events (`pushState`, `replaceState`). If your router uses fragment-only navigation (`#/route`) or replaces the page DOM without pushing state, it won't tick. Switch your router to History API mode, or call the SDK's manual track method.
-
-**Custom events.** The default snippet tracks pageviews. For event tracking (button clicks, form submits, conversions), use the SDK's `track()` method:
+The default snippet tracks pageviews. For event tracking (button clicks, form submits, conversions), call the SDK's `track()` method:
 
 ```javascript
 window.brimble?.track("signup", { plan: "pro" });
 ```
+
+## Troubleshooting
+
+**Snippet loaded but no data.** Open your browser's Network tab and confirm requests to `analytics.brimble.io` are going through (no 404, no CORS error, no extension blocking the request). If those requests are firing and the dashboard is still empty, contact support with the website ID.
+
+**SPA route changes don't count.** The snippet listens for History API events (`pushState`, `replaceState`). If your router uses fragment-only navigation (`#/route`) or replaces the page DOM without pushing state, it won't tick. Switch your router to History API mode, or call the SDK's manual track method.
+
+**Numbers don't match server-side request logs.** Expected. Server logs include bots, prefetches, and direct API hits the analytics dashboard filters out. The two views answer different questions.
 
 ## Next steps
 

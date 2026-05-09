@@ -91,7 +91,7 @@ For automation, integrate with your CI: have CI call out to Brimble's API to tri
 
 **Health check fails (502).** The image isn't listening on `$PORT`, or it's listening on `127.0.0.1` instead of `0.0.0.0`. Pass the port through whatever mechanism the image expects, and make sure the bind address is `0.0.0.0`.
 
-**Image is huge and pulls slowly.** First pull is uncached. Subsequent pulls of the same image (within the same region) are fast. For very large images, consider splitting your build to ship a thinner runtime layer.
+**Image is huge and pulls slowly.** Only the first pull per region is uncached; subsequent deploys reuse layers. If the cold pull is unacceptable, switch to a multi-stage build that ships a thinner runtime image.
 
 ## Next steps
 

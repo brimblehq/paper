@@ -172,11 +172,11 @@ Rotating requires 2FA. The new password takes effect immediately; existing conne
 
 **Connection times out.** Either the database isn't yet `active`, or your IP isn't on the whitelist. Check both.
 
-**Connection refused.** The database may have crashed or be restarting after a resize. Check the database project's status in the dashboard.
+**Connection refused.** The database is mid-restart (typically after a resize) or unhealthy. Open the project, the status will show `restarting` or `degraded`. Wait for it to return to `active` and reconnect.
 
 **Connection works locally but fails from the service.** Make sure the service and database are in the same region for private-endpoint use, or that you're using the public endpoint with TLS otherwise.
 
-**Provisioning failed.** Open the database project. The status page shows the provisioning state and any error. Common causes are: region out of capacity, name conflict, or a payment issue. Click **Retry** on the project to attempt provisioning again.
+**Provisioning failed.** Open the database project; the status page shows the failure reason. Common user-fixable causes: name already in use in the workspace, or a payment issue. Click **Retry** to attempt provisioning again.
 
 ## Next steps
 
