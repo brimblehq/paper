@@ -86,3 +86,7 @@
 * [DNS issues](troubleshooting/dns.md)
 * [TLS certificate issues](troubleshooting/tls.md)
 * [Deployment stuck](troubleshooting/deployment-stuck.md)
+
+## Reference
+
+* [Glossary](glossary.md)
