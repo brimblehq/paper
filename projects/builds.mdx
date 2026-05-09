@@ -67,23 +67,50 @@ While the push happens, the new layers are added to the project's persistent cac
 
 ### 7. Orchestrate
 
-The runner hands the artifact off to the orchestration layer, which schedules the container in your project's region. Brimble uses Nomad for scheduling and Consul for service discovery and health checking.
+What happens here splits by service type.
 
-For each deployment, the orchestration layer:
+**Static sites: no container, no orchestration.**
+For a static site, the build phase ends with the asset bundle being uploaded to Brimble's **globally distributed object storage** for static artifacts. There's no container, no Nomad scheduling, no health probe. As soon as the upload completes, Brimble's gateway is able to serve the new assets directly from object storage on the next request, and Cloudflare's cache for your project's hostnames is purged so users see the new version immediately. See [Static sites](service-types#static-site) for the full flow and [Edge caching](#edge-caching) below for what gets cached and where.
+
+**Web services, MCP servers, workers, and databases: orchestrate as a container.**
+The runner hands the artifact off to the orchestration layer, which schedules the container in your project's region. Brimble uses Nomad for scheduling and Consul for service discovery and health checking. For each deployment, the orchestration layer:
 
 1. Allocates a slot on a host with capacity for your project's CPU, memory, and storage.
-2. Pulls the image (or unpacks the static bundle).
+2. Pulls the image.
 3. **If you've set a pre-start command, runs it first** in a small Alpine task with your project's environment variables. The main task only starts if pre-start exits cleanly. See [Pre-start command](#pre-start-command) for the full behavior.
 4. Starts the main container with your start command and the runtime environment variables.
 5. Registers the service in Consul with health checks defined by your `healthCheckPath`.
 
 ### 8. Health check
 
-For web services, Brimble sends a GET to your `healthCheckPath` (default `/`). For workers, the check is process liveness. For static sites, no probe; the artifact is served directly from the edge.
+For web services and MCP servers, Brimble sends a GET to your `healthCheckPath` (default `/`). For workers, the check is process liveness. For static sites, there's no probe, the artifact is served directly from the edge as soon as the upload completes.
 
 Once the check passes, the edge flips traffic to the new deployment. The previous deployment continues running for a short drain window so in-flight requests finish, then it's stopped.
 
 If the health check never passes, the deployment is marked **degraded** and traffic stays on the previous deployment. After repeated failures the deployment moves to **failed**.
+
+## Edge caching
+
+Brimble sits behind **Cloudflare**. Every public request to a `*.brimble.app` URL or a verified custom domain hits Cloudflare's global edge first, and only the requests Cloudflare can't serve from cache are tunneled into Brimble's gateway. That's where most of the perceived speed of a Brimble-hosted app comes from, especially for static sites.
+
+What gets cached, and what doesn't, is decided by the `Cache-Control` headers Brimble's gateway sets on the response:
+
+| Response type | `Cache-Control` |
+|---|---|
+| HTML documents | `no-store, no-cache, must-revalidate, max-age=0, s-maxage=0` |
+| Hashed asset paths (`/assets/`, `/_assets/`, `/static/`) | `public, max-age=31536000, immutable` |
+| Other immutable extensions (`.js`, `.css`, fonts, images) | `public, max-age=31536000, immutable` |
+| All other static files | `public, max-age=3600, must-revalidate` |
+| Dynamic responses from your container | The headers your code returns |
+
+Two practical consequences:
+
+* **HTML is always fresh.** Browsers and Cloudflare both treat HTML as uncacheable, so a deploy is visible to users on their next page load. There's no stale HTML pinning users to an old bundle.
+* **Hashed assets cache for a year.** Vite, Next.js, Astro, and the rest of the modern frontend toolchain emit content-hashed filenames (`app.7a3b9c.js`). Once an asset is fetched, Cloudflare and the user's browser cache it for a year. New deploys produce new hashes, and the new HTML references the new hashes, so cache invalidation happens "for free."
+
+When a deploy goes active, Brimble explicitly purges Cloudflare's cache for the project's hostnames. That guarantees the first request after a deploy fetches fresh HTML from the gateway rather than a stale copy from Cloudflare's edge. You don't need to touch Cloudflare to make this happen, it's part of the deploy pipeline.
+
+For static sites, this combination, globally distributed origin storage plus Cloudflare's edge cache, means a returning visitor's request is usually answered from the closest Cloudflare data center to them without ever reaching Brimble.
 
 ## Pre-start command
 

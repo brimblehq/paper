@@ -39,15 +39,46 @@ A long-running container that handles HTTP traffic.
 
 ## Static site
 
-The build emits a directory of files; Brimble serves those files from the edge.
+A pure asset deploy: Brimble's frontend builder runs your build, captures the output directory, and ships the files. **No container is created and no runtime cost is billed.**
 
 **Required:**
 - A `build` command that produces the output directory.
 - An output directory configured in **Settings → Build** (e.g. `dist`, `out`, `build`, `public`).
 
-**Auto-detected for:** Next.js (`next export`), Vite, Astro, Hugo, Jekyll, Eleventy, Gatsby, Docusaurus, MkDocs, plain HTML repos.
+**Auto-detected for:** Next.js (`next export`), Vite, Astro, Hugo, Jekyll, Eleventy, Gatsby, Docusaurus, MkDocs, SvelteKit static, Remix static, plain HTML repos.
 
-**No runtime container.** No `PORT`, no start command. Build the assets, Brimble caches and serves them.
+### How a static-site request is served
+
+A deploy goes through the standard build phases (clone, detect, install, build) and then takes a different path at orchestrate:
+
+1. The frontend builder uploads the built assets to Brimble's **globally distributed object storage** for static artifacts. Each project gets its own prefix; the latest active deployment is what users see.
+2. The deployment goes live the moment the upload finishes. There's no health check, no container start, no Nomad scheduling.
+3. Brimble's gateway serves requests directly from the storage layer. The static path short-circuits the container-routing logic, requests don't fan out to a backend, they fan out to objects.
+4. Cloudflare sits in front of every public request, so most asset hits are answered from the closest Cloudflare data center to the user without ever reaching Brimble.
+5. When a deploy goes live, Cloudflare's cache for the project's hostnames is purged automatically so the new version is visible immediately.
+
+This is why static sites are faster and cheaper than web services on Brimble: no idle compute, no cold starts, and most requests are served from cache at the edge.
+
+### Cache headers
+
+The gateway sets `Cache-Control` per response so Cloudflare and browsers cache the right things for the right durations:
+
+- **HTML documents:** `no-store, no-cache, must-revalidate, max-age=0` (always fresh after a deploy).
+- **Hashed asset paths** (`/assets/*`, `/_assets/*`, `/static/*`) and immutable extensions (`.js`, `.css`, fonts, images): `public, max-age=31536000, immutable` (cached for a year, invalidated automatically by content-hashed filenames).
+- **Other static files:** `public, max-age=3600, must-revalidate`.
+
+See [Edge caching](builds#edge-caching) in the builds doc for the full table and the reasoning.
+
+### What you don't need
+
+- **A start command.** The artifact is files, not a process.
+- **A `PORT`.** No HTTP server is spawned.
+- **A health check path.** Probes don't apply.
+- **Resource sizing.** CPU and memory aren't billed for static sites; storage and bandwidth are.
+
+### SPA fallback
+
+If your build is a single-page app (Vite, CRA, Remix static, etc.) and a request path doesn't match a file in your output directory, the gateway falls back to `index.html` so client-side routing works. You don't need to configure rewrites; this is the default.
 
 ## Worker
 
