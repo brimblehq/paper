@@ -5,27 +5,13 @@
   "description": "Brimble documentation. Deploy applications, manage domains, scale services, and ship without operating infrastructure.",
   "colors": {
     "primary": "#006fff",
-    "light": "#4879f8",
+    "light": "#006fff",
     "dark": "#006fff"
   },
   "favicon": "/favicon.svg",
   "logo": {
     "light": "/logo/light.svg",
     "dark": "/logo/dark.svg"
-  },
-  "fonts": {
-    "heading": {
-      "family": "ABC Marfa",
-      "format": "woff2",
-      "weight": 400,
-      "source": "/fonts/ABCMarfaVariableVF-Trial.woff2"
-    },
-    "body": {
-      "family": "ABC Marfa",
-      "format": "woff2",
-      "weight": 400,
-      "source": "/fonts/ABCMarfaVariableVF-Trial.woff2"
-    }
   },
   "navigation": {
     "tabs": [
@@ -90,22 +76,15 @@
           },
           {
             "group": "Scaling",
-            "pages": [
-              "scaling/overview"
-            ]
+            "pages": ["scaling/overview"]
           },
           {
             "group": "Observability",
-            "pages": [
-              "observability/metrics",
-              "observability/logs"
-            ]
+            "pages": ["observability/metrics", "observability/logs"]
           },
           {
             "group": "Analytics",
-            "pages": [
-              "analytics/web-analytics"
-            ]
+            "pages": ["analytics/web-analytics"]
           },
           {
             "group": "Workspaces and teams",
@@ -116,29 +95,19 @@
           },
           {
             "group": "Security",
-            "pages": [
-              "security/two-factor-authentication"
-            ]
+            "pages": ["security/two-factor-authentication"]
           },
           {
             "group": "Billing",
-            "pages": [
-              "billing/plans",
-              "billing/build-minutes"
-            ]
+            "pages": ["billing/plans", "billing/build-minutes"]
           },
           {
             "group": "Notifications",
-            "pages": [
-              "notifications/overview"
-            ]
+            "pages": ["notifications/overview"]
           },
           {
             "group": "Webhooks",
-            "pages": [
-              "webhooks/overview",
-              "webhooks/events"
-            ]
+            "pages": ["webhooks/overview", "webhooks/events"]
           },
           {
             "group": "Troubleshooting",
@@ -152,9 +121,7 @@
           },
           {
             "group": "Reference",
-            "pages": [
-              "glossary"
-            ]
+            "pages": ["glossary"]
           }
         ]
       }

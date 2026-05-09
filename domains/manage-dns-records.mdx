@@ -45,7 +45,7 @@ Click the trash icon next to a record and confirm. There's no undo, re-add the r
 
 ### Apex and www pointing at the same project
 
-```
+```text
 @        A      <edge IP from Add Domain dialog>   (proxied: on)
 www      CNAME  gateway.brimble.app                 (proxied: on)
 ```
@@ -54,7 +54,7 @@ For DNS providers that support apex CNAME flattening / ALIAS at the apex (Cloudf
 
 ### Email through Google Workspace
 
-```
+```text
 @   MX  1 ASPMX.L.GOOGLE.COM
 @   MX  5 ALT1.ASPMX.L.GOOGLE.COM
 @   MX  5 ALT2.ASPMX.L.GOOGLE.COM
@@ -67,7 +67,7 @@ Don't proxy MX records, they're SMTP, not HTTP.
 
 Most third-party services (Google Search Console, Stripe, GitHub) verify with a TXT record on the apex:
 
-```
+```text
 @   TXT  "google-site-verification=abc123..."
 ```
 
@@ -77,13 +77,13 @@ Add the record they give you exactly as written, including the quotes if shown.
 
 Most domains don't need a CAA record. If you have one and Let's Encrypt isn't listed, certificate issuance fails. Either remove the CAA record or add Let's Encrypt:
 
-```
+```text
 @   CAA   0 issue "letsencrypt.org"
 ```
 
 ### SRV record (e.g. for XMPP, SIP, Matrix)
 
-```
+```text
 _xmpp-server._tcp   SRV  10 5 5269 jabber.example.com
 ```
 

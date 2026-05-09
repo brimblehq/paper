@@ -59,7 +59,7 @@ Cross-project references follow these rules:
 
 References can be embedded in a longer string and can chain, a referenced value that itself contains a reference will resolve, too.
 
-```
+```bash
 SHARED_API=https://api.{{shared.BASE_DOMAIN}}
 PROJECT_A.ENDPOINT={{shared.SHARED_API}}/v1
 ```

@@ -115,7 +115,7 @@ The default health check is `GET /`. If your `/` returns 404, 500, or anything o
 
 **Fix:** Either add a `/` route, or set the health check path to a working endpoint under **Settings → Configuration**:
 
-```
+```yaml
 healthCheckPath: /healthz
 ```
 

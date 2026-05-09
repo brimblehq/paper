@@ -66,21 +66,21 @@ After making a change, raise the TTL back up to the long value once you're confi
 
 ### Pointing the apex and www at the same project
 
-```
+```text
 @        A      <edge IP shown in dashboard>   (proxied)
 www      CNAME  gateway.brimble.app             (proxied)
 ```
 
 Or, if your DNS provider supports CNAME flattening / ALIAS at apex:
 
-```
+```text
 @        ALIAS  gateway.brimble.app             (proxied)
 www      CNAME  gateway.brimble.app             (proxied)
 ```
 
 ### Email through Google Workspace
 
-```
+```text
 @        MX     1 ASPMX.L.GOOGLE.COM
 @        MX     5 ALT1.ASPMX.L.GOOGLE.COM
 @        MX     5 ALT2.ASPMX.L.GOOGLE.COM
@@ -91,7 +91,7 @@ www      CNAME  gateway.brimble.app             (proxied)
 
 ### Subdomain on another nameserver
 
-```
+```text
 api      NS     ns1.somewhere.com
 api      NS     ns2.somewhere.com
 ```
@@ -100,7 +100,7 @@ This delegates `api.example.com` to a different DNS provider. Useful when one te
 
 ### Domain verification (Google, Stripe, GitHub, etc.)
 
-```
+```text
 @        TXT    "google-site-verification=abc123..."
 ```
 

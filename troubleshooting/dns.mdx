@@ -56,7 +56,7 @@ dig your-domain.com CAA +short
 
 If you see a CAA record that doesn't include `letsencrypt.org`, Let's Encrypt won't issue. Add a CAA record allowing it, or remove the existing CAA record:
 
-```
+```text
 @   CAA   0 issue "letsencrypt.org"
 ```
 

@@ -47,7 +47,7 @@ For web services and MCP servers, Brimble assigns the listening port via `PORT` 
 
 A child environment can inherit variables from a parent. A common pattern:
 
-```
+```text
 Production  (DB_URL=prod, STRIPE_KEY=live, LOG_LEVEL=info)
 └── Preview (inherits from Production, overrides DB_URL=staging)
 ```
