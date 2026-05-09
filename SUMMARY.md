@@ -74,6 +74,10 @@
 * [Plans and pricing](billing/plans.md)
 * [Build minutes](billing/build-minutes.md)
 
+## Notifications
+
+* [Overview](notifications/overview.md)
+
 ## Webhooks
 
 * [Overview](webhooks/overview.md)

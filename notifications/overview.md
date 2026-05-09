@@ -1,0 +1,129 @@
+# Notifications
+
+Brimble notifies you about deployments, billing, domains, team activity, and a few other events through three channels: the **dashboard bell**, **email**, and **browser push notifications**. Each channel can be turned on or off independently. A single mute setting silences all three at once.
+
+For programmatic delivery to your own systems (Discord, Slack, your own endpoint), use [Webhooks](../webhooks/overview.md) instead. Webhooks aren't gated by the notification preferences described here.
+
+## The three channels
+
+### Dashboard bell
+
+Every Brimble dashboard view has a bell icon in the top bar. Click it to see your unread notifications, scoped to the workspace you're currently in.
+
+The bell shows:
+
+- A red badge with the unread count when you have unseen notifications.
+- Up to 8 of your most recent notifications in the dropdown.
+- Each item's level (success, error, warning, info), a short message, and a link to the relevant page (the project, the domain, the invite, etc.). Clicking marks the item as seen.
+
+A **Mark all as read** action sits at the top of the dropdown.
+
+The bell is always available, regardless of your email or push preferences. It's the inbox of record.
+
+{% hint style="info" %}
+**Image needed:** screenshot of the topbar with the notification bell open, showing the unread badge, several notification items with level chips, a relative timestamp on each, and the "Mark all as read" link.
+{% endhint %}
+
+### Email
+
+Brimble sends transactional emails to your account address for events that need action or matter for record-keeping. Toggle them on or off under your profile drawer in **Notifications**.
+
+Emails go to the address on the account that owns the resource. For team projects, every team member who has email notifications enabled gets a copy.
+
+### Push (browser) notifications
+
+When enabled, the dashboard sends a browser notification when one of your deployments finishes. Push notifications are per-browser and per-workspace, so toggling them on at work doesn't carry over to your laptop at home.
+
+Toggling push on the first time triggers a browser permission prompt. If you deny it, push stays off until you re-allow it through your browser settings.
+
+Push fires only when the browser has Brimble permission **and** the workspace's push toggle is on **and** notifications aren't muted account-wide.
+
+## What triggers a notification
+
+| Event | Bell | Email |
+|-------|------|-------|
+| Deployment succeeded | Yes | Yes (template: deployment success) |
+| Deployment failed | Yes | Yes (template: deployment failed) |
+| Database provisioned | Yes | Yes |
+| Domain about to expire | Yes | Yes (reminder, then again at expiry) |
+| Domain transfer completed | Yes | Yes |
+| Subscription past due / unpaid | Yes | Yes |
+| Subscription reactivated | Yes | Yes |
+| Payment reversed (refund) | Yes | Yes |
+| Resource limit reached | Yes | Yes |
+| Team invite | Yes | Yes |
+| Team ownership transfer requested | Yes | Yes |
+| Team ownership transfer completed | Yes | Yes |
+| Workspace removal (you removed from a team) | Yes | Yes |
+| 2FA enabled / disabled | Yes | Yes |
+| New login on your account | No | Yes |
+| Account deletion scheduled | Yes | Yes |
+| Project deleted | Yes | Yes |
+| License key issued | Yes | Yes |
+
+PR-preview comments and commit-status updates aren't notifications: they're posted directly to the PR by Brimble's git integration. See [Git integrations](../projects/git-integrations.md).
+
+## Manage notification preferences
+
+Open the dashboard, click your avatar, then **Notifications**.
+
+You'll see three controls:
+
+1. **Push notifications.** Browser alerts when deployments finish. Toggle to enable; the browser will prompt for permission the first time. Disabled when notifications are muted.
+2. **Email notifications.** Whether Brimble sends event emails to your account address. Off doesn't unsubscribe you from required transactional mail (password resets, security-critical mail, etc.).
+3. **Webhook URLs** (if your plan includes them). Discord, Slack, and custom webhook URLs to forward events programmatically. See [Webhooks](../webhooks/overview.md).
+
+{% hint style="info" %}
+**Image needed:** screenshot of the Notifications panel in the user profile drawer showing the Push notifications toggle, Email notifications toggle, and the three webhook URL fields (Discord, Slack, custom) with the Test button next to each.
+{% endhint %}
+
+Changes save when you click **Save**. Push toggles take effect immediately for the current browser; email and webhook changes apply to the next event after save.
+
+## Mute everything
+
+If you need a window of quiet (deep-work session, vacation), use the account-level **mute** setting. When mute is on:
+
+- Push notifications are disabled (the toggle is greyed out).
+- Email notifications stop sending.
+- The bell still receives items so you don't miss anything; you just won't be alerted.
+
+Mute is on the user, not the workspace, so it covers every workspace you're part of. Toggle it from the same Notifications panel, the mute control is alongside the push and email toggles.
+
+## Per-workspace scoping
+
+Push notifications are scoped per browser and per workspace:
+
+- The push toggle's state lives in the browser's storage, keyed by workspace. Each browser remembers its own preference for each workspace.
+- The notification bell shows only items for the workspace you're currently in. Switch workspaces and the bell switches with you.
+
+Email notifications aren't workspace-scoped. They're sent to the account email, regardless of which workspace the event happened in. The email subject and body include the workspace name when relevant so you can tell at a glance.
+
+## Levels
+
+Bell notifications carry one of four levels, shown as a colored chip on each item:
+
+| Level | Used for |
+|-------|----------|
+| `success` | Deployments that succeeded, transfers that completed, normal good outcomes. |
+| `error` | Failed deployments, payment failures, transfer rejections. |
+| `warn` | Items needing your attention but not failing yet, like upcoming domain expiry. |
+| `info` | Routine state changes, configuration confirmations. |
+
+Levels are informational; no preference yet exists for "warnings only" or "errors only." Push and email respect the on/off toggles for the whole channel, not per level.
+
+## Troubleshooting
+
+**Bell shows zero unread but I'm sure I have new events.** The unread badge is per-workspace. Switch into the right workspace and the count updates.
+
+**I enabled push but I'm not getting browser notifications.** Three things must all be true: push is toggled on for the current workspace and browser, browser permission is granted (check your browser's site settings for `app.brimble.io`), and notifications aren't muted account-wide.
+
+**My team isn't getting deployment emails.** Each team member opts in individually. Have them open their own profile drawer and confirm **Email notifications** is on. A team-wide email setting doesn't exist; email follows the user, not the team.
+
+**Email notifications are off but I still get login emails.** Login alerts and other security mail are transactional and not gated by the email toggle. The toggle covers product event emails (deployments, billing, team activity).
+
+**Push works on my desktop but not my phone.** Push is per-browser. Each browser stores the toggle state independently in its own local storage. Enable it again on the new device.
+
+## Next steps
+
+* [Webhooks](../webhooks/overview.md), for programmatic delivery to Discord, Slack, or your own endpoint.
+* [Two-factor authentication](../security/two-factor-authentication.md), separate from notifications but uses the same email address for security-critical mail.
