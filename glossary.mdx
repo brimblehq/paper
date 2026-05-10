@@ -25,9 +25,9 @@ Terms you'll see across Brimble docs and the dashboard, in alphabetical order.
 
 **Build cache.** The persistent layer cache attached to your project. Survives across builds; clears automatically after 15 days of inactivity.
 
-**Build minutes.** Wall-clock time inside the build runner, measured from clone start to push end. Each plan includes a monthly allowance; overage on paid plans bills at $0.002/min, or you can top up. See [Build minutes](billing/build-minutes).
+**Build minutes.** Wall-clock time inside the builder, measured from clone start to push end. Each plan includes a monthly allowance; overage on paid plans bills at $0.002/min, or you can top up. See [Build minutes](billing/build-minutes).
 
-**Build runner.** The ephemeral machine that runs your build. Fresh every build, with the project's persistent layer cache available.
+**Builder.** The ephemeral machine that runs your build. Fresh every build, with the project's persistent layer cache available.
 
 ## C
 
@@ -65,7 +65,7 @@ Terms you'll see across Brimble docs and the dashboard, in alphabetical order.
 
 **Environment.** A named set of configuration a project deploys with. Default is **Production**; Preview is created automatically for PR builds. You can create more. See [Environments](environments/overview).
 
-**Environment variable.** A key/value pair injected into both the build runner and the running container. See [Manage environment variables](environments/environment-variables).
+**Environment variable.** A key/value pair injected into both the builder and the running container. See [Manage environment variables](environments/environment-variables).
 
 **EPP code.** Also called the auth code or transfer code. The token from a domain's current registrar that authorizes a transfer to a new registrar. See [Transfer a domain](domains/transfer-a-domain).
 

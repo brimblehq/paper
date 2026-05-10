@@ -3,7 +3,7 @@ title: "Manage environment variables"
 description: "Set, edit, and delete environment variables for a project."
 ---
 
-Set, edit, and delete environment variables for a project. Variables are injected into both the build runner and the running container.
+Set, edit, and delete environment variables for a project. Variables are injected into both the builder and the running container.
 
 ## Prerequisites
 
@@ -91,7 +91,7 @@ See [Reference shared and cross-project variables](env-references) for the full 
   **Adding or changing a variable doesn't affect a running deployment.** Variables are injected at build and start time, so the new value takes effect on the next deploy. Click **Redeploy** on the latest deployment after changing env vars, otherwise your container keeps running with the old values.
 </Warning>
 
-Variables are injected into the build runner and into the running container. Anything you set is available during `install`, `build`, and `start` commands, and your code at runtime reads them like any other process environment variable.
+Variables are injected into the builder and into the running container. Anything you set is available during `install`, `build`, and `start` commands, and your code at runtime reads them like any other process environment variable.
 
 For private package registries, set the auth token as a variable and reference it in `.npmrc` or `pip.conf`:
 

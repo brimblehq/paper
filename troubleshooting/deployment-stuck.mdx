@@ -89,11 +89,11 @@ Your build command runs but writes nothing to stdout for a long time. Brimble do
 console.log(`[${new Date().toISOString()}] step X complete`);
 ```
 
-This both helps you diagnose hangs and keeps the build runner active.
+This both helps you diagnose hangs and keeps the builder active.
 
 ### Cause 3: Out-of-memory thrashing
 
-Your build is using too much memory and the runner is paging or thrashing instead of OOMing.
+Your build is using too much memory and the builder is paging or thrashing instead of OOMing.
 
 **Confirm:** Build slows to a crawl after a fast start.
 

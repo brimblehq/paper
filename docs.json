@@ -53,6 +53,7 @@
               "projects/frameworks",
               "projects/regions",
               "projects/builds",
+              "projects/build-system",
               "projects/deployments",
               "projects/git-integrations",
               "projects/deploy-a-worker",

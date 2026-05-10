@@ -3,7 +3,7 @@ title: "Builds"
 description: "A build turns your source code into something Brimble can run."
 ---
 
-A **build** turns your source code into something Brimble can run. This page covers what runs during a build, in what order, and what the runner does between "you pushed a commit" and "your service is live."
+A **build** turns your source code into something Brimble can run. This page covers what runs during a build, in what order, and what the builder does between "you pushed a commit" and "your service is live."
 
 ## What runs your build
 
@@ -11,7 +11,7 @@ Brimble runs every build on its **remote builder fleet**, a pool of ephemeral bu
 
 Three things matter to you here:
 
-* **Builders run in the same region as your project.** Brimble keeps builder pools in every region. When you trigger a deploy, the dispatcher picks a healthy, least-loaded builder from the pool in your project's region. That keeps the source code, the layer cache, and the destination host close together, so push and orchestrate phases don't pay a cross-region round-trip.
+* **Builders run in the same region as your project.** Brimble keeps builder pools in every region. When you trigger a deploy, the dispatcher picks a healthy, least-loaded builder from the pool in your project's region. That keeps the source code, the layer cache, and the destination host close together, so push and launch phases don't pay a cross-region round-trip.
 * **Builders are ephemeral.** A build machine doesn't survive the build. State written to the local filesystem during a build is gone the moment the build ends.
 * **The cache is persistent.** Even though the machine is fresh, the layer cache attached to your project survives. The next build pulls cached layers from object storage and skips the work it already did.
 
@@ -23,41 +23,41 @@ Each deployment moves through these stages, and each one shows up as a section i
 
 ### 1. Clone
 
-The runner fetches your commit from GitHub, GitLab, or Bitbucket using the credentials Brimble has on file for your account. Submodules are cloned recursively. The clone is shallow, fetching only the commit being built and a small history.
+The builder fetches your commit from GitHub, GitLab, or Bitbucket using the credentials Brimble has on file for your account. Submodules are cloned recursively. The clone is shallow, fetching only the commit being built and a small history.
 
-If your repo is private, the runner authenticates using the Git provider integration you authorized when connecting the repo. No SSH keys or tokens of your own are needed.
+If your repo is private, the builder authenticates using the Git provider integration you authorized when connecting the repo. No SSH keys or tokens of your own are needed.
 
 ### 2. Detect
 
-The runner inspects the repo to decide which **builder** to use. Brimble has two builders plus straight Docker, and which one runs depends on what's in the repo:
+The builder inspects the repo to decide which **builder** to use. Brimble has two builders plus straight Docker, and which one runs depends on what's in the repo:
 
-* **`Dockerfile` at the project root → Docker (BuildKit).** The runner uses your Dockerfile directly. You're in full control of the image; Brimble doesn't inspect or rewrite it.
-* **A backend stack (Node, Python, Ruby, Go, Java, PHP, Rust, Elixir, and similar) → [Railpack](https://railpack.com/).** The runner uses Railpack to detect the framework, materialize the toolchain, run install and build, and produce a runnable container image without you writing a Dockerfile. See [Frameworks supported](frameworks) for the full list of stacks Railpack handles.
+* **`Dockerfile` at the project root → Docker (BuildKit).** The builder uses your Dockerfile directly. You're in full control of the image; Brimble doesn't inspect or rewrite it.
+* **A backend stack (Node, Python, Ruby, Go, Java, PHP, Rust, Elixir, and similar) → [Railpack](https://railpack.com/).** The builder uses Railpack to detect the framework, materialize the toolchain, run install and build, and produce a runnable container image without you writing a Dockerfile. See [Frameworks supported](frameworks) for the full list of stacks Railpack handles.
 * **A static-site or frontend framework (Vite, Astro, Next.js export, Hugo, SvelteKit static, Remix static, Gatsby, Docusaurus, MkDocs, Eleventy, and similar) → Brimble's frontend builder.** This is a purpose-built builder for frontend apps. It runs your install and build commands, captures the output directory, and ships the assets to the edge. No container is produced for static sites; the artifact is plain files.
 
 The detected stack, version, and chosen builder are logged at the top of the build output. If the auto-detection picks the wrong thing, override the framework, install command, build command, or start command under **Configuration**.
 
 ### 3. Inject secrets
 
-Before install or build runs, the runner pulls your environment variables from **Vault** and exposes them to the build environment. Brimble uses HashiCorp Vault as the secret store: every value you set under **Environment** is encrypted at rest, scoped to your project, and only readable by a build that has been issued a short-lived Vault token for that project. The dashboard, the API, and the runner never persist plaintext secrets to disk.
+Before install or build runs, the builder pulls your environment variables from **Vault** and exposes them to the build environment. Brimble uses HashiCorp Vault as the secret store: every value you set under **Environment** is encrypted at rest, scoped to your project, and only readable by a build that has been issued a short-lived Vault token for that project. The dashboard, the API, and the builder never persist plaintext secrets to disk.
 
 Once injected, the variables are available to every command that runs from this point forward, install scripts, build scripts, your code, and any pre-start command. Variables set in the active environment (Production, Preview, etc.) are the ones loaded.
 
 For BuildKit and Railpack builds, secrets are passed as build secrets (`--secret`), not as plain `--build-arg`, so they don't end up baked into image layers.
 
 <Check>
-  **Secrets stay encrypted at rest and out of image layers.** Vault holds plaintext only in memory, the runner reads them with a short-lived token scoped to your project, and BuildKit's `--secret` mount keeps them out of layer history. There's no path that writes plaintext secrets to disk on the build host or into the image you ship.
+  **Secrets stay encrypted at rest and out of image layers.** Vault holds plaintext only in memory, the builder reads them with a short-lived token scoped to your project, and BuildKit's `--secret` mount keeps them out of layer history. There's no path that writes plaintext secrets to disk on the build host or into the image you ship.
 </Check>
 
 ### 4. Install
 
-The runner runs your install command (`npm ci`, `pip install -r requirements.txt`, `bundle install`, `go mod download`, whatever the framework needs). The default install command is auto-detected; override it under **Configuration**.
+The builder runs your install command (`npm ci`, `pip install -r requirements.txt`, `bundle install`, `go mod download`, whatever the framework needs). The default install command is auto-detected; override it under **Configuration**.
 
-If a layer cache exists for this project and the lockfile hasn't changed since the last successful build, the runner restores the cached install output instead of running the install fresh. A warm cache typically takes the install phase from a minute or two down to a few seconds. See [Build cache](#build-cache) below.
+If a layer cache exists for this project and the lockfile hasn't changed since the last successful build, the builder restores the cached install output instead of running the install fresh. A warm cache typically takes the install phase from a minute or two down to a few seconds. See [Build cache](#build-cache) below.
 
 ### 5. Build
 
-The runner runs your build command (`npm run build`, `mix compile`, `cargo build --release`, and so on). For Dockerfile-based projects, this is where the image is built layer by layer using BuildKit.
+The builder runs your build command (`npm run build`, `mix compile`, `cargo build --release`, and so on). For Dockerfile-based projects, this is where the image is built layer by layer using BuildKit.
 
 For Railpack-based builds, Railpack assembles a base image, applies the language toolchain, copies your source, runs your build command, and produces a runnable container.
 
@@ -65,19 +65,19 @@ For static sites, this is the only phase that produces output; no container is b
 
 ### 6. Push
 
-The runner pushes the finished artifact (a container image, or a directory of static assets) to Brimble's internal storage. For container images, the runner pushes only the layers that don't already exist; unchanged base layers don't transfer.
+The builder pushes the finished artifact (a container image, or a directory of static assets) to Brimble's internal storage. For container images, the builder pushes only the layers that don't already exist; unchanged base layers don't transfer.
 
 While the push happens, the new layers are added to the project's persistent cache so the next build can reuse them.
 
-### 7. Orchestrate
+### 7. Launch
 
 What happens here splits by service type.
 
 **Static sites: no container, no orchestration.**
 For a static site, the build phase ends with the asset bundle being uploaded to Brimble's **globally distributed object storage** for static artifacts. There's no container, no Nomad scheduling, no health probe. As soon as the upload completes, Brimble's gateway is able to serve the new assets directly from object storage on the next request, and Cloudflare's cache for your project's hostnames is purged so users see the new version immediately. See [Static sites](service-types#static-site) for the full flow and [Edge caching](#edge-caching) below for what gets cached and where.
 
-**Web services, MCP servers, workers, and databases: orchestrate as a container.**
-The runner hands the artifact off to the orchestration layer, which schedules the container in your project's region. Brimble uses Nomad for scheduling and Consul for service discovery and health checking. For each deployment, the orchestration layer:
+**Web services, MCP servers, workers, and databases: launch on the cluster.**
+The builder hands the artifact off to the orchestration layer, which schedules the container in your project's region. Brimble uses Nomad for scheduling and Consul for service discovery and health checking. For each deployment, the orchestration layer:
 
 1. Allocates a slot on a host with capacity for your project's CPU, memory, and storage.
 2. Pulls the image.
@@ -241,7 +241,7 @@ How it works in practice:
 
 * Anything you write to a path outside the standard install or build directories.
 * Output that depends on environment variables not declared as build inputs (changing one of these silently bypasses the cache).
-* The build runner's working directory itself; it's wiped between builds.
+* The builder's working directory itself; it's wiped between builds.
 
 ### Cache lifetime
 
@@ -261,7 +261,7 @@ If a stale cache is producing weird results, clear it:
 
 ## The build environment
 
-Inside the build runner:
+Inside the builder:
 
 * Your repo at the project's root directory, or the `rootDir` you configured for monorepos.
 * Standard package managers for the detected language: npm, yarn, pnpm, bun, pip, poetry, bundler, go, cargo, composer, mvn, gradle, mix.
@@ -274,7 +274,7 @@ You don't have:
 * Access to your production runtime container or its filesystem.
 * Persistent state between builds beyond the cache.
 * The ability to spawn long-running processes that outlive the build.
-* Access to other tenants' builds or runtimes; every build runs on an isolated runner.
+* Access to other tenants' builds or runtimes; every build runs on an isolated builder.
 
 ## Watch paths
 
@@ -309,9 +309,9 @@ Your Dockerfile has full control. Anything Docker can do, you can do. Brimble do
 
 ## Status updates back to the dashboard
 
-The runner streams status back to Brimble's API in real time as it works. Each phase emits start and finish events. The dashboard's logs drawer subscribes to that stream so you see logs land within hundreds of milliseconds of the runner producing them.
+The builder streams status back to Brimble's API in real time as it works. Each phase emits start and finish events. The dashboard's logs drawer subscribes to that stream so you see logs land within hundreds of milliseconds of the builder producing them.
 
-When a deployment finishes (success or failure), the runner publishes a final event. That event triggers:
+When a deployment finishes (success or failure), the builder publishes a final event. That event triggers:
 
 * The status badge update in the dashboard.
 * The webhook delivery for `deployment.success` or `deployment.failed`, if you've configured webhooks.
