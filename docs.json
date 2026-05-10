@@ -1,6 +1,6 @@
 {
   "$schema": "https://mintlify.com/docs.json",
-  "theme": "mint",
+  "theme": "maple",
   "name": "Brimble",
   "description": "Brimble documentation. Deploy applications, manage domains, scale services, and ship without operating infrastructure.",
   "colors": {
@@ -16,6 +16,21 @@
   },
   "contextual": {
     "options": ["copy", "view", "chatgpt", "claude", "perplexity"]
+  },
+  "seo": {
+    "indexing": "all",
+    "metatags": {
+      "og:type": "website",
+      "og:site_name": "Brimble Docs",
+      "og:image": "https://brimble.io/og-image.png",
+      "twitter:card": "summary_large_image",
+      "twitter:site": "@brimblehq",
+      "twitter:creator": "@brimblehq",
+      "robots": "index, follow"
+    }
+  },
+  "metadata": {
+    "timestamp": true
   },
   "favicon": "/logo/icon.png",
   "logo": {
