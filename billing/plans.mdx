@@ -97,7 +97,7 @@ Each plan includes a per-project baseline of CPU and memory at no extra charge (
 
 ### Choosing a compute size
 
-When you create a project, you pick CPU and memory from sliders. Available sizes:
+When you create a project on a paid plan, you pick CPU and memory from sliders. Available sizes:
 
 | Resource | Available sizes |
 | -------- | --------------- |
@@ -105,16 +105,10 @@ When you create a project, you pick CPU and memory from sliders. Available sizes
 | Memory | 0.5, 1, 1.5, 2, 4, 8, 12, 16 GB |
 
 <Warning>
-  **Picking a size above your plan's included compute is metered, not blocked.** The sliders let you go all the way up to 8 vCPU / 16 GB on every plan. Brimble doesn't stop you, the gap above your plan's included CPU/memory is billed at $4/GB-month for each, prorated for the time you ran at that size. Bump the slider deliberately, and watch **Billing → Usage** for the live estimate.
+  **Picking a size above your plan's included compute is metered, not blocked.** On paid plans, the sliders let you go all the way up to 8 vCPU / 16 GB. Brimble doesn't stop you, the gap above your plan's included CPU/memory is billed at $4/GB-month for each, prorated for the time you ran at that size. Bump the slider deliberately, and watch **Billing → Usage** for the live estimate.
 </Warning>
 
-The smallest size you can pick (0.5 of each) is **higher** than what's included on Free and matches what's included on Hacker. So a Free-plan project at 0.5 vCPU / 0.5 GB pays metered overage on the 0.25 above its plan default for both. To stay fully inside Free's included compute, you'd need to provision below the slider's smallest stop, which the dashboard doesn't currently expose.
-
-<Warning>
-  **Free-plan projects can quietly meter overage.** Because the smallest slider stop (0.5 vCPU / 0.5 GB) is double the Free-plan baseline (0.25 / 0.25), every Free-plan project provisioned at the slider's minimum is paying metered compute on the 0.25-unit gap. Watch **Billing → Usage** if you didn't expect a charge.
-</Warning>
-
-Database projects on Free are capped at 0.1 vCPU / 0.25 GB memory / 10 GB storage. The sliders are locked to those values; you can't pick a higher tier on Free for databases. Other plans get the full slider range for databases.
+**Free plan compute.** The Free plan only deploys **static sites** (up to 5) and one **free-tier database** at a locked 0.1 vCPU / 0.25 GB / 10 GB. Static sites don't use CPU or memory, they're files served from the edge, so there's nothing to meter. Web services, MCP servers, and workers are blocked at deploy time on Free; you can't accidentally provision compute that would be billed to you. Upgrade to Hacker, Pro, or Team to use the compute slider.
 
 ### How metering actually works
 
@@ -248,12 +242,6 @@ When pricing changes, current customers are notified via email and dashboard ban
 **Are there startup credits or promo codes?** The workspace-creation flow has a **Startup Promo Code** field, enter and verify the code before creating the workspace.
 
 **What happens if I exhaust bandwidth mid-cycle?** On paid plans, you're billed $0.25/GB for everything above the included amount. On the free plan, projects start returning 503 once you've used your included amount, until the cycle resets.
-
-<Warning>
-  **Free-plan projects auto-pause after 30 minutes of inactivity.** A request after that wakes the project, but the first request takes a cold-start hit (a few seconds for most stacks). Team and paid-plan projects are never idled this way. If you're hosting something a user might hit at any time, put it on Hacker or Pro.
-</Warning>
-
-**Are free-plan projects ever idled?** Yes. Free-plan, non-team projects that haven't received a request in 30 minutes are auto-paused. The next incoming request unpauses the project automatically. Team and paid-plan projects are not idled this way.
 
 ## Next steps
 

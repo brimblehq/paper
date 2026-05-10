@@ -127,19 +127,18 @@ If the Nomad cluster can't reach the host running your container, network partit
 
 ### Putting it together
 
-```text
-Container exits → restart on same host (up to 10 attempts, 20s delay)
-   │
-   │  still failing
-   ▼
-Reschedule onto another host (exponential backoff, no limit)
-   │
-   │  host stops responding entirely
-   ▼
-After 15 min unreachable → mark allocation lost
-   │
-   ├── Web/MCP/DB → start a replacement immediately, keep replacement
-   └── Worker     → wait for original (no double-up); reschedule if host is confirmed dead
+```mermaid
+flowchart TB
+  exit["Container exits"] -->|"up to 10 attempts, 20s delay"| restart["Restart on same host"]
+  restart -->|still failing| reschedule["Reschedule onto another host<br/><span style='font-weight:400'>exponential backoff, no limit</span>"]
+  reschedule -->|host stops responding| lost["After 15 min unreachable<br/><span style='font-weight:400'>allocation marked lost</span>"]
+  lost --> web["Web / MCP / DB<br/><span style='font-weight:400'>start a replacement immediately,<br/>keep replacement</span>"]
+  lost --> worker["Worker<br/><span style='font-weight:400'>wait for original (no double-up);<br/>reschedule if host is confirmed dead</span>"]
+
+  classDef step fill:#1a1c1e,stroke:#454545,stroke-width:1px,color:#e8eaed
+  classDef accent fill:#202022,stroke:#006fff,stroke-width:1px,color:#ffffff
+  class exit,restart,reschedule,lost step
+  class web,worker accent
 ```
 
 For the things you can configure, autoscaling, replicas, regions, see [Scaling](../scaling/overview).
