@@ -11,8 +11,25 @@ Deploy a project from a pre-built Docker image instead of building from source. 
 
 ## Prerequisites
 
-- A Docker image hosted somewhere Brimble can pull from. Public registries (Docker Hub, GHCR, Quay) work without credentials. Private registries need a username and a token.
+- A Docker image hosted on a [supported registry](#supported-registries).
 - A Brimble account.
+
+## Supported registries
+
+Brimble can pull from the following registries. Public images pull anonymously; private images use the credentials you provide on the project (one **username** + **token / password** form, regardless of registry).
+
+| Registry | Hostname format | What to put in the credentials form (private images) |
+|---|---|---|
+| **Docker Hub** | `nginx:latest`, `myorg/image:tag` (no prefix needed) | Docker Hub username + a Personal Access Token. |
+| **GitHub Container Registry (GHCR)** | `ghcr.io/org/image:tag` | GitHub username + a PAT with the `read:packages` scope. |
+| **Google Container Registry (GCR)** | `gcr.io/project/image:tag`, or regional (`us.gcr.io`, `eu.gcr.io`, `asia.gcr.io`) | `_json_key` as username + the contents of a service-account JSON key as the password. |
+| **Red Hat Quay** | `quay.io/org/image:tag` | Quay username (or a robot account name) + the matching token. |
+| **AWS Elastic Container Registry (ECR)** | `<account>.dkr.ecr.<region>.amazonaws.com/image:tag` (private) or `public.ecr.aws/...` (anonymous) | An IAM-issued ECR auth token as the password (`AWS` is the conventional username). |
+| **DigitalOcean Container Registry** | `registry.digitalocean.com/<registry>/image:tag` | A DigitalOcean API token used as both username and password. |
+
+Brimble identifies the registry from the image hostname; you don't pick a registry type from a dropdown. Just paste the image URI and, if it's private, expand **Private registry credentials** and fill in username and token.
+
+Custom / self-hosted registries that speak the Docker Registry HTTP API v2 will generally work too, but they're not first-class. If yours behaves oddly, open a support ticket.
 
 ## Create the project
 

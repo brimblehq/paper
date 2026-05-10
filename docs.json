@@ -13,6 +13,14 @@
     "light": "/logo/icon.png",
     "dark": "/logo/icon.png"
   },
+  "fonts": {
+    "heading": {
+      "family": "ABC Marfa",
+      "source": "/fonts/ABCMarfaVariableVF-Trial.woff2",
+      "format": "woff2",
+      "weight": 700
+    }
+  },
   "navigation": {
     "tabs": [
       {
