@@ -91,11 +91,12 @@ To toggle authentication after deploy:
 
 To rotate the key:
 
-1. In **Settings → Configuration**, click **Rotate key**.
-2. Confirm.
-3. Update every client that connects to the server with the new key.
+1. Click your avatar in the sidebar to open the profile drawer.
+2. Scroll to **API key**.
+3. Click **Reroll key** and confirm.
+4. Update every client that connects with the new key.
 
-The old key stops working immediately on rotation.
+The old key stops working immediately on reroll. Because the API key is **account-level**, rerolling affects every MCP server, every API call, and any other integration that uses your Brimble API key, not just this one project.
 
 ## Custom MCP servers
 
@@ -118,7 +119,7 @@ If you didn't enable authentication, drop the `x-brimble-key` header and the req
 
 **Server deploys but no tools show in my client.** Confirm the URL ends in `/mcp` (or whatever path the server documents). Some clients trim trailing paths; check the URL the client actually requested.
 
-**`401 Unauthorized` on every request.** Authentication is enabled and the `x-brimble-key` header is missing or wrong. Pull the current key from **Settings → Configuration** and update your client.
+**`401 Unauthorized` on every request.** Authentication is enabled and the `x-brimble-key` header is missing or wrong. Open your profile drawer (avatar → **API key**), reveal the key, and update your client with that value.
 
 **Server shows as deployed but `/mcp` returns 502.** The server's container isn't responding. Open the project's logs to see the startup output. Some MCP servers from the marketplace need additional environment variables, check the server's detail page for required config.
 

@@ -64,7 +64,9 @@ MCP servers usually shouldn't be open to the internet. Brimble has a built-in au
 2. Toggle it on.
 3. Save.
 
-When MCP authentication is on, Brimble requires every request to include an `x-brimble-key` header with your project's MCP key. The key is shown in **Settings → Configuration**; click the eye icon to reveal it. Rotate the key from the same panel.
+When MCP authentication is on, Brimble requires every request to include an `x-brimble-key` header with your **account-level API key**. To find it, click your avatar in the sidebar to open the profile drawer, scroll to **API key**, and click the eye icon to reveal the value. The same key authenticates every MCP server in your account, you don't need a separate key per project.
+
+API keys are available on paid plans only. If you're on the free plan, MCP authentication can't be enabled until you upgrade.
 
 If you'd rather implement auth in your application code (per-user tokens, rotation logic, etc.), leave the toggle off and validate auth headers yourself in your handler. Don't enable both, clients would have to satisfy two layers.
 
@@ -116,7 +118,7 @@ If your server's logging is verbose, log selectively, runtime logs accumulate an
 
 **Client can't connect.** Confirm the server is listening on `process.env.PORT`, binds to `0.0.0.0`, and that the path in the URL matches what your code handles.
 
-**`401 Unauthorized` on every request.** MCP authentication is on and the `x-brimble-key` header is missing or wrong. Pull the current key from **Settings → Configuration** and update the client.
+**`401 Unauthorized` on every request.** MCP authentication is on and the `x-brimble-key` header is missing or wrong. Open your profile drawer (avatar → **API key**), reveal the key, and update the client with that value.
 
 **Client connects but no tools appear.** Tools are registered before `server.connect()` is called. Make sure registration runs at module-load time, not lazily inside a handler.
 

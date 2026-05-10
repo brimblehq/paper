@@ -183,6 +183,6 @@ Terms you'll see across Brimble docs and the dashboard, in alphabetical order.
 
 **`x-brimble-id`.** A unique-per-request UUID Brimble's gateway adds to every response. Log it on your side and Brimble's side correlates the same request, useful for support tickets.
 
-**`x-brimble-key`.** The header MCP server projects with auth enabled require on every request. Issued by Brimble per project; rotate it from the project's configuration.
+**`x-brimble-key`.** The header MCP server projects with auth enabled require on every request. The value is your **account-level API key** (one per account, not per project), available in the profile drawer; reroll from the same panel. Paid plans only.
 
 **`x-brimble-session`.** The httpOnly session cookie Brimble sets after a successful login on a password-protected project.
