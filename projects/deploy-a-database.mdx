@@ -102,6 +102,27 @@ CPU, memory, and storage can be scaled up at any time. Storage can only grow, no
 
 Scaling causes a short restart (typically under 30 seconds). Connections drop and reconnect, so make sure your client has reconnect logic.
 
+## Free-tier databases
+
+Free-plan accounts can run a managed database, but the resource limits and lifecycle are different from paid plans. The flow is designed for prototyping and short-lived experiments, not production workloads.
+
+What you get on the free plan:
+
+- **One database per account.** The dashboard blocks creating a second.
+- **Capped at 10 GB storage**, alongside the free-tier CPU and memory caps. The size sliders won't go above the cap.
+- **Some engines aren't available.** The provision dialog hides or disables engines that aren't offered on free; the dashboard surfaces the list.
+- **No backups.** Hourly backups are enabled for paid personal accounts and team workspaces only (see [Storage and durability](#storage-and-durability)).
+
+<Warning>
+  **Free-plan databases run for 15 days, then are deleted.** When the 15-day trial ends, Brimble permanently deletes the database and all of its data. You'll get an email three days before expiry warning you of the deletion date, and a final email when it happens. To keep the database running with no interruption, upgrade the account before the trial ends.
+</Warning>
+
+The clock starts the moment you provision the database. The database overview page shows the trial expiry date once provisioning completes, and `Billing → Plan` summarizes any upcoming free-tier deletions.
+
+Upgrading the account at any point before expiry switches the database off the free-tier lifecycle, the trial counter is dropped, the database becomes regular paid storage, and backups start running on the next hourly schedule.
+
+If the database is deleted at trial end, the data is unrecoverable. There's no grace period after deletion. Plan for the deletion or upgrade ahead of it.
+
 ## Storage and durability
 
 Every Brimble database is backed by **two independent layers** so your data isn't on one disk that one outage can take with it:
@@ -143,7 +164,6 @@ Backups are **not** taken for free personal accounts. If you're on the free tier
 Putting it together, here's the user-visible picture for the kinds of events people worry about:
 
 - **Container crashes.** New container comes up on the same volume. The engine replays its WAL (Postgres) or oplog (Mongo) and reaches a consistent state. **No data lost.**
-- **Host goes down.** Nomad reschedules onto another host, remounts the volume. **No data lost.**
 - **Region-wide incident affecting hosts but not the storage layer.** The volume is still intact. When the region recovers, the database comes back with all data.
 - **Volume corruption or unrecoverable failure.** Restore from the latest backup. Data written between the most recent backup and the failure may be lost (up to ~1 hour, depending on when the failure happened relative to the last hourly snapshot).
 - **You dropped the wrong table.** Restore from the latest backup.
@@ -163,8 +183,8 @@ A self-serve restore flow is on the roadmap. Until then, support can complete mo
 To rotate the database password:
 
 1. Open the database project.
-2. Go to **Settings → Credentials**.
-3. Click **Rotate password**.
+2. Go to **Configurations**.
+3. Provide your new password or use the password generation button.
 
 Rotating requires 2FA. The new password takes effect immediately; existing connections are dropped. Update the connection string in any service using the database, then redeploy that service.
 

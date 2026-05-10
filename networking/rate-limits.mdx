@@ -3,22 +3,31 @@ title: "Rate limits"
 description: "The hard limits Brimble's edge enforces on incoming traffic."
 ---
 
-The hard limits Brimble's edge enforces on incoming traffic. These are infrastructure-level guardrails, they protect your service from abusive single-source traffic and don't depend on your project's compute capacity.
+The hard limits Brimble's edge enforces on incoming traffic. These protect your service from abusive single-source traffic and don't depend on your project's compute capacity.
 
 ## Public traffic
 
+Public request rate limits are enforced at **Cloudflare**, the layer that fronts every Brimble URL. Cloudflare's limits adapt to traffic patterns and the type of request (browser, API, bot), so there's no single fixed "N requests per minute" we publish, what counts as abusive is judged in real time.
+
+What you can rely on:
+
+- A burst of normal traffic from a single user won't get throttled.
+- A clear flood from one IP (scraping, password spraying, simple DDoS) is blocked at the edge before it reaches your container.
+- When a request is throttled, the client gets `429 Too Many Requests` from Cloudflare. Bodies and other limits are independent.
+
+For request-shape limits Brimble enforces directly:
+
 | Limit | Value |
 |---|---|
-| **Requests** | 500 per 10-minute window, per IP, per domain |
 | **Body size** | 5 MB per request |
 | **Header size** | 8 KB |
 | **URL length** | 8 KB |
 
-Requests that exceed the request rate get `429 Too Many Requests` until the window rolls. Over-size bodies get `413 Payload Too Large`.
+Over-size bodies get `413 Payload Too Large`.
 
 ## Internal traffic
 
-Requests from internal Brimble IPs (the dashboard, the API, your other Brimble projects) are exempt from public rate limits. This means service-to-service calls between your Brimble projects don't count against each other's limit.
+Service-to-service calls inside Brimble's network (your projects calling each other over `*.service.brimble.internal`, the dashboard talking to the API) don't go through Cloudflare and aren't subject to public rate limits. Your internal traffic doesn't count against any limit.
 
 ## Build minutes
 
@@ -63,4 +72,4 @@ The 2FA prompt allows 5 wrong attempts per challenge, then locks for a cooling-o
 
 ## Higher limits
 
-For workloads that need more than the default public traffic limit (high-traffic public APIs, large file ingest, and similar), contact support. Custom rate limit policies, custom body size limits, and per-project carve-outs are available on Pro and Team plans. The dashboard surfaces the current thresholds but doesn't let you raise them in place; that goes through support or a plan upgrade.
+For workloads that need more headroom than the default public-traffic posture (high-traffic public APIs, large file ingest, and similar), contact support. Custom Cloudflare rules and custom body size limits are available on Pro and Team plans, those go through support or a plan upgrade.

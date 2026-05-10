@@ -88,15 +88,11 @@ gRPC and gRPC-Web both work. Bidirectional streaming, server streaming, and clie
 
 ## Rate limits
 
-Public traffic to your project is rate-limited at the edge:
+Public traffic to your project goes through **Cloudflare**, which rate-limits abusive single-source traffic at the edge before it reaches Brimble's gateway. Throttled requests get `429 Too Many Requests` from Cloudflare; normal user traffic is unaffected.
 
-- **500 requests per 10-minute window, per IP, per domain.**
+Service-to-service calls inside Brimble's network don't go through Cloudflare and aren't rate-limited.
 
-This protects your service from abusive single-IP traffic patterns. Above the limit, the edge returns `429 Too Many Requests` until the window rolls.
-
-The limit is independent of the project's compute capacity, it's an infrastructure-level guardrail. For higher limits or custom rules, contact support.
-
-Internal Brimble IPs (the dashboard, the API, your other Brimble projects) are exempt.
+For workloads that need custom rules (high-traffic public APIs, large file ingest), contact support. See [Rate limits](rate-limits) for the full breakdown.
 
 ## Body size
 

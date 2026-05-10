@@ -132,7 +132,7 @@ You added or changed an env var in the dashboard, but the running container has 
 
 ## Cause 10: Rate limit at the edge
 
-You're hitting Brimble's edge rate limit (500 requests per 10 minutes per IP per domain). Above the limit, the edge returns 429, not 502, but if you mistake one for the other, you may chase the wrong cause.
+Cloudflare is rate-limiting traffic from your client IP at the edge. Throttled requests return `429`, not `502`, but if you mistake one for the other you'll chase the wrong cause.
 
 **Confirm:**
 
