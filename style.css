@@ -1,0 +1,259 @@
+/*
+ * Dark-mode tokens mirrored from the Brimble dashboard
+ * (apps/dashboard/src/styles.css → .dark block).
+ *
+ * Page background is set in docs.json's `background.colors.dark`.
+ * This file paints elevated surfaces, borders, text, and code blocks
+ * to match the dashboard's dark theme.
+ */
+
+:root.dark,
+html.dark,
+[data-theme="dark"] {
+  /* Surfaces */
+  --bg-page-dark: #1a1c1e;          /* matches dashboard --brimble-air-gray */
+  --bg-elevated-dark: #202022;      /* matches dashboard --dash-bg */
+  --bg-elevated-2-dark: #29292a;    /* matches dashboard --dash-bg-elevated */
+  --bg-surface-dark: #222528;       /* matches dashboard --brimble-surface */
+
+  /* Text */
+  --text-strong-dark: #ffffff;      /* dashboard --dash-text-strong */
+  --text-body-dark: #bdbcbc;        /* dashboard --dash-text-body */
+  --text-faded-dark: #9a9d9c;       /* dashboard --dash-text-faded */
+  --text-extra-faded-dark: #8e9195; /* dashboard --dash-text-extra-faded */
+
+  /* Borders */
+  --border-dark: #454545;           /* dashboard --dash-border */
+}
+
+/* Body & main content */
+.dark body,
+[data-theme="dark"] body {
+  background-color: #1a1c1e;
+  color: #bdbcbc;
+}
+
+/* Headings keep the strong-white tone */
+.dark h1,
+.dark h2,
+.dark h3,
+.dark h4,
+[data-theme="dark"] h1,
+[data-theme="dark"] h2,
+[data-theme="dark"] h3,
+[data-theme="dark"] h4 {
+  color: #ffffff;
+}
+
+/* Cards, callouts, frames — elevated surfaces */
+.dark .card,
+.dark [class*="callout"],
+.dark [class*="Frame"],
+.dark [class*="Note"],
+.dark [class*="Info"],
+.dark [class*="Tip"],
+.dark [class*="Check"],
+.dark [class*="Warning"],
+.dark blockquote,
+[data-theme="dark"] .card,
+[data-theme="dark"] [class*="callout"],
+[data-theme="dark"] [class*="Frame"],
+[data-theme="dark"] blockquote {
+  background-color: #202022;
+  border-color: #454545;
+}
+
+/* Inline code chips */
+.dark code:not(pre code),
+[data-theme="dark"] code:not(pre code) {
+  background-color: #29292a;
+  color: #ffffff;
+  border: 0.5px solid #454545;
+}
+
+/* Code blocks */
+.dark pre,
+.dark pre code,
+[data-theme="dark"] pre,
+[data-theme="dark"] pre code {
+  background-color: #1a1c1e !important;
+  border: 0.5px solid #454545;
+}
+
+/* Tables */
+.dark table,
+[data-theme="dark"] table {
+  background-color: #1a1c1e;
+}
+
+.dark thead,
+.dark tr:nth-child(even),
+[data-theme="dark"] thead,
+[data-theme="dark"] tr:nth-child(even) {
+  background-color: #202022;
+}
+
+.dark th,
+.dark td,
+[data-theme="dark"] th,
+[data-theme="dark"] td {
+  border-color: #454545;
+}
+
+/* Sidebar / nav chrome */
+.dark aside,
+.dark nav,
+[data-theme="dark"] aside,
+[data-theme="dark"] nav {
+  background-color: #1a1c1e;
+  border-color: #454545;
+}
+
+/* Active sidebar item picks up the dashboard's elevated tone */
+.dark aside a[aria-current="page"],
+.dark aside a.active,
+[data-theme="dark"] aside a[aria-current="page"],
+[data-theme="dark"] aside a.active {
+  background-color: #29292a;
+  color: #ffffff;
+}
+
+/* Hairline rules */
+.dark hr,
+[data-theme="dark"] hr {
+  border-color: #454545;
+}
+
+/* Selection — match dashboard amber selection */
+.dark ::selection,
+[data-theme="dark"] ::selection {
+  background: rgba(255, 155, 0, 0.45);
+  color: #fff6e8;
+}
+
+/*
+ * Scrollbars — mirror the dashboard's `.scrollbar-subtle` pattern.
+ * Thin, transparent track, semi-translucent pill thumb that darkens on hover.
+ */
+
+/* Firefox */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(0, 0, 0, 0.18) transparent;
+}
+.dark *,
+[data-theme="dark"] * {
+  scrollbar-color: rgba(255, 255, 255, 0.14) transparent;
+}
+
+/* Chromium / Safari */
+*::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+*::-webkit-scrollbar-track {
+  background: transparent;
+}
+*::-webkit-scrollbar-thumb {
+  background-color: rgba(0, 0, 0, 0.18);
+  border-radius: 999px;
+  border: 2px solid transparent;
+  background-clip: padding-box;
+}
+*::-webkit-scrollbar-thumb:hover {
+  background-color: rgba(0, 0, 0, 0.28);
+}
+
+.dark *::-webkit-scrollbar-thumb,
+[data-theme="dark"] *::-webkit-scrollbar-thumb {
+  background-color: rgba(255, 255, 255, 0.14);
+}
+.dark *::-webkit-scrollbar-thumb:hover,
+[data-theme="dark"] *::-webkit-scrollbar-thumb:hover {
+  background-color: rgba(255, 255, 255, 0.22);
+}
+
+/*
+ * "On this page" TOC — Railway-style vertical rail with a dot at the
+ * active section. Renders a thin line down the left edge of the TOC and
+ * a filled dot at whichever heading is currently in view.
+ *
+ * Mintlify renames TOC classes between releases, so selectors are
+ * intentionally broad.
+ */
+
+/* The TOC list grows a left padding so the rail has room to sit. */
+nav[aria-labelledby*="on-this-page" i] ol,
+nav[aria-labelledby*="on-this-page" i] ul,
+aside[aria-label*="on this page" i] ol,
+aside[aria-label*="on this page" i] ul,
+[id*="toc" i] ol,
+[id*="toc" i] ul {
+  position: relative;
+  padding-left: 16px;
+  margin-left: 0;
+  list-style: none;
+}
+
+/* The vertical rail itself. */
+nav[aria-labelledby*="on-this-page" i] > ol::before,
+nav[aria-labelledby*="on-this-page" i] > ul::before,
+aside[aria-label*="on this page" i] > ol::before,
+aside[aria-label*="on this page" i] > ul::before,
+[id*="toc" i] > ol::before,
+[id*="toc" i] > ul::before {
+  content: "";
+  position: absolute;
+  left: 5px;
+  top: 0;
+  bottom: 0;
+  width: 1.5px;
+  background-color: rgba(0, 0, 0, 0.10);
+  border-radius: 999px;
+}
+
+.dark nav[aria-labelledby*="on-this-page" i] > ol::before,
+.dark nav[aria-labelledby*="on-this-page" i] > ul::before,
+.dark aside[aria-label*="on this page" i] > ol::before,
+.dark aside[aria-label*="on this page" i] > ul::before,
+.dark [id*="toc" i] > ol::before,
+.dark [id*="toc" i] > ul::before,
+[data-theme="dark"] nav[aria-labelledby*="on-this-page" i] > ol::before,
+[data-theme="dark"] [id*="toc" i] > ul::before {
+  background-color: rgba(255, 255, 255, 0.10);
+}
+
+/* Each list item makes room for a dot to the left of its label. */
+nav[aria-labelledby*="on-this-page" i] li,
+aside[aria-label*="on this page" i] li,
+[id*="toc" i] li {
+  position: relative;
+}
+
+/*
+ * Active item dot. Mintlify marks the active anchor with one of:
+ *   aria-current="page" / aria-current="true" / data-active="true"
+ * or with a class that includes "active". We catch all of them.
+ */
+nav[aria-labelledby*="on-this-page" i] li:has(> a[aria-current="true"])::before,
+nav[aria-labelledby*="on-this-page" i] li:has(> a[aria-current="page"])::before,
+nav[aria-labelledby*="on-this-page" i] li:has(> a[data-active="true"])::before,
+nav[aria-labelledby*="on-this-page" i] li:has(> a.active)::before,
+aside[aria-label*="on this page" i] li:has(> a[aria-current="true"])::before,
+aside[aria-label*="on this page" i] li:has(> a[aria-current="page"])::before,
+aside[aria-label*="on this page" i] li:has(> a.active)::before,
+[id*="toc" i] li:has(> a[aria-current="true"])::before,
+[id*="toc" i] li:has(> a[aria-current="page"])::before,
+[id*="toc" i] li:has(> a.active)::before {
+  content: "";
+  position: absolute;
+  left: 1px;
+  top: 50%;
+  width: 9px;
+  height: 9px;
+  border-radius: 999px;
+  background-color: #006fff;
+  box-shadow: 0 0 0 3px rgba(0, 111, 255, 0.18);
+  transform: translateY(-50%);
+  z-index: 1;
+}

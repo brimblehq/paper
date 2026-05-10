@@ -9,9 +9,9 @@
     "dark": "#006fff"
   },
   "background": {
-    "colors": {
+    "color": {
       "light": "#ffffff",
-      "dark": "#202022"
+      "dark": "#1a1c1e"
     }
   },
   "favicon": "/logo/icon.png",
@@ -161,6 +161,10 @@
       {
         "label": "Dashboard",
         "href": "https://app.brimble.io"
+      },
+      {
+        "label": "Changelog",
+        "href": "https://brimble.io/changelog"
       },
       {
         "label": "Status",
