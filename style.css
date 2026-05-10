@@ -7,6 +7,15 @@
  * to match the dashboard's dark theme.
  */
 
+/* Bold runs in body copy use Marfa Bold. Headings already use Marfa via
+ * docs.json's fonts.heading slot, which loads the variable font face,
+ * so referencing the family here is enough for the browser to pick the
+ * 700-weight glyph. */
+strong, b, em strong, strong em {
+  font-family: "ABC Marfa", -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
+  font-weight: 700;
+}
+
 :root.dark,
 html.dark,
 [data-theme="dark"] {

@@ -72,7 +72,7 @@ Two things to call out about this picture:
 
 **The Builder doesn't share state with other Builders directly.** Each one owns its own worker pool and its own attached Redis for queue state. The only "fleet-wide" things it talks to are Consul, Vault, Nomad, and the shared object-storage bucket. That keeps the blast radius of a single Builder failing small: Nomad reschedules it, the orchestration layer notices, and your next build gets routed to a healthy Builder.
 
-**The dispatcher always picks a Builder in your project's region.** When core-api receives a deploy request, it filters live Builders by `(region, healthy)` and scores the survivors by available memory and current load. The lowest-scored healthy Builder picks up the job. Source code, the layer cache, and the destination host all stay in the same region, no cross-region round-trips during the build.
+**The dispatcher always picks a Builder in your project's region.** When a deploy request comes in, the regional dispatcher filters live Builders by `(region, healthy)` and scores the survivors by available memory and current load. The lowest-scored healthy Builder picks up the job. Source code, the layer cache, and the destination host all stay in the same region, no cross-region round-trips during the build.
 
 ## Life of a build
 
@@ -80,7 +80,7 @@ Walking through one deploy from `git push` to "live":
 
 ### 1. Webhook in, queue out
 
-Your Git provider (GitHub, GitLab, or Bitbucket) sends a push webhook to core-api. Core-api validates the payload, finds the matching project, and creates a `deployment` record. It then asks the regional dispatcher for a Builder and emits a build event onto the message bus.
+Your Git provider (GitHub, GitLab, or Bitbucket) sends a push webhook to Brimble. The platform validates the payload, finds the matching project, and creates a `deployment` record. It then asks the regional dispatcher for a Builder and emits a build event onto the message bus.
 
 The whole thing takes milliseconds. By the time the dashboard's deployment row appears with status `pending`, the event is already on its way to a Builder.
 
@@ -90,7 +90,7 @@ The chosen Builder's event processor pulls the message off the bus and pushes a 
 
 ### 3. Clone
 
-The Builder's `clone.service` hits the Git provider with the credentials it pulled from Vault for this user, fetches a shallow clone of just the target commit, and writes the working tree to a per-job directory. Submodules clone recursively. The clone is depth-1 by default; we don't pull history we don't need.
+The Builder hits the Git provider with the credentials it pulled from Vault for this user, fetches a shallow clone of just the target commit, and writes the working tree to a per-job directory. Submodules clone recursively. The clone is depth-1 by default; we don't pull history we don't need.
 
 If the repo is private and the credentials have expired (a common case after rotating a GitHub PAT), the clone fails fast and the job is marked failed with a clear message. We don't retry into a wall.
 
@@ -147,7 +147,7 @@ Three calls we made deliberately:
 
 **Per-project orchestration queue.** It would be tempting to dispatch every Nomad submission through a single global queue and serve them all at once. We don't. Each project gets its own orchestration queue with concurrency = 1 because deploy ordering matters: a fast deploy and a slow deploy of the same project, processed concurrently, can resolve in the wrong order and leave the project on an old commit. Per-project serialization sidesteps the problem at the cost of a few hundred lightweight Bull queues sitting idle.
 
-**Region-pinned everything.** A build, its artifact, its cache, and its destination host all live in the same region. We had to make this choice at the Builder-dispatch layer, the cache-storage layer, and the orchestration layer. The reward is that push and pull phases of a build don't pay a 50–200ms cross-region round-trip per layer. Cross-region calls between Brimble services exist (the dashboard talks to every region's core-api) but they're explicit, not accidental.
+**Region-pinned everything.** A build, its artifact, its cache, and its destination host all live in the same region. We had to make this choice at the Builder-dispatch layer, the cache-storage layer, and the orchestration layer. The reward is that push and pull phases of a build don't pay a 50–200ms cross-region round-trip per layer. Cross-region calls between Brimble's own services exist, but they're explicit, not accidental.
 
 ## What changed for users
 

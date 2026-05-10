@@ -20,16 +20,14 @@ Cloudflare (global edge)
  │
  ▼
 Brimble Gateway (the proxy)
- │  5. Strip dangerous headers
- │  6. Match the hostname to a Brimble domain
- │  7. Apply ingress rules (redirect? maintenance? auth?)
- │  8. Inject Brimble headers
- │  9. Resolve which container instance to send to
- │ 10. Forward
+ │  5. Match the hostname to a Brimble domain
+ │  6. Apply ingress rules (redirect? maintenance? auth?)
+ │  7. Resolve which container instance to send to
+ │  8. Forward
  │
  ▼
 Your service
- │ 11. Code runs, returns response
+ │  9. Code runs, returns response
  │
  ▼
 Gateway → Cloudflare → User
@@ -69,17 +67,7 @@ What this means for you:
 - DDoS attacks hit Cloudflare's edge, not Brimble.
 - Brimble can move servers around without DNS changes.
 
-## 5. Brimble Gateway: header strip
-
-Once inside, the gateway is the first thing in Brimble's own network to see the request. It removes a small set of dangerous request headers, used by frameworks for internal-only signaling that should never be set by an external client:
-
-- `x-react-router-spa-mode`
-- `x-react-router-prerender-data`
-- `x-middleware-subrequest`
-
-If a client tries to set one, the gateway drops it before your code runs.
-
-## 6. Hostname matching
+## 5. Hostname matching
 
 The gateway looks up the request's hostname against the domain table. Three outcomes:
 
@@ -89,7 +77,7 @@ The gateway looks up the request's hostname against the domain table. Three outc
 
 The hostname is an exact match. `app.example.com` is a different lookup from `example.com`.
 
-## 7. Ingress rules
+## 6. Ingress rules
 
 Before the request reaches your container, the gateway runs through several gates in order. Each can short-circuit the request.
 
@@ -117,33 +105,31 @@ If the domain has a redirect URL configured, the gateway returns the configured 
 
 If the project hasn't finished its first deployment, or the latest deployment is `failed` and there's no previous active version, the gateway returns **202** (still deploying) or **409** (failed).
 
-## 8. Header inject
-
-The gateway adds and rewrites a few headers before forwarding to your container:
-
-| Header | Value |
-|---|---|
-| `x-forwarded-proto` | `https` (always, even if the connection between Cloudflare and Brimble was plaintext) |
-| `x-forwarded-ssl` | `on` |
-| `host` | rewritten to your domain |
-| `x-brimble-host` | the gateway server that handled the request |
-| `x-brimble-id` | a fresh UUID for this request, log this for correlation |
-| `x-brimble-project-version` | an ISO timestamp identifying which deployment is serving |
-
-The original `x-forwarded-for` and `x-real-ip` headers from Cloudflare carry the user's real IP, your code can read them to know who's connecting.
-
-For document requests (`Accept: text/html`, `Sec-Fetch-Dest: document`), conditional cache headers (`if-none-match`, `if-modified-since`, `if-match`, `if-unmodified-since`, `if-range`) are stripped, the edge always serves fresh HTML, never a 304. Static assets keep their conditional headers.
-
-## 9. Backend resolution
+## 7. Backend resolution
 
 The gateway picks which container instance to send the request to.
 
 - **Single-container projects**, the request goes to the project's container at its internal IP and port.
-- **Multi-container projects** (with an autoscaling group), the gateway uses Brimble's internal service discovery to find healthy instances and picks the container with the fewest active connections (least-connection algorithm). If that container errors at connection time, the gateway falls back to another instance.
+- **Multi-container projects** (with an autoscaling group), the gateway uses **Consul service discovery** to find healthy instances and picks the container with the fewest active connections (least-connection algorithm). If that container errors at connection time, the gateway falls back to another instance.
 
 The selection happens per request, sticky sessions aren't the default. If your service depends on session affinity, store session state in a database or shared cache, not in the container's memory.
 
-## 10. Forward to your container
+### Service discovery and DNS failover
+
+How the gateway actually resolves a project name to a live container, and why a single DNS hiccup doesn't take traffic down:
+
+- **Consul is the source of truth.** Every running container is registered with Consul on deploy and continuously health-checked. A container that fails its check is taken out of rotation immediately, the next request from the gateway no longer sees it as a candidate.
+- **CoreDNS sits in front of Consul.** Brimble runs **CoreDNS** as a system job on every host in a region. The gateway's DNS lookups go to the local CoreDNS instance, which is fronted by Consul's standard service-discovery semantics.
+- **Multiple Consul agents, with sequential failover.** CoreDNS is configured to forward DNS queries to a list of Consul agents, starting with the local one and stepping through every other Consul agent in the cluster in order. Each forwarder has a health check, if one Consul agent is unreachable or unhealthy, CoreDNS skips it and asks the next. The query only fails if every Consul agent in the cluster is down, which has an extremely small blast radius in practice.
+- **Lookups are cached.** Successful resolutions are cached at the gateway for a few minutes. A briefly-flapping DNS dependency doesn't translate into a flapping user-facing experience.
+
+What this means for you:
+
+- A single Consul or DNS instance failing in the middle of a deploy doesn't break routing for other projects.
+- A new deployment becomes routable within seconds of registering with Consul; you don't wait on long DNS TTLs.
+- A removed deployment stops receiving traffic the moment its health check fails or its container is deregistered, even before any cache expires, because the gateway tracks active connections and fails over on connection error.
+
+## 8. Forward to your container
 
 The gateway opens a connection to your container's address and forwards the request, including:
 
@@ -157,14 +143,14 @@ For WebSockets (paths like `/ws/*`, `/socket.io/*`, or any request with `Upgrade
 
 For gRPC (`Content-Type: application/grpc*`), the gateway forwards using HTTP/2 cleartext (h2c).
 
-## 11. Your service handles the request
+## 9. Your service handles the request
 
 Your code runs and returns a response. The gateway forwards it back, with two transformations:
 
 * `Cache-Control: no-store` is set on HTML document responses, and `etag` / `last-modified` are stripped, so the next page load gets the freshest deployment.
 * Static assets (JS, CSS, images, fonts) pass through with their cache headers intact, so Cloudflare can cache them on the way back out.
 
-## 12. Back to the user
+## 10. Back to the user
 
 The response travels back: gateway → Cloudflare tunnel → Cloudflare's edge → user's browser. Cacheable responses sit on Cloudflare's edge so the next user gets them without round-tripping to Brimble.
 
