@@ -48,9 +48,9 @@ A pure asset deploy: Brimble's frontend builder runs your build, captures the ou
 **Auto-detected for:** Next.js (`next export`), Vite, Astro, Hugo, Jekyll, Eleventy, Gatsby, Docusaurus, MkDocs, SvelteKit static, Remix static, plain HTML repos.
 
 <Warning>
-  **Next.js (and any other framework with both SSR and static modes) must be explicitly configured for static output.** A vanilla Next.js repo defaults to SSR, the build emits a `.next/` directory that needs a Node server at runtime. A static-site deploy doesn't have a runtime, so the build runs, the upload succeeds, and the deployed site loads blank.
+  **Frameworks with both SSR and static modes must be explicitly configured for static output.** A vanilla Next.js or Nuxt repo defaults to SSR, the build emits server-runtime artifacts that need a Node process. A static-site deploy doesn't have a runtime, so the build runs, the upload succeeds, and the deployed site loads blank.
 
-  To deploy Next.js as a static site, set `output: "export"` in your `next.config.js` (or `.mjs`/`.ts`):
+  **Next.js.** Set `output: "export"` in `next.config.js` (or `.mjs`/`.ts`):
 
   ```js
   // next.config.js
@@ -59,9 +59,24 @@ A pure asset deploy: Brimble's frontend builder runs your build, captures the ou
   };
   ```
 
-  This makes Next.js emit a real `out/` directory of HTML/CSS/JS at build time. **You lose server-side rendering, API routes, middleware, on-demand revalidation, and image optimization** — anything that needs a server at runtime. If your app uses any of those, deploy as a [Web service](#web-service) instead (paid plans only).
+  Next.js emits a real `out/` directory of HTML/CSS/JS at build time.
 
-  Same caveat applies to SvelteKit (use the static adapter), Nuxt (`nuxt generate`), Remix (static adapter), and Astro/Hugo/Eleventy/Jekyll — but these latter ones default to static, so they Just Work.
+  **Nuxt 3.** Run `nuxi generate` instead of `nuxi build` (or set `nitro.preset: "static"` in `nuxt.config.ts`):
+
+  ```ts
+  // nuxt.config.ts
+  export default defineNuxtConfig({
+    nitro: {
+      preset: "static",
+    },
+  });
+  ```
+
+  Nuxt emits a prerendered `.output/public/` directory; set that as the **output directory** in **Configuration**.
+
+  **Either way, you lose** server-side rendering, API routes, middleware, on-demand revalidation, and image optimization, anything that needs a server at runtime. If your app uses any of those, deploy as a [Web service](#web-service) instead (paid plans only).
+
+  Same caveat applies to **SvelteKit** (use `@sveltejs/adapter-static`) and **Remix** (use the static adapter). **Astro, Hugo, Eleventy, Jekyll, and Gatsby** default to static, so they Just Work.
 </Warning>
 
 ### How a static-site request is served
