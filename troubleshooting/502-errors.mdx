@@ -46,6 +46,8 @@ The `|| 3000` fallback only matters locally, in production `PORT` is always set.
 
 Your app listens on `127.0.0.1` or `localhost` only. Brimble's edge can't reach localhost-only listeners.
 
+If you're hitting this at deploy time (the new deployment is marked **Failed** instead of returning 502), see [Application failed to respond](application-failed-to-respond) — same root cause, caught earlier.
+
 **Confirm:** Look for `app.listen(port, "127.0.0.1", ...)` or `--host 127.0.0.1` in your start command.
 
 **Fix:** Bind to `0.0.0.0` instead:

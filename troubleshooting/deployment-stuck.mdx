@@ -103,11 +103,11 @@ Your build is using too much memory and the builder is paging or thrashing inste
 
 Build succeeded, container started, but Brimble never marks it active.
 
-### Cause 1: App not listening on `$PORT`
+### Cause 1: App not listening on `$PORT` or `0.0.0.0`
 
-Your code listens on a hardcoded port; the edge can't reach it.
+Your code listens on a hardcoded port, or binds to `127.0.0.1` instead of all interfaces. The edge can't reach it either way.
 
-**Fix:** Read `process.env.PORT` and bind to `0.0.0.0`. See [502 errors](502-errors).
+**Fix:** Read `process.env.PORT` and bind to `0.0.0.0`. See [Application failed to respond](application-failed-to-respond) for per-framework start commands.
 
 ### Cause 2: Health check path returns non-2xx
 

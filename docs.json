@@ -160,6 +160,7 @@
             "icon": "wrench",
             "pages": [
               "troubleshooting/build-failures",
+              "troubleshooting/application-failed-to-respond",
               "troubleshooting/502-errors",
               "troubleshooting/dns",
               "troubleshooting/tls",

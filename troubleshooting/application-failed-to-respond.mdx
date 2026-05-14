@@ -1,0 +1,186 @@
+---
+title: "Application failed to respond"
+description: "Build succeeded, but Brimble couldn't reach your app on the port it was supposed to listen on."
+---
+
+Your app built successfully but didn't start serving requests on the port Brimble assigned. The deployment is marked **Failed**, the previous deployment keeps serving, and your build log ends with:
+
+```
+Application failed to respond.
+```
+
+Different from a [502](502-errors): a 502 means a deployment is live but returning errors. This means no live deployment exists yet — the new build never reached **Active**.
+
+Different from a [stuck deployment](deployment-stuck): stuck deployments hang. This one explicitly failed.
+
+## Quick check
+
+Open the failed deployment and read the container logs printed under the error. If you see any of these, the cause is in [Cause 1](#cause-1-app-is-listening-on-127-0-0-1-instead-of-0-0-0-0):
+
+```
+Local:    http://localhost:3000/
+Network:  use --host to expose
+```
+
+```
+* Running on http://127.0.0.1:5000
+```
+
+```
+Starting development server at http://127.0.0.1:8000/
+```
+
+If the logs end with a stack trace, an "exited" line, or no output at all, jump to [Cause 4](#cause-4-start-command-exits-immediately) or [Cause 3](#cause-3-app-takes-too-long-to-start) instead.
+
+## Cause 1: App is listening on `127.0.0.1` instead of `0.0.0.0`
+
+The dominant cause. Your app bound to the container's loopback interface, so Brimble's health check (which hits the container from outside) can't reach it. Most dev/preview servers default to `127.0.0.1` and require an explicit flag or config to bind to all interfaces.
+
+**Confirm:** look for `localhost`, `127.0.0.1`, or `use --host to expose` in the container logs.
+
+**Fix:** bind to `0.0.0.0` in your start command or framework config.
+
+### Astro
+
+In your start command:
+
+```bash
+astro preview --host 0.0.0.0 --port $PORT
+```
+
+Or in `astro.config.mjs`:
+
+```javascript
+import { defineConfig } from "astro/config";
+
+export default defineConfig({
+  server: { host: "0.0.0.0" },
+  preview: { host: "0.0.0.0" },
+});
+```
+
+### Vite
+
+```bash
+vite preview --host 0.0.0.0 --port $PORT
+```
+
+Or `vite.config.ts`:
+
+```javascript
+export default defineConfig({
+  preview: { host: "0.0.0.0", port: Number(process.env.PORT) || 4173 },
+});
+```
+
+### Next.js
+
+```bash
+next start -H 0.0.0.0 -p $PORT
+```
+
+### Express / raw Node
+
+```javascript
+const port = Number(process.env.PORT) || 3000;
+app.listen(port, "0.0.0.0", () => console.log(`listening on ${port}`));
+```
+
+### Flask
+
+```python
+import os
+app.run(host="0.0.0.0", port=int(os.environ["PORT"]))
+```
+
+For production, use gunicorn instead of `app.run`:
+
+```bash
+gunicorn --bind 0.0.0.0:$PORT app:app
+```
+
+### Django
+
+`runserver` is dev-only — in production use gunicorn or uvicorn:
+
+```bash
+gunicorn --bind 0.0.0.0:$PORT myproject.wsgi
+```
+
+If you must use `runserver` for a quick test:
+
+```bash
+python manage.py runserver 0.0.0.0:$PORT
+```
+
+### Rails
+
+```bash
+rails s -b 0.0.0.0 -p $PORT
+```
+
+### FastAPI / uvicorn
+
+```bash
+uvicorn app:app --host 0.0.0.0 --port $PORT
+```
+
+## Cause 2: App is listening on the wrong port
+
+Brimble injects `PORT` into the container's environment. Your app must read it. Hardcoding a different port (e.g. `app.listen(8080)` while `$PORT=3000`) leaves the port Brimble is checking silent.
+
+**Confirm:** the container logs show "listening on 8080" (or any number that isn't the project's configured port).
+
+**Fix:** read `process.env.PORT`. See the same patterns in [502 errors → Cause 1](502-errors#cause-1-service-isnt-listening-on-port).
+
+## Cause 3: App takes too long to start
+
+Brimble's deploy-time health check has a finite retry window. If your app doesn't start listening within ~60 seconds, the check times out and the deployment fails.
+
+**Confirm:** the container logs show normal startup activity (DB migrations, model downloads, asset compilation) but never reach the "listening" message before the error.
+
+**Fix:** move slow work out of the boot path.
+
+- Run database migrations as a separate step (a pre-deploy command, or a one-off job), not on every container start.
+- Pre-download large model files at build time, not at boot.
+- For JIT-warmed apps, don't block listening on warm-up — start listening first, warm up in the background.
+
+If startup genuinely needs to be that long for legitimate reasons, see [stuck deployments → App takes too long to start](deployment-stuck#cause-3-app-takes-too-long-to-start) for options.
+
+## Cause 4: Start command exits immediately
+
+The container starts the process, but the process exits (cleanly or not) before binding to the port. Health check hits a dead container.
+
+**Confirm:** the container logs end with "exited", a stack trace, an exit code, or are empty (no startup output at all).
+
+**Fix:** find the crash.
+
+- A missing env var raised at boot → set it under **Settings → Environment**, then redeploy.
+- A typo in the start command → fix it under **Settings → Build → Start command**. Common: `node ./serve.js` when the file is `./server.js`, or `npm start` when no `start` script exists in `package.json`.
+- An unhandled promise rejection during boot → add a top-level handler so the failure shows up in logs:
+
+```javascript
+process.on("unhandledRejection", (err) => console.error("unhandled:", err));
+process.on("uncaughtException", (err) => { console.error("uncaught:", err); process.exit(1); });
+```
+
+If the start command runs a wrapper that's expected to exit (e.g. a build step accidentally set as the start command), that's the bug — your start command must be a long-running server.
+
+## Diagnostic checklist
+
+When you see "Application failed to respond", verify in this order:
+
+1. Container logs printed below the error — what was the last line before the deployment was killed?
+2. Is the start command binding to `0.0.0.0`? (Most common cause.)
+3. Is the start command listening on `process.env.PORT`?
+4. Did the process print a "listening" message before the error?
+5. Are all env vars the app needs at boot configured in **Settings → Environment**?
+
+If all five are clean and you still see the error, open a ticket with the deployment ID and the container log snippet.
+
+## Next steps
+
+- [502 errors](502-errors), if a deployment goes Active but doesn't serve traffic.
+- [Deployment is stuck](deployment-stuck), if a deployment never finishes (rather than failing).
+- [Build failures](build-failures), if the build itself fails before the deploy phase.
+- [Build system](../projects/build-system), for how install/build/start commands are configured.
