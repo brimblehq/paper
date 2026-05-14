@@ -99,7 +99,7 @@ The resize happens on the next deployment. The container restarts to pick up the
 A persistent disk is the wrong choice when:
 
 * **You need scale-out.** Multiple containers reading and writing the same dataset want a managed database or object storage, not a local volume.
-* **Your data must be backed up automatically.** Use a managed database (PostgreSQL, MongoDB, etc); Brimble snapshots those.
+* **Your data must be backed up automatically.** Use a managed database (PostgreSQL, MongoDB, etc.); Brimble snapshots those.
 * **Your data is large.** Beyond a hundred-ish GB, object storage with a small metadata DB scales better.
 
 For most production apps, the right answer is "managed database for state, object storage for files, no persistent disk." Persistent disks are best for self-hosted tools, prototypes, and edge cases where local files are genuinely the right model.
