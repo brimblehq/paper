@@ -32,7 +32,7 @@ If your repo is private, the builder authenticates using the Git provider integr
 The builder inspects the repo to decide which **builder** to use. Brimble has two builders plus straight Docker, and which one runs depends on what's in the repo:
 
 * **`Dockerfile` at the project root → Docker (BuildKit).** The builder uses your Dockerfile directly. You're in full control of the image; Brimble doesn't inspect or rewrite it.
-* **A backend stack (Node, Python, Ruby, Go, Java, PHP, Rust, Elixir, and similar) → [Railpack](https://railpack.com/).** The builder uses Railpack to detect the framework, materialize the toolchain, run install and build, and produce a runnable container image without you writing a Dockerfile. See [Frameworks supported](frameworks) for the full list of stacks Railpack handles.
+* **A backend stack (Node, Python, Ruby, Go, Java, PHP, Rust, Elixir, and similar) → [Railpack](https://railpack.com/).** The builder uses Railpack to detect the framework, materialize the toolchain, run install and build, and produce a runnable container image without you writing a Dockerfile. See [Frameworks supported](/projects/frameworks) for the full list of stacks Railpack handles.
 * **A static-site or frontend framework (Vite, Astro, Next.js export, Hugo, SvelteKit static, Remix static, Gatsby, Docusaurus, MkDocs, Eleventy, and similar) → Brimble's frontend builder.** This is a purpose-built builder for frontend apps. It runs your install and build commands, captures the output directory, and ships the assets to the edge. No container is produced for static sites; the artifact is plain files.
 
 The detected stack, version, and chosen builder are logged at the top of the build output. If the auto-detection picks the wrong thing, override the framework, install command, build command, or start command under **Configuration**.
@@ -74,7 +74,7 @@ While the push happens, the new layers are added to the project's persistent cac
 What happens here splits by service type.
 
 **Static sites: no container, no orchestration.**
-For a static site, the build phase ends with the asset bundle being uploaded to Brimble's **globally distributed object storage** for static artifacts. There's no container, no Nomad scheduling, no health probe. As soon as the upload completes, Brimble's gateway is able to serve the new assets directly from object storage on the next request, and Cloudflare's cache for your project's hostnames is purged so users see the new version immediately. See [Static sites](service-types#static-site) for the full flow and [Edge caching](#edge-caching) below for what gets cached and where.
+For a static site, the build phase ends with the asset bundle being uploaded to Brimble's **globally distributed object storage** for static artifacts. There's no container, no Nomad scheduling, no health probe. As soon as the upload completes, Brimble's gateway is able to serve the new assets directly from object storage on the next request, and Cloudflare's cache for your project's hostnames is purged so users see the new version immediately. See [Static sites](/projects/service-types#static-site) for the full flow and [Edge caching](#edge-caching) below for what gets cached and where.
 
 **Web services, MCP servers, workers, and databases: launch on the cluster.**
 The builder hands the artifact off to the orchestration layer, which schedules the container in your project's region. Brimble uses Nomad for scheduling and Consul for service discovery and health checking. For each deployment, the orchestration layer:
@@ -323,6 +323,6 @@ The build pipeline has well-defined failure modes. See [Build failures](../troub
 
 ## Next steps
 
-* [Deployments](deployments), how a build's output becomes a running service.
+* [Deployments](/projects/deployments), how a build's output becomes a running service.
 * [Build failures](../troubleshooting/build-failures), common errors during a build.
-* [Frameworks supported](frameworks), the full list of detected stacks.
+* [Frameworks supported](/projects/frameworks), the full list of detected stacks.

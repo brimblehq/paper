@@ -91,7 +91,7 @@ The deploy phase schedules the container in your region.
 
 The container started but isn't responding to health checks.
 
-**"Application failed to respond."** Your service isn't listening on `$PORT`, isn't listening on `0.0.0.0`, or takes longer than the health check timeout to respond. This is the most common deploy failure — see [Application failed to respond](application-failed-to-respond) for per-framework start commands (Astro, Vite, Next, Express, Flask, Django, Rails).
+**"Application failed to respond."** Your service isn't listening on `$PORT`, isn't listening on `0.0.0.0`, or takes longer than the health check timeout to respond. This is the most common deploy failure — see [Application failed to respond](/troubleshooting/application-failed-to-respond) for per-framework start commands (Astro, Vite, Next, Express, Flask, Django, Rails).
 
 **Health check returns non-2xx.** Your `healthCheckPath` (default `/`) returns an error. Either fix the route, or set `healthCheckPath` to a working endpoint under **Settings → Configuration**.
 

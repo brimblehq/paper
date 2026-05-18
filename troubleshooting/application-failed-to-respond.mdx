@@ -9,9 +9,9 @@ Your app built successfully but didn't start serving requests on the port Brimbl
 Application failed to respond.
 ```
 
-Different from a [502](502-errors): a 502 means a deployment is live but returning errors. This means no live deployment exists yet — the new build never reached **Active**.
+Different from a [502](/troubleshooting/502-errors): a 502 means a deployment is live but returning errors. This means no live deployment exists yet — the new build never reached **Active**.
 
-Different from a [stuck deployment](deployment-stuck): stuck deployments hang. This one explicitly failed.
+Different from a [stuck deployment](/troubleshooting/deployment-stuck): stuck deployments hang. This one explicitly failed.
 
 ## Quick check
 
@@ -131,7 +131,7 @@ Brimble injects `PORT` into the container's environment. Your app must read it. 
 
 **Confirm:** the container logs show "listening on 8080" (or any number that isn't the project's configured port).
 
-**Fix:** read `process.env.PORT`. See the same patterns in [502 errors → Cause 1](502-errors#cause-1-service-isnt-listening-on-port).
+**Fix:** read `process.env.PORT`. See the same patterns in [502 errors → Cause 1](/troubleshooting/502-errors#cause-1-service-isnt-listening-on-port).
 
 ## Cause 3: App takes too long to start
 
@@ -145,7 +145,7 @@ Brimble's deploy-time health check has a finite retry window. If your app doesn'
 - Pre-download large model files at build time, not at boot.
 - For JIT-warmed apps, don't block listening on warm-up — start listening first, warm up in the background.
 
-If startup genuinely needs to be that long for legitimate reasons, see [stuck deployments → App takes too long to start](deployment-stuck#cause-3-app-takes-too-long-to-start) for options.
+If startup genuinely needs to be that long for legitimate reasons, see [stuck deployments → App takes too long to start](/troubleshooting/deployment-stuck#cause-3-app-takes-too-long-to-start) for options.
 
 ## Cause 4: Start command exits immediately
 
@@ -180,7 +180,7 @@ If all five are clean and you still see the error, open a ticket with the deploy
 
 ## Next steps
 
-- [502 errors](502-errors), if a deployment goes Active but doesn't serve traffic.
-- [Deployment is stuck](deployment-stuck), if a deployment never finishes (rather than failing).
-- [Build failures](build-failures), if the build itself fails before the deploy phase.
+- [502 errors](/troubleshooting/502-errors), if a deployment goes Active but doesn't serve traffic.
+- [Deployment is stuck](/troubleshooting/deployment-stuck), if a deployment never finishes (rather than failing).
+- [Build failures](/troubleshooting/build-failures), if the build itself fails before the deploy phase.
 - [Build system](../projects/build-system), for how install/build/start commands are configured.

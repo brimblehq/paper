@@ -48,7 +48,7 @@ Workers need credentials to talk to whatever they consume. Common ones:
 - `REDIS_URL`, queue or cache connection string.
 - `AWS_ACCESS_KEY_ID` / `AWS_SECRET_ACCESS_KEY`, for SQS, S3, etc.
 
-Add these under **Environment** before deploying. See [Manage environment variables](environment-variables).
+Add these under **Environment** before deploying. See [Manage environment variables](/environments/environment-variables).
 
 ## Step 4: Deploy
 
@@ -112,5 +112,5 @@ process.on("uncaughtException", (err) => console.error("uncaught:", err));
 
 ## Next steps
 
-- [Deployments](deployments), how restarts and health checks work.
-- [Deploy a database](deploy-a-database), provision the queue or DB the worker reads from.
+- [Deployments](/projects/deployments), how restarts and health checks work.
+- [Deploy a database](/projects/deploy-a-database), provision the queue or DB the worker reads from.
