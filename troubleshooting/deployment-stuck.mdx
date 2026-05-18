@@ -107,7 +107,7 @@ Build succeeded, container started, but Brimble never marks it active.
 
 Your code listens on a hardcoded port, or binds to `127.0.0.1` instead of all interfaces. The edge can't reach it either way.
 
-**Fix:** Read `process.env.PORT` and bind to `0.0.0.0`. See [Application failed to respond](application-failed-to-respond) for per-framework start commands.
+**Fix:** Read `process.env.PORT` and bind to `0.0.0.0`. See [Application failed to respond](/troubleshooting/application-failed-to-respond) for per-framework start commands.
 
 ### Cause 2: Health check path returns non-2xx
 
@@ -155,6 +155,6 @@ Include the deployment ID and the project name. Brimble's logs include extra con
 
 ## Next steps
 
-- [Build failures](build-failures), for deployments that fail with an error.
-- [502 errors](502-errors), for deployments that go active but don't serve traffic.
+- [Build failures](/troubleshooting/build-failures), for deployments that fail with an error.
+- [502 errors](/troubleshooting/502-errors), for deployments that go active but don't serve traffic.
 - [Deployments](../projects/deployments), the full lifecycle and what each phase does.
