@@ -5,7 +5,7 @@ description: "Brimble supports three git providers as deployment sources: GitHub
 
 Brimble supports three git providers as deployment sources: **GitHub**, **GitLab**, and **Bitbucket**. Each one connects to your account separately. Once connected, you can deploy any repo your account has access to.
 
-You can also deploy from a pre-built Docker image instead; see [Deploy from a Docker image](deploy-from-docker-image). That path doesn't require a git provider connection.
+You can also deploy from a pre-built Docker image instead; see [Deploy from a Docker image](/projects/deploy-from-docker-image). That path doesn't require a git provider connection.
 
 ## Provider summary
 
@@ -35,7 +35,7 @@ You can connect more than one account on the same provider, useful when you have
 
 ## What happens on push
 
-When you push a commit to a project's tracked branch, Brimble's webhook fires and a build kicks off automatically. The build uses the latest commit on that branch. See [Builds](builds) for the pipeline.
+When you push a commit to a project's tracked branch, Brimble's webhook fires and a build kicks off automatically. The build uses the latest commit on that branch. See [Builds](/projects/builds) for the pipeline.
 
 Brimble registers webhooks differently per provider:
 
@@ -94,6 +94,6 @@ A project's git source is set at creation. To switch a project from GitHub to Gi
 
 ## Next steps
 
-- [Deploy from a Docker image](deploy-from-docker-image), the alternative source if you don't want git-based builds.
-- [Builds](builds), what happens after Brimble pulls the commit.
-- [Deployments](deployments), how a build becomes a running service.
+- [Deploy from a Docker image](/projects/deploy-from-docker-image), the alternative source if you don't want git-based builds.
+- [Builds](/projects/builds), what happens after Brimble pulls the commit.
+- [Deployments](/projects/deployments), how a build becomes a running service.

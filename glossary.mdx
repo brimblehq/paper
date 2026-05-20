@@ -9,13 +9,13 @@ Terms you'll see across Brimble docs and the dashboard, in alphabetical order.
 
 **A record.** A DNS record type that maps a hostname to an IPv4 address. Used at the apex of a domain pointing at Brimble's edge when CNAME at apex isn't supported by your provider.
 
-**Application logs.** The stdout and stderr stream from your running container. Visible under **Logs** on a project. See [Logs](observability/logs).
+**Application logs.** The stdout and stderr stream from your running container. Visible under **Logs** on a project. See [Logs](/observability/logs).
 
 **Apex.** The root of a domain (`example.com`), as opposed to a subdomain (`app.example.com`). Some DNS providers don't allow CNAME records at the apex; use an A record or ALIAS instead.
 
 **Auto-deploy.** A project setting that triggers a build on every push to the tracked branch. On by default for git-sourced projects.
 
-**Autoscaling group.** A configuration that lets a project run more than one container, scaling the count based on CPU, memory, or fixed bounds. See [Configure scaling](scaling/overview).
+**Autoscaling group.** A configuration that lets a project run more than one container, scaling the count based on CPU, memory, or fixed bounds. See [Configure scaling](/scaling/overview).
 
 ## B
 
@@ -25,7 +25,7 @@ Terms you'll see across Brimble docs and the dashboard, in alphabetical order.
 
 **Build cache.** The persistent layer cache attached to your project. Survives across builds; clears automatically after 15 days of inactivity.
 
-**Build minutes.** Wall-clock time inside the builder, measured from clone start to push end. Each plan includes a monthly allowance; overage on paid plans bills at $0.002/min, or you can top up. See [Build minutes](billing/build-minutes).
+**Build minutes.** Wall-clock time inside the builder, measured from clone start to push end. Each plan includes a monthly allowance; overage on paid plans bills at $0.002/min, or you can top up. See [Build minutes](/billing/build-minutes).
 
 **Builder.** The ephemeral machine that runs your build. Fresh every build, with the project's persistent layer cache available.
 
@@ -33,7 +33,7 @@ Terms you'll see across Brimble docs and the dashboard, in alphabetical order.
 
 **CAA record.** A DNS record type that restricts which certificate authorities can issue TLS certificates for the domain. If you have a CAA record that doesn't allow Let's Encrypt, certificate issuance fails.
 
-**Cloudflare.** The CDN and edge layer that sits in front of every public request to Brimble. Terminates TLS, filters DDoS, and tunnels into Brimble's gateway. See [Request lifecycle](networking/request-lifecycle).
+**Cloudflare.** The CDN and edge layer that sits in front of every public request to Brimble. Terminates TLS, filters DDoS, and tunnels into Brimble's gateway. See [Request lifecycle](/networking/request-lifecycle).
 
 **CNAME.** A DNS record type that aliases one hostname to another. Used to point `app.example.com` at `gateway.brimble.app`.
 
@@ -49,11 +49,11 @@ Terms you'll see across Brimble docs and the dashboard, in alphabetical order.
 
 **Default domain.** The hostname Brimble assigns to every project, of the form `<project-name>.brimble.app`. Always available, served over HTTPS.
 
-**Deployment.** A single attempt to roll out a new version of a project. Triggered by a push, a redeploy, a PR (for previews), or a manual rollback. See [Deployments](projects/deployments).
+**Deployment.** A single attempt to roll out a new version of a project. Triggered by a push, a redeploy, a PR (for previews), or a manual rollback. See [Deployments](/projects/deployments).
 
 **Disabled.** A project state set when a subscription's payment has failed for more than 7 days. Existing deployments keep serving, but new builds are blocked.
 
-**DNS record.** A directive at the DNS layer that maps a hostname to an answer (an IP, another hostname, text, etc.). Brimble supports A, AAAA, CNAME, MX, TXT, NS, SRV, and CAA. See [DNS record types](domains/dns-records).
+**DNS record.** A directive at the DNS layer that maps a hostname to an answer (an IP, another hostname, text, etc.). Brimble supports A, AAAA, CNAME, MX, TXT, NS, SRV, and CAA. See [DNS record types](/domains/dns-records).
 
 **Dockerfile.** A file in your repo's root that tells Brimble how to build the container. When present, Brimble uses it directly instead of Railpack.
 
@@ -63,11 +63,11 @@ Terms you'll see across Brimble docs and the dashboard, in alphabetical order.
 
 **Edge.** The first Brimble-managed component a request hits after Cloudflare. Terminates TLS, applies ingress rules, and forwards to your container.
 
-**Environment.** A named set of configuration a project deploys with. Default is **Production**; Preview is created automatically for PR builds. You can create more. See [Environments](environments/overview).
+**Environment.** A named set of configuration a project deploys with. Default is **Production**; Preview is created automatically for PR builds. You can create more. See [Environments](/environments/overview).
 
-**Environment variable.** A key/value pair injected into both the builder and the running container. See [Manage environment variables](environments/environment-variables).
+**Environment variable.** A key/value pair injected into both the builder and the running container. See [Manage environment variables](/environments/environment-variables).
 
-**EPP code.** Also called the auth code or transfer code. The token from a domain's current registrar that authorizes a transfer to a new registrar. See [Transfer a domain](domains/transfer-a-domain).
+**EPP code.** Also called the auth code or transfer code. The token from a domain's current registrar that authorizes a transfer to a new registrar. See [Transfer a domain](/domains/transfer-a-domain).
 
 ## G
 
@@ -91,7 +91,7 @@ Terms you'll see across Brimble docs and the dashboard, in alphabetical order.
 
 **Inherit (environments).** A child environment can pull values from a parent environment for variables marked **inheritable**. Child values override the parent.
 
-**Internal services.** Brimble's region-scoped private network. Services in the same workspace and region can talk to each other at `<project-slug>.service.brimble.internal`. See [Internal services](networking/internal-services).
+**Internal services.** Brimble's region-scoped private network. Services in the same workspace and region can talk to each other at `<project-slug>.service.brimble.internal`. See [Internal services](/networking/internal-services).
 
 ## L
 
@@ -115,11 +115,11 @@ Terms you'll see across Brimble docs and the dashboard, in alphabetical order.
 
 ## P
 
-**Passkey.** A cryptographic credential bound to a device (Touch ID, Windows Hello, hardware key). Used for sign-in and step-up authentication. See [Two-factor authentication](security/two-factor-authentication).
+**Passkey.** A cryptographic credential bound to a device (Touch ID, Windows Hello, hardware key). Used for sign-in and step-up authentication. See [Two-factor authentication](/security/two-factor-authentication).
 
-**Persistent disk.** A durable volume attached to a project so files survive restarts and redeploys. 10 to 150 GB in 10 GB steps, billed at $0.25/GB-month base. See [Persistent disk](projects/persistent-disk).
+**Persistent disk.** A durable volume attached to a project so files survive restarts and redeploys. 10 to 150 GB in 10 GB steps, billed at $0.25/GB-month base. See [Persistent disk](/projects/persistent-disk).
 
-**Plan.** Free, Hacker, Pro, or Team. Each has a base price, an included quota of resources, and a feature set. See [Plans and pricing](billing/plans).
+**Plan.** Free, Hacker, Pro, or Team. Each has a base price, an included quota of resources, and a feature set. See [Plans and pricing](/billing/plans).
 
 **Preview deployment.** A deployment built from a PR or merge request, served at its own hostname. Used to vet changes before merging.
 
@@ -141,9 +141,9 @@ Terms you'll see across Brimble docs and the dashboard, in alphabetical order.
 
 **Redeploy.** Re-running a deployment without a new commit. Picks up env-var changes, retries a failed deploy, or rolls back to a previous artifact.
 
-**Redirect (domain).** A configuration on a domain that returns a 301, 302, 307, or 308 to a destination URL at the edge. The request never reaches a project. See [Redirect a domain](domains/redirect-a-domain).
+**Redirect (domain).** A configuration on a domain that returns a 301, 302, 307, or 308 to a destination URL at the edge. The request never reaches a project. See [Redirect a domain](/domains/redirect-a-domain).
 
-**Region.** The datacenter where a project runs. Pick the one closest to your users. See [Regions](projects/regions).
+**Region.** The datacenter where a project runs. Pick the one closest to your users. See [Regions](/projects/regions).
 
 **Rollback.** Re-running a previous deployment's artifact (no rebuild) and flipping traffic to it. Seconds, not minutes.
 
@@ -153,7 +153,7 @@ Terms you'll see across Brimble docs and the dashboard, in alphabetical order.
 
 **Segment (compute).** A time range during which a project's resources didn't change. Compute billing tracks segments and charges for each one separately, so scaling mid-cycle is billed precisely.
 
-**Service type.** The kind of workload a project runs: **Web service**, **Static site**, **Worker**, **Database**, or **MCP server**. Determines build behavior and runtime model. See [Service types](projects/service-types).
+**Service type.** The kind of workload a project runs: **Web service**, **Static site**, **Worker**, **Database**, or **MCP server**. Determines build behavior and runtime model. See [Service types](/projects/service-types).
 
 **Shared environment.** A workspace-level set of environment variables that any project can inherit from. Variables in a shared environment can be referenced from a project as `{{shared.NAME}}`.
 
@@ -165,7 +165,7 @@ Terms you'll see across Brimble docs and the dashboard, in alphabetical order.
 
 ## T
 
-**Top-up (build minutes).** A purchase of additional build minutes that get added as credits. Credits never expire and are spent after the plan's monthly allowance. See [Build minutes](billing/build-minutes).
+**Top-up (build minutes).** A purchase of additional build minutes that get added as credits. Credits never expire and are spent after the plan's monthly allowance. See [Build minutes](/billing/build-minutes).
 
 **TOTP.** Time-based One-Time Password. The 6-digit code an authenticator app generates. Brimble uses TOTP as one of its 2FA methods.
 
@@ -175,7 +175,7 @@ Terms you'll see across Brimble docs and the dashboard, in alphabetical order.
 
 **Watch paths.** A project setting that limits which file changes trigger a build. For monorepos, set this to the directory of the project so unrelated pushes don't redeploy.
 
-**Webhook.** An HTTP POST Brimble sends to a URL you configure when an event happens (deployment success, domain renewed, env var changed, etc.). See [Webhooks](webhooks/overview).
+**Webhook.** An HTTP POST Brimble sends to a URL you configure when an event happens (deployment success, domain renewed, env var changed, etc.). See [Webhooks](/webhooks/overview).
 
 **Workspace.** A context the dashboard organizes projects under. Personal workspaces hold your individual projects; team workspaces hold projects shared with members.
 

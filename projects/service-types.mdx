@@ -19,7 +19,7 @@ A long-running container that handles HTTP traffic.
 
 **Source options:**
 - **Git repository**, Brimble builds from source using Railpack (auto-detected) or a `Dockerfile` if one is at the project root.
-- **Docker image**, pull a pre-built image from Docker Hub, GHCR, or any container registry. See [Deploy from a Docker image](deploy-from-docker-image).
+- **Docker image**, pull a pre-built image from Docker Hub, GHCR, or any container registry. See [Deploy from a Docker image](/projects/deploy-from-docker-image).
 
 **Required:**
 - The container's start command must listen on `process.env.PORT`.
@@ -99,7 +99,7 @@ The gateway sets `Cache-Control` per response so Cloudflare and browsers cache t
 - **Hashed asset paths** (`/assets/*`, `/_assets/*`, `/static/*`) and immutable extensions (`.js`, `.css`, fonts, images): `public, max-age=31536000, immutable` (cached for a year, invalidated automatically by content-hashed filenames).
 - **Other static files:** `public, max-age=3600, must-revalidate`.
 
-See [Edge caching](builds#edge-caching) in the builds doc for the full table and the reasoning.
+See [Edge caching](/projects/builds#edge-caching) in the builds doc for the full table and the reasoning.
 
 ### What you don't need
 
