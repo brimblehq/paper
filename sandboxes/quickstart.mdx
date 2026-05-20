@@ -1,158 +1,240 @@
 ---
 title: "Sandbox quickstart"
-description: "Create a sandbox, run code in it, write a file, take a snapshot, and destroy it, in under five minutes."
+description: "Create a sandbox with the SDK, run code in it, write a file, take a snapshot, and destroy it, in under five minutes."
 ---
 
 Create a sandbox, run a command, write a file, take a snapshot, and tear it down. The whole loop, end-to-end, in about five minutes.
 
-This page shows two parallel paths: clicking through the dashboard, and hitting the [Sandbox API](/sandboxes) directly. Pick whichever matches how you'll use sandboxes.
+The recommended path is the **SDK**. It handles polling, retries, idempotency, and serialization for you, so the snippets below are the shortest working version of the full lifecycle. The dashboard and REST paths are linked at the bottom if you prefer to click or curl your way through.
 
 ## Prerequisites
 
 - A Brimble account. Free plan works for non-paid regions; paid regions need a Hacker plan or higher.
-- For the API path: a personal **API key** from the profile drawer (avatar → **API key**). Paid plans only.
+- An **API key** from the profile drawer (avatar → **API key**). Paid plans only.
+- The SDK for your language installed and `BRIMBLE_SANDBOX_KEY` set in your environment.
 
-## Step 1: Create a sandbox
+<CodeGroup>
 
-### From the dashboard
-
-1. Open the dashboard.
-2. Click **Sandboxes** in the sidebar, then **New sandbox**.
-3. Pick a **template** (e.g. `node-22`, `python-3.12`).
-4. Pick a **region**. Free-plan accounts only see free-tier regions.
-5. Optionally set CPU, memory, and ephemeral disk under **Specs**.
-6. Click **Create**. The dashboard takes you to the sandbox detail page; status starts as **starting** and flips to **ready** in a few seconds.
-
-<Info>
-  **Image needed:** screenshot of the **New sandbox** form showing the template picker, region selector, and the specs sliders (CPU, memory, disk).
-</Info>
-
-### From the API
-
-```bash
-curl -X POST https://sandbox.brimble.io/sandboxes \
-  -H "x-brimble-key: $BRIMBLE_API_KEY" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "template": "node-22",
-    "region": "<region-id>",
-    "name": "my-first-sandbox"
-  }'
+```bash TypeScript
+npm install @brimble/sandbox
+export BRIMBLE_SANDBOX_KEY="sk_..."
 ```
 
-You'll get back a response with `id`, `name`, `status: "starting"`, and `expires_at`. Hold onto the `id`; every subsequent request needs it.
-
-Find a region's `_id` from `GET /v1/regions` in the dashboard's regions list.
-
-## Step 2: Wait for it to be ready
-
-Provisioning is asynchronous. The sandbox is usable when `status` is `ready`:
-
-```bash
-curl https://sandbox.brimble.io/sandboxes/$SANDBOX_ID \
-  -H "x-brimble-key: $BRIMBLE_API_KEY"
+```bash Python
+pip install brimble-sandbox
+export BRIMBLE_SANDBOX_KEY="sk_..."
 ```
 
-Polling once a second is fine; typical readiness is well under a minute. In the dashboard, the status chip flips on its own; you don't need to refresh.
-
-<Info>
-  **Image needed:** sandbox detail page showing the **ready** status, the embedded exec terminal, and the file browser.
-</Info>
-
-## Step 3: Run a command
-
-### From the dashboard
-
-Open the **Terminal** tab on the sandbox detail page and type:
-
-```bash
-echo "hello from brimble" && uname -a
+```bash Go
+go get github.com/brimblehq/brimble/packages/sandbox-go
+export BRIMBLE_SANDBOX_KEY="sk_..."
 ```
 
-### From the API
+</CodeGroup>
 
-```bash
-curl -X POST https://sandbox.brimble.io/sandboxes/$SANDBOX_ID/exec \
-  -H "x-brimble-key: $BRIMBLE_API_KEY" \
-  -H "Content-Type: application/json" \
-  -d '{ "cmd": "echo hello from brimble && uname -a" }'
+## Step 1: Create a sandbox and wait until it's ready
+
+`createReady` creates the sandbox and waits for it to leave `starting`, so the next line of code can start using it immediately.
+
+<CodeGroup>
+
+```typescript TypeScript
+import { SandboxClient } from "@brimble/sandbox";
+
+const client = new SandboxClient();
+
+const sandbox = await client.sandboxes.createReady({
+  region: "auto",
+  template: "node-22",
+  name: "my-first-sandbox",
+});
+
+console.log(sandbox.id, sandbox.status); // ..., "ready"
 ```
 
-You get back stdout, stderr, exit code, and the duration in milliseconds:
+```python Python
+from brimble_sandbox import SandboxClient
 
-```json
-{
-  "message": "Command executed",
-  "data": {
-    "stdout": "hello from brimble\nLinux ...\n",
-    "stderr": "",
-    "exit_code": 0,
-    "duration_ms": 12
-  }
+client = SandboxClient()
+
+sandbox = client.sandboxes.create_ready({
+    "region": "auto",
+    "template": "python-3.12",
+    "name": "my-first-sandbox",
+})
+
+print(sandbox.id, sandbox.status)  # ..., "ready"
+```
+
+```go Go
+package main
+
+import (
+    "context"
+    "fmt"
+    sandbox "github.com/brimblehq/brimble/packages/sandbox-go"
+)
+
+func main() {
+    ctx := context.Background()
+    client, _ := sandbox.NewClient(sandbox.ClientConfig{})
+
+    handle, err := client.Sandboxes.CreateReady(ctx, sandbox.CreateSandboxRequest{
+        Region:   "auto",
+        Template: "node-22",
+        Name:     "my-first-sandbox",
+    }, nil)
+    if err != nil {
+        panic(err)
+    }
+    fmt.Println(handle.ID(), handle.Status())
 }
 ```
 
-## Step 4: Run code
+</CodeGroup>
 
-`POST /sandboxes/{id}/code` is the language-aware sibling of `exec`. It takes a snippet and an interpreter (Python or Node).
+`region: "auto"` lets the server pick the best region for your account. Pass a specific region ID to pin one.
 
-```bash
-curl -X POST https://sandbox.brimble.io/sandboxes/$SANDBOX_ID/code \
-  -H "x-brimble-key: $BRIMBLE_API_KEY" \
-  -H "Content-Type: application/json" \
-  -d '{
+## Step 2: Run a command
+
+<CodeGroup>
+
+```typescript TypeScript
+const result = await sandbox.exec({
+  cmd: "echo hello from brimble && uname -a",
+});
+
+console.log(result.stdout);
+console.log("exit:", result.exit_code);
+```
+
+```python Python
+result = sandbox.exec({"cmd": "echo hello from brimble && uname -a"})
+print(result["stdout"])
+print("exit:", result["exit_code"])
+```
+
+```go Go
+run, _ := handle.Exec(ctx, sandbox.ExecInput{
+    Cmd: "echo hello from brimble && uname -a",
+})
+fmt.Println(run.Stdout)
+fmt.Println("exit:", run.ExitCode)
+```
+
+</CodeGroup>
+
+You get back stdout, stderr, exit code, and duration. If the sandbox isn't ready yet (you skipped `createReady` and used `create` instead), pass `waitUntilReady: true` and the SDK will wait for you.
+
+## Step 3: Run code in a language runtime
+
+`runCode` is the language-aware sibling of `exec`. Hand it a snippet and an interpreter.
+
+<CodeGroup>
+
+```typescript TypeScript
+const result = await sandbox.runCode({
+  language: "python",
+  code: "import sys, json\nprint(json.dumps({'version': sys.version}))",
+});
+
+console.log(result.stdout);
+```
+
+```python Python
+result = sandbox.run_code({
     "language": "python",
-    "code": "import sys, json\nprint(json.dumps({\"version\": sys.version}))"
-  }'
+    "code": "import sys, json\nprint(json.dumps({'version': sys.version}))",
+})
+print(result["stdout"])
 ```
 
-## Step 5: Write and read a file
-
-Upload bytes to any path inside the sandbox:
-
-```bash
-echo "console.log('hello')" | curl -X PUT \
-  "https://sandbox.brimble.io/sandboxes/$SANDBOX_ID/files/app/index.js" \
-  -H "x-brimble-key: $BRIMBLE_API_KEY" \
-  --data-binary @-
+```go Go
+run, _ := handle.RunCode(ctx, sandbox.RunCodeInput{
+    Language: "python",
+    Code:     "import sys, json\nprint(json.dumps({'version': sys.version}))",
+})
+fmt.Println(run.Stdout)
 ```
 
-Read it back:
+</CodeGroup>
 
-```bash
-curl "https://sandbox.brimble.io/sandboxes/$SANDBOX_ID/files/app/index.js" \
-  -H "x-brimble-key: $BRIMBLE_API_KEY"
+## Step 4: Write and read a file
+
+<CodeGroup>
+
+```typescript TypeScript
+await sandbox.putFile("/app/index.js", "console.log('hello')");
+
+const buf = await sandbox.getFile("/app/index.js");
+console.log(new TextDecoder().decode(buf));
 ```
 
-The PUT streams; the GET streams. Both honor the per-file size cap configured for your plan.
+```python Python
+sandbox.put_file("/app/index.js", b"console.log('hello')")
 
-## Step 6: Take a snapshot
-
-A snapshot captures the sandbox's filesystem as a restorable image. You can launch a brand-new sandbox from a snapshot later, exactly the state you saved.
-
-```bash
-curl -X POST https://sandbox.brimble.io/sandboxes/$SANDBOX_ID/snapshots \
-  -H "x-brimble-key: $BRIMBLE_API_KEY" \
-  -H "Content-Type: application/json" \
-  -d '{ "name": "first-snapshot" }'
+contents = sandbox.get_file("/app/index.js")
+print(contents.decode())
 ```
 
-Snapshots are async too: status starts as `creating` and flips to `ready` when the image is built. See [Snapshots](snapshots) for the full lifecycle, including automatic snapshots.
+```go Go
+import "strings"
 
-<Info>
-  **Image needed:** Create-snapshot modal on the sandbox detail page, with the snapshot name input and the **Create** button.
-</Info>
+body := "console.log('hello')"
+_ = handle.PutFile(ctx, "/app/index.js", strings.NewReader(body), int64(len(body)))
 
-## Step 7: Destroy
-
-When you're done:
-
-```bash
-curl -X DELETE https://sandbox.brimble.io/sandboxes/$SANDBOX_ID \
-  -H "x-brimble-key: $BRIMBLE_API_KEY"
+rc, _ := handle.GetFile(ctx, "/app/index.js")
+defer rc.Close()
 ```
 
-Or click **Destroy** on the sandbox detail page in the dashboard. Persistent volumes (if you created the sandbox with `persistent: true`) are **detached**, not deleted; you can attach them to a future sandbox by passing their `volumeId`.
+</CodeGroup>
+
+Uploads and downloads stream; both honor the per-file size cap for your plan.
+
+## Step 5: Take a snapshot
+
+A snapshot captures the sandbox's filesystem as a restorable image. Launch a fresh sandbox from a snapshot later and get exactly that state back.
+
+<CodeGroup>
+
+```typescript TypeScript
+const snap = await sandbox.snapshots.create({ name: "first-snapshot" });
+console.log(snap.id, snap.status); // status starts as "creating"
+```
+
+```python Python
+snap = sandbox.snapshots.create({"name": "first-snapshot"})
+print(snap["id"], snap["status"])
+```
+
+```go Go
+snap, _ := handle.Snapshots.Create(ctx, sandbox.CreateSnapshotInput{Name: "first-snapshot"})
+fmt.Println(snap.ID, snap.Status)
+```
+
+</CodeGroup>
+
+Snapshots are asynchronous: `status` starts as `creating` and flips to `ready` when the image is built. See [Snapshots](snapshots) for the full lifecycle, including automatic snapshots.
+
+## Step 6: Destroy
+
+<CodeGroup>
+
+```typescript TypeScript
+await sandbox.destroy();
+```
+
+```python Python
+sandbox.destroy()
+```
+
+```go Go
+_ = handle.Destroy(ctx)
+```
+
+</CodeGroup>
+
+Persistent volumes (if you created the sandbox with `persistent: true`) are **detached**, not deleted; you can attach them to a future sandbox by passing their `volumeId`.
 
 <Warning>
   **Destroy is final for ephemeral sandboxes.** Anything written to a non-persistent sandbox is gone the moment you destroy. Snapshot or save to a persistent volume first if the work matters.
@@ -164,9 +246,56 @@ Or click **Destroy** on the sandbox detail page in the dashboard. Persistent vol
 - Set `blockOutbound: true` if you're running untrusted code and want it to have no outbound network access.
 - Set `autoDestroy: true` with a `destroyTimeout` (`30m`, `1h`, `3h`, `6h`, `12h`, `18h`) so abandoned sandboxes clean themselves up.
 - Restore a sandbox from a snapshot by passing `fromSnapshot: "<snapshot-id>"` on create.
+- Use `client.sandboxes.quickstartNode()` or `quickstartPython()` for one-line "give me a persistent dev box" presets. See [SDKs](sdks#quickstart-presets).
+
+## Alternative paths
+
+### From the dashboard
+
+1. Open the dashboard.
+2. Click **Sandboxes** in the sidebar, then **New sandbox**.
+3. Pick a **template** (e.g. `node-22`, `python-3.12`).
+4. Pick a **region**. Free-plan accounts only see free-tier regions.
+5. Optionally set CPU, memory, and ephemeral disk under **Specs**.
+6. Click **Create**. The dashboard takes you to the sandbox detail page; status starts as **starting** and flips to **ready** in a few seconds. From there, **Terminal**, **Files**, and **Snapshots** tabs cover the rest of this flow.
+
+<Info>
+  **Image needed:** screenshot of the **New sandbox** form showing the template picker, region selector, and the specs sliders (CPU, memory, disk).
+</Info>
+
+### From the REST API (curl)
+
+If you can't use an SDK, every step above maps to a single HTTP call:
+
+```bash
+# Create
+curl -X POST https://sandbox.brimble.io/sandboxes \
+  -H "x-brimble-key: $BRIMBLE_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{ "template": "node-22", "region": "auto", "name": "my-first-sandbox" }'
+
+# Exec
+curl -X POST https://sandbox.brimble.io/sandboxes/$SANDBOX_ID/exec \
+  -H "x-brimble-key: $BRIMBLE_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{ "cmd": "echo hello && uname -a" }'
+
+# Snapshot
+curl -X POST https://sandbox.brimble.io/sandboxes/$SANDBOX_ID/snapshots \
+  -H "x-brimble-key: $BRIMBLE_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{ "name": "first-snapshot" }'
+
+# Destroy
+curl -X DELETE https://sandbox.brimble.io/sandboxes/$SANDBOX_ID \
+  -H "x-brimble-key: $BRIMBLE_API_KEY"
+```
+
+The REST endpoints are documented under the [Sandbox API](/sandboxes) tab.
 
 ## Next steps
 
+- [SDKs](sdks), full reference for the TypeScript, Python, and Go SDKs.
 - [Sandboxes overview](overview), lifecycle, sizing, billing.
 - [Snapshots](snapshots), manual + automatic snapshot flows.
 - [Sandbox API](/sandboxes), every endpoint with full schemas.

@@ -89,20 +89,20 @@ Provisioning is **asynchronous**: the create endpoint returns immediately with `
 
 ## Operations you can run
 
-Once a sandbox is `ready`:
+Once a sandbox is `ready`, the SDK exposes one method per operation. All three SDKs ([TypeScript, Python, Go](sdks)) share the same surface.
 
-| Operation | Endpoint | What it does |
-|---|---|---|
-| Exec command | `POST /sandboxes/{id}/exec` | Runs a shell command; returns stdout, stderr, exit code, duration. |
-| Run code | `POST /sandboxes/{id}/code` | Runs a Python or Node snippet you pass in the body. Same return shape as exec. |
-| Write file | `PUT /sandboxes/{id}/files/{path}` | Streams the body to the file at `path` inside the sandbox. |
-| Read file | `GET /sandboxes/{id}/files/{path}` | Streams the file at `path` back to you. |
-| Pause | `POST /sandboxes/{id}/pause` | Scales the container to zero. Persistent volumes stay attached. |
-| Resume | `POST /sandboxes/{id}/resume` | Starts a fresh container and reattaches the volume. |
-| Snapshot | `POST /sandboxes/{id}/snapshots` | Captures the sandbox's filesystem as a restorable image. See [Snapshots](snapshots). |
-| Destroy | `DELETE /sandboxes/{id}` | Terminal cleanup. |
+| Operation | SDK call | Underlying endpoint | What it does |
+|---|---|---|---|
+| Exec command | `handle.exec({ cmd })` | `POST /sandboxes/{id}/exec` | Runs a shell command; returns stdout, stderr, exit code, duration. |
+| Run code | `handle.runCode({ language, code })` | `POST /sandboxes/{id}/code` | Runs a Python or Node snippet you pass in. Same return shape as exec. |
+| Write file | `handle.putFile(path, body)` | `PUT /sandboxes/{id}/files/{path}` | Streams the body to the file at `path` inside the sandbox. |
+| Read file | `handle.getFile(path)` | `GET /sandboxes/{id}/files/{path}` | Streams the file at `path` back to you. |
+| Pause | `handle.pause()` | `POST /sandboxes/{id}/pause` | Scales the container to zero. Persistent volumes stay attached. |
+| Resume | `handle.resume()` | `POST /sandboxes/{id}/resume` | Starts a fresh container and reattaches the volume. |
+| Snapshot | `handle.snapshots.create({ name })` | `POST /sandboxes/{id}/snapshots` | Captures the sandbox's filesystem as a restorable image. See [Snapshots](snapshots). |
+| Destroy | `handle.destroy()` | `DELETE /sandboxes/{id}` | Terminal cleanup. |
 
-The full API is documented under the [Sandbox API](/sandboxes) tab.
+Start with the [SDKs](sdks). The raw REST contract for every endpoint is documented under the [Sandbox API](/sandboxes) tab if you need it.
 
 ## Resource sizing
 
@@ -156,6 +156,7 @@ Sandboxes get a normal outbound network by default: they can `curl`, install dep
 
 ## Next steps
 
+- [SDKs](sdks), full reference for the TypeScript, Python, and Go SDKs.
 - [Quickstart](quickstart), create your first sandbox in five minutes.
 - [Snapshots](snapshots), save and restore sandbox state.
 - [Inside the Brimble Sandbox runtime](sandbox-system), how Brimble provisions and manages sandboxes underneath.

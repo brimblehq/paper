@@ -86,8 +86,8 @@
             "icon": "box",
             "pages": [
               "sandboxes/overview",
-              "sandboxes/quickstart",
               "sandboxes/sdks",
+              "sandboxes/quickstart",
               "sandboxes/snapshots",
               "sandboxes/sandbox-system",
               {
