@@ -1,0 +1,249 @@
+---
+title: "Run an AI coding agent"
+description: "Spin up a Claude Code, Codex, OpenCode, or Droid sandbox, give it a task and a repo, then collect the diff."
+---
+
+You want to delegate a coding task to an AI agent: open a Git repo, hand it a brief, let it run, and pick up the result. Brimble ships dedicated templates with the major agents preinstalled, so you don't have to build the runtime yourself.
+
+## When to use this recipe
+
+- A "fix-this-ticket" workflow where you wire an agent to your issue tracker.
+- Batch refactors across many repos: the same agent task, fanned out.
+- Evaluation harnesses that compare different agents on the same task.
+- A scheduled background worker that picks up tasks from a queue and runs them.
+
+## Prerequisites
+
+- A Brimble account with API access enabled.
+- The SDK installed and `BRIMBLE_SANDBOX_KEY` set.
+- An API key for whichever AI agent you're running (Anthropic, OpenAI, etc.) to pass in as a sandbox env var.
+- Optional but recommended: a Git provider token if the agent needs to clone private repos.
+
+## Recipe
+
+Available agent templates (see the [Templates list](../overview#templates) for the live catalog):
+
+- `claude-code`, Anthropic's Claude Code CLI
+- `codex`, OpenAI Codex CLI
+- `opencode`, OpenCode, open-source agent
+- `droid`, Factory's Droid agent
+
+The shape below uses `claude-code`. Swap the template name and the invocation command for any of the others.
+
+<CodeGroup>
+
+```typescript TypeScript
+import { SandboxClient } from "@brimble/sandbox";
+
+const client = new SandboxClient();
+
+async function runAgent({
+  repoUrl,
+  task,
+  anthropicKey,
+}: { repoUrl: string; task: string; anthropicKey: string }) {
+  const handle = await client.sandboxes.createReady({
+    region: "auto",
+    template: "claude-code",
+    persistent: true,
+    persistentDiskGB: 20,         // room for the checkout + node_modules / venvs
+    autoDestroy: true,
+    destroyTimeout: "3h",         // generous; agent runs can take a while
+    blockOutbound: false,         // agent needs the internet
+  });
+
+  try {
+    // Seed the task description on disk
+    await handle.putFile("/work/task.md", task);
+
+    // Clone and run the agent
+    const run = await handle.exec({
+      cmd: [
+        "set -e",
+        "mkdir -p /work && cd /work",
+        `export ANTHROPIC_API_KEY='${anthropicKey}'`,
+        `git clone --depth 1 ${repoUrl} repo`,
+        "cd repo",
+        "claude --print --dangerously-skip-permissions < /work/task.md > /work/agent.log 2>&1",
+      ].join(" && "),
+      timeout_seconds: 1800,       // 30 min cap
+    });
+
+    if (run.exit_code !== 0) {
+      throw new Error(`agent failed (${run.exit_code}): ${run.stderr}`);
+    }
+
+    // Collect the resulting diff
+    const diff = await handle.exec({
+      cmd: "cd /work/repo && git add -A && git diff --staged",
+    });
+
+    // Snapshot before we destroy, in case we want to resume / inspect later
+    const snap = await handle.snapshots.create({ name: "post-run" });
+
+    return { diff: diff.stdout, snapshotId: snap.id };
+  } finally {
+    await handle.destroy().catch(() => {});
+  }
+}
+
+const result = await runAgent({
+  repoUrl: "https://github.com/myorg/widgets.git",
+  task: "Refactor src/utils to use async/await. Add tests.",
+  anthropicKey: process.env.ANTHROPIC_API_KEY!,
+});
+
+console.log(result.diff);
+```
+
+```python Python
+import os
+from brimble_sandbox import SandboxClient
+
+client = SandboxClient()
+
+def run_agent(*, repo_url: str, task: str, anthropic_key: str) -> dict:
+    sandbox = client.sandboxes.create_ready({
+        "region": "auto",
+        "template": "claude-code",
+        "persistent": True,
+        "persistentDiskGB": 20,
+        "autoDestroy": True,
+        "destroyTimeout": "3h",
+    })
+
+    try:
+        sandbox.put_file("/work/task.md", task.encode())
+
+        run = sandbox.exec({
+            "cmd": " && ".join([
+                "set -e",
+                "mkdir -p /work && cd /work",
+                f"export ANTHROPIC_API_KEY='{anthropic_key}'",
+                f"git clone --depth 1 {repo_url} repo",
+                "cd repo",
+                "claude --print --dangerously-skip-permissions < /work/task.md > /work/agent.log 2>&1",
+            ]),
+            "timeout_seconds": 1800,
+        })
+        if run["exit_code"] != 0:
+            raise RuntimeError(f"agent failed ({run['exit_code']}): {run['stderr']}")
+
+        diff = sandbox.exec({
+            "cmd": "cd /work/repo && git add -A && git diff --staged",
+        })
+
+        snap = sandbox.snapshots.create({"name": "post-run"})
+        return {"diff": diff["stdout"], "snapshot_id": snap["id"]}
+    finally:
+        try:
+            sandbox.destroy()
+        except Exception:
+            pass
+
+result = run_agent(
+    repo_url="https://github.com/myorg/widgets.git",
+    task="Refactor src/utils to use async/await. Add tests.",
+    anthropic_key=os.environ["ANTHROPIC_API_KEY"],
+)
+print(result["diff"])
+```
+
+```go Go
+package main
+
+import (
+    "context"
+    "fmt"
+    "os"
+    "strings"
+    sandbox "github.com/brimblehq/brimble/packages/sandbox-go"
+)
+
+func runAgent(ctx context.Context, client *sandbox.Client, repoURL, task, anthropicKey string) (string, string, error) {
+    handle, err := client.Sandboxes.CreateReady(ctx, sandbox.CreateSandboxRequest{
+        Region:           "auto",
+        Template:         "claude-code",
+        Persistent:       true,
+        PersistentDiskGB: 20,
+        AutoDestroy:      true,
+        DestroyTimeout:   "3h",
+    }, nil)
+    if err != nil {
+        return "", "", err
+    }
+    defer handle.Destroy(context.Background())
+
+    if err := handle.PutFile(ctx, "/work/task.md", strings.NewReader(task), int64(len(task))); err != nil {
+        return "", "", err
+    }
+
+    cmd := strings.Join([]string{
+        "set -e",
+        "mkdir -p /work && cd /work",
+        fmt.Sprintf("export ANTHROPIC_API_KEY='%s'", anthropicKey),
+        fmt.Sprintf("git clone --depth 1 %s repo", repoURL),
+        "cd repo",
+        "claude --print --dangerously-skip-permissions < /work/task.md > /work/agent.log 2>&1",
+    }, " && ")
+
+    run, err := handle.Exec(ctx, sandbox.ExecInput{Cmd: cmd, TimeoutSeconds: 1800})
+    if err != nil {
+        return "", "", err
+    }
+    if run.ExitCode != 0 {
+        return "", "", fmt.Errorf("agent failed (%d): %s", run.ExitCode, run.Stderr)
+    }
+
+    diff, err := handle.Exec(ctx, sandbox.ExecInput{
+        Cmd: "cd /work/repo && git add -A && git diff --staged",
+    })
+    if err != nil {
+        return "", "", err
+    }
+
+    snap, err := handle.Snapshots.Create(ctx, sandbox.CreateSnapshotInput{Name: "post-run"})
+    if err != nil {
+        return "", "", err
+    }
+    return diff.Stdout, snap.ID, nil
+}
+
+func main() {
+    ctx := context.Background()
+    client, _ := sandbox.NewClient(sandbox.ClientConfig{})
+    diff, snapID, _ := runAgent(ctx, client,
+        "https://github.com/myorg/widgets.git",
+        "Refactor src/utils to use async/await. Add tests.",
+        os.Getenv("ANTHROPIC_API_KEY"),
+    )
+    fmt.Println("snapshot:", snapID)
+    fmt.Println(diff)
+}
+```
+
+</CodeGroup>
+
+## What's happening
+
+1. **Pick the agent template.** `claude-code` ships with the Claude Code CLI preinstalled and configured for unattended runs. Swap to `codex`, `droid`, or `opencode` and adjust the binary name in the exec command (`codex --print ...`, `droid run ...`, etc.).
+2. **Persistent disk on, 20 GB.** The agent's checkout, `node_modules`, model caches, and intermediate files all live on the workspace volume. A snapshot at the end captures that state for replay or audit.
+3. **`autoDestroy` with a 3-hour ceiling.** Agent runs can be long; a 30-minute hard timeout would kill the work mid-flight. Three hours is a reasonable backstop. Set `oneShot: true` instead if you want the sandbox to terminate the moment `claude --print` exits.
+4. **Outbound network is on.** The agent needs to reach the model API (`api.anthropic.com`, `api.openai.com`, etc.). If you want stricter isolation, pre-bake any tool the agent needs into the snapshot and turn `blockOutbound: true` on for the actual run.
+5. **API key as a shell env var, not a build-time secret.** Sandboxes don't bake env vars into the template; you set them per-exec.
+6. **Diff capture after the run.** `git add -A && git diff --staged` shows everything the agent touched, including new files. Pipe it to your own review tool or PR-creation flow.
+7. **Snapshot before destroy.** Cheap insurance: if the diff looks wrong or the agent did something unexpected, you can restore the snapshot into a fresh sandbox and inspect.
+
+## Variations
+
+- **Resume an interrupted run.** Pass `fromSnapshot` on `createReady` to start a new sandbox from the agent's last state. Useful when an agent hits the timeout mid-task and you want to continue.
+- **Reuse a checkout across runs.** Create a `sandbox`-type [volume](../../volumes/overview), attach it on first run, and pass the same `volumeId` on subsequent runs. The repo is already cloned, dependencies are already installed.
+- **Fan out across many tasks.** Loop `runAgent` over a task list. Each call provisions an isolated sandbox; the platform's concurrency cap is your only ceiling.
+- **Different agents, same task.** Swap the template (`claude-code` → `codex` → `droid`) on the same input and compare the resulting diffs.
+- **Background mode with logs.** Replace the inline exec with two calls: one to start the agent in the background (`nohup claude ... &`), one to tail `/work/agent.log` while it runs. You'll need `getFile` to stream the log.
+
+## Next steps
+
+- [Sandboxes overview](../overview), templates and lifecycle.
+- [Snapshots](../snapshots), the snapshot lifecycle and restore semantics.
+- [Run untrusted code](untrusted-code), the simpler one-shot pattern this recipe extends.

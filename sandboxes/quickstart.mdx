@@ -1,0 +1,172 @@
+---
+title: "Sandbox quickstart"
+description: "Create a sandbox, run code in it, write a file, take a snapshot, and destroy it, in under five minutes."
+---
+
+Create a sandbox, run a command, write a file, take a snapshot, and tear it down. The whole loop, end-to-end, in about five minutes.
+
+This page shows two parallel paths: clicking through the dashboard, and hitting the [Sandbox API](/sandboxes) directly. Pick whichever matches how you'll use sandboxes.
+
+## Prerequisites
+
+- A Brimble account. Free plan works for non-paid regions; paid regions need a Hacker plan or higher.
+- For the API path: a personal **API key** from the profile drawer (avatar → **API key**). Paid plans only.
+
+## Step 1: Create a sandbox
+
+### From the dashboard
+
+1. Open the dashboard.
+2. Click **Sandboxes** in the sidebar, then **New sandbox**.
+3. Pick a **template** (e.g. `node-22`, `python-3.12`).
+4. Pick a **region**. Free-plan accounts only see free-tier regions.
+5. Optionally set CPU, memory, and ephemeral disk under **Specs**.
+6. Click **Create**. The dashboard takes you to the sandbox detail page; status starts as **starting** and flips to **ready** in a few seconds.
+
+<Info>
+  **Image needed:** screenshot of the **New sandbox** form showing the template picker, region selector, and the specs sliders (CPU, memory, disk).
+</Info>
+
+### From the API
+
+```bash
+curl -X POST https://sandbox.brimble.io/sandboxes \
+  -H "x-brimble-key: $BRIMBLE_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "template": "node-22",
+    "region": "<region-id>",
+    "name": "my-first-sandbox"
+  }'
+```
+
+You'll get back a response with `id`, `name`, `status: "starting"`, and `expires_at`. Hold onto the `id`; every subsequent request needs it.
+
+Find a region's `_id` from `GET /v1/regions` in the dashboard's regions list.
+
+## Step 2: Wait for it to be ready
+
+Provisioning is asynchronous. The sandbox is usable when `status` is `ready`:
+
+```bash
+curl https://sandbox.brimble.io/sandboxes/$SANDBOX_ID \
+  -H "x-brimble-key: $BRIMBLE_API_KEY"
+```
+
+Polling once a second is fine; typical readiness is well under a minute. In the dashboard, the status chip flips on its own; you don't need to refresh.
+
+<Info>
+  **Image needed:** sandbox detail page showing the **ready** status, the embedded exec terminal, and the file browser.
+</Info>
+
+## Step 3: Run a command
+
+### From the dashboard
+
+Open the **Terminal** tab on the sandbox detail page and type:
+
+```bash
+echo "hello from brimble" && uname -a
+```
+
+### From the API
+
+```bash
+curl -X POST https://sandbox.brimble.io/sandboxes/$SANDBOX_ID/exec \
+  -H "x-brimble-key: $BRIMBLE_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{ "cmd": "echo hello from brimble && uname -a" }'
+```
+
+You get back stdout, stderr, exit code, and the duration in milliseconds:
+
+```json
+{
+  "message": "Command executed",
+  "data": {
+    "stdout": "hello from brimble\nLinux ...\n",
+    "stderr": "",
+    "exit_code": 0,
+    "duration_ms": 12
+  }
+}
+```
+
+## Step 4: Run code
+
+`POST /sandboxes/{id}/code` is the language-aware sibling of `exec`. It takes a snippet and an interpreter (Python or Node).
+
+```bash
+curl -X POST https://sandbox.brimble.io/sandboxes/$SANDBOX_ID/code \
+  -H "x-brimble-key: $BRIMBLE_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "language": "python",
+    "code": "import sys, json\nprint(json.dumps({\"version\": sys.version}))"
+  }'
+```
+
+## Step 5: Write and read a file
+
+Upload bytes to any path inside the sandbox:
+
+```bash
+echo "console.log('hello')" | curl -X PUT \
+  "https://sandbox.brimble.io/sandboxes/$SANDBOX_ID/files/app/index.js" \
+  -H "x-brimble-key: $BRIMBLE_API_KEY" \
+  --data-binary @-
+```
+
+Read it back:
+
+```bash
+curl "https://sandbox.brimble.io/sandboxes/$SANDBOX_ID/files/app/index.js" \
+  -H "x-brimble-key: $BRIMBLE_API_KEY"
+```
+
+The PUT streams; the GET streams. Both honor the per-file size cap configured for your plan.
+
+## Step 6: Take a snapshot
+
+A snapshot captures the sandbox's filesystem as a restorable image. You can launch a brand-new sandbox from a snapshot later, exactly the state you saved.
+
+```bash
+curl -X POST https://sandbox.brimble.io/sandboxes/$SANDBOX_ID/snapshots \
+  -H "x-brimble-key: $BRIMBLE_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{ "name": "first-snapshot" }'
+```
+
+Snapshots are async too: status starts as `creating` and flips to `ready` when the image is built. See [Snapshots](snapshots) for the full lifecycle, including automatic snapshots.
+
+<Info>
+  **Image needed:** Create-snapshot modal on the sandbox detail page, with the snapshot name input and the **Create** button.
+</Info>
+
+## Step 7: Destroy
+
+When you're done:
+
+```bash
+curl -X DELETE https://sandbox.brimble.io/sandboxes/$SANDBOX_ID \
+  -H "x-brimble-key: $BRIMBLE_API_KEY"
+```
+
+Or click **Destroy** on the sandbox detail page in the dashboard. Persistent volumes (if you created the sandbox with `persistent: true`) are **detached**, not deleted; you can attach them to a future sandbox by passing their `volumeId`.
+
+<Warning>
+  **Destroy is final for ephemeral sandboxes.** Anything written to a non-persistent sandbox is gone the moment you destroy. Snapshot or save to a persistent volume first if the work matters.
+</Warning>
+
+## What to try next
+
+- Set `oneShot: true` on creation to auto-destroy the moment your main process exits, perfect for batch jobs.
+- Set `blockOutbound: true` if you're running untrusted code and want it to have no outbound network access.
+- Set `autoDestroy: true` with a `destroyTimeout` (`30m`, `1h`, `3h`, `6h`, `12h`, `18h`) so abandoned sandboxes clean themselves up.
+- Restore a sandbox from a snapshot by passing `fromSnapshot: "<snapshot-id>"` on create.
+
+## Next steps
+
+- [Sandboxes overview](overview), lifecycle, sizing, billing.
+- [Snapshots](snapshots), manual + automatic snapshot flows.
+- [Sandbox API](/sandboxes), every endpoint with full schemas.

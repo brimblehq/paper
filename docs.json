@@ -82,6 +82,31 @@
             ]
           },
           {
+            "group": "Sandboxes",
+            "icon": "box",
+            "pages": [
+              "sandboxes/overview",
+              "sandboxes/quickstart",
+              "sandboxes/sdks",
+              "sandboxes/snapshots",
+              "sandboxes/sandbox-system",
+              {
+                "group": "Cookbook",
+                "icon": "utensils",
+                "pages": [
+                  "sandboxes/cookbook/untrusted-code",
+                  "sandboxes/cookbook/ai-coding-agent",
+                  "sandboxes/cookbook/persistent-dev-env"
+                ]
+              }
+            ]
+          },
+          {
+            "group": "Volumes",
+            "icon": "hard-drive",
+            "pages": ["volumes/overview"]
+          },
+          {
             "group": "Domains",
             "icon": "globe",
             "pages": [
@@ -171,6 +196,67 @@
             "group": "Reference",
             "icon": "book",
             "pages": ["glossary"]
+          }
+        ]
+      },
+      {
+        "tab": "Sandbox API",
+        "openapi": "/api-reference/sandboxes.openapi.yaml",
+        "groups": [
+          {
+            "group": "Discovery",
+            "icon": "compass",
+            "pages": [
+              "api-reference/sandboxes/templates-list",
+              "api-reference/sandboxes/regions-list"
+            ]
+          },
+          {
+            "group": "Sandboxes",
+            "icon": "box",
+            "pages": [
+              "api-reference/sandboxes/create",
+              "api-reference/sandboxes/list",
+              "api-reference/sandboxes/get",
+              "api-reference/sandboxes/destroy",
+              "api-reference/sandboxes/pause",
+              "api-reference/sandboxes/resume"
+            ]
+          },
+          {
+            "group": "Runtime",
+            "icon": "terminal",
+            "pages": [
+              "api-reference/sandboxes/exec",
+              "api-reference/sandboxes/code",
+              "api-reference/sandboxes/upload-file",
+              "api-reference/sandboxes/download-file"
+            ]
+          },
+          {
+            "group": "Observability",
+            "icon": "gauge",
+            "pages": ["api-reference/sandboxes/stats"]
+          },
+          {
+            "group": "Snapshots",
+            "icon": "camera",
+            "pages": [
+              "api-reference/sandboxes/snapshot-create",
+              "api-reference/sandboxes/snapshot-list",
+              "api-reference/sandboxes/snapshots-list-all",
+              "api-reference/sandboxes/snapshot-delete"
+            ]
+          },
+          {
+            "group": "Volumes",
+            "icon": "hard-drive",
+            "pages": [
+              "api-reference/volumes/create",
+              "api-reference/volumes/list",
+              "api-reference/volumes/get",
+              "api-reference/volumes/delete"
+            ]
           }
         ]
       }

@@ -1,0 +1,130 @@
+---
+title: "Snapshots"
+description: "Capture a sandbox's state as a restorable image. Restore into a fresh sandbox later."
+---
+
+A **snapshot** is a point-in-time image of a sandbox's filesystem. You can launch a brand-new sandbox from any snapshot you own, with exactly the files you saved. Use snapshots to:
+
+- Save a working environment before risky changes.
+- Hand off a configured environment to a teammate (within your account; snapshots are per-user).
+- Spin up identical sandboxes from a known-good baseline instead of re-running setup every time.
+
+Snapshots are independent objects: a sandbox can be destroyed without affecting its snapshots, and a snapshot can be deleted without affecting the sandbox it came from.
+
+## Creating a snapshot
+
+You create snapshots in two modes: manually whenever you want, or on a schedule.
+
+### Manual
+
+From the dashboard, click **Snapshot** on a sandbox's detail page and name it. From the API:
+
+```bash
+curl -X POST https://sandbox.brimble.io/sandboxes/$SANDBOX_ID/snapshots \
+  -H "x-brimble-key: $BRIMBLE_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{ "name": "before-migration" }'
+```
+
+The name is lowercase letters, digits, and hyphens, 1–40 chars.
+
+The response is immediate with `status: "creating"`. The snapshot transitions to `ready` once the image is built, typically within a couple of minutes for typical sandbox sizes. If the build fails, the snapshot moves to `failed` and stays there; failed snapshots don't auto-retry.
+
+<Info>
+  **Image needed:** sandbox detail page with the **Take snapshot** modal open, showing the name input and the **Create** button.
+</Info>
+
+You can only snapshot a `ready` sandbox. Sandboxes that are `paused`, `starting`, or anything else reject the snapshot call. Only one snapshot per sandbox can be in-flight at a time; back-to-back requests serialize.
+
+### Automatic
+
+To snapshot on a schedule, set `snapshotMode: "automatic"` and `snapshotFrequency` (a five-field cron expression) at sandbox creation:
+
+```json
+{
+  "template": "node-22",
+  "region": "<region-id>",
+  "persistent": true,
+  "persistentDiskGB": 20,
+  "snapshotMode": "automatic",
+  "snapshotFrequency": "0 */2 * * *"
+}
+```
+
+The example above snapshots every two hours. The scheduler only fires when the sandbox is `ready` and no snapshot is already in flight; if the sandbox is paused or busy, the tick is skipped (it doesn't queue up missed runs).
+
+`snapshotMode` defaults to `manual`. `snapshotFrequency` is required when mode is `automatic` and forbidden otherwise.
+
+## Restoring from a snapshot
+
+Restoring doesn't modify the snapshot; it creates a **new** sandbox whose initial filesystem is the snapshot's image.
+
+```bash
+curl -X POST https://sandbox.brimble.io/sandboxes \
+  -H "x-brimble-key: $BRIMBLE_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "region": "<region-id>",
+    "fromSnapshot": "<snapshot-id>"
+  }'
+```
+
+A few things to know:
+
+- Only **`ready`** snapshots are restorable. `creating` rejects with a clear error; `failed` is unusable.
+- The new sandbox's `template` is inherited from the snapshot's source template.
+- The new sandbox gets a fresh ID and is otherwise independent; pause, exec, destroy, all behave normally.
+- You can restore the same snapshot any number of times. Each restore is a separate sandbox.
+
+<Info>
+  **Image needed:** the **Snapshots** tab in the dashboard showing a list of snapshots with name, source sandbox, status, created date, and a **Restore** button on each row.
+</Info>
+
+## Listing snapshots
+
+Two endpoints, depending on scope:
+
+- `GET /sandboxes/snapshots`, every snapshot you own across all sandboxes, paginated.
+- `GET /sandboxes/{id}/snapshots`, snapshots created from a specific sandbox.
+
+Both return the snapshot's `id`, `name`, `source_template`, `status`, `created_at`, and `sandbox_id`. The image bytes themselves aren't downloadable; snapshots are restore-only.
+
+## Deleting snapshots
+
+```bash
+curl -X DELETE https://sandbox.brimble.io/sandboxes/snapshots/$SNAPSHOT_ID \
+  -H "x-brimble-key: $BRIMBLE_API_KEY"
+```
+
+Deletion is **permanent**. The snapshot's underlying image is removed; restore stops working immediately for anyone holding the ID.
+
+<Warning>
+  **Snapshot deletion can't be undone.** There's no soft-delete. Sandboxes already restored from the snapshot keep running, but you can't restore the same snapshot again. If the snapshot is your only copy of important state, take a fresh one before deleting.
+</Warning>
+
+## Retention and expiry
+
+Each snapshot has an `expires_at` timestamp set at creation. A background reaper runs hourly and deletes snapshots whose `expires_at` has passed. The retention window depends on your plan and account configuration; check **Billing → Limits** to see your current snapshot retention.
+
+Restoring from a snapshot does **not** extend its expiry. If you want to keep a baseline indefinitely, take a fresh snapshot from the restored sandbox before the original expires.
+
+## Billing
+
+Snapshots count against your account's compute-storage usage for the time they're held. Storage charges are visible under **Billing → Usage**. Deletion stops the billing immediately.
+
+Restoring isn't free either: the new sandbox bills from the moment it goes `ready`, like any other sandbox. The snapshot itself stays billable separately.
+
+## Failure modes
+
+| Failure | What happens | What to do |
+|---|---|---|
+| Snapshot build fails | Status flips to `failed`; no auto-retry | Delete the failed snapshot, take a fresh one from a `ready` sandbox. |
+| Snapshot expired before you restored | Restore call returns `not found` | Take snapshots more frequently, or extend retention via plan upgrade. |
+| Snapshot deleted while you were restoring | Restore fails partway with a clear error | Don't delete snapshots in flight; deletion is final but waits for in-flight restores to complete first. |
+| Concurrent snapshots requested | Second request is rejected | Wait for the in-flight snapshot to finish (`ready` or `failed`), then retry. |
+
+## Next steps
+
+- [Sandboxes overview](overview), lifecycle and operations.
+- [Sandbox internals](sandbox-system), how snapshot images are stored and restored.
+- [Sandbox API](/sandboxes), the snapshot endpoints with full request/response schemas.

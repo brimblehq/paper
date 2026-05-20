@@ -1,0 +1,1010 @@
+---
+title: "SDKs"
+description: "Official Brimble sandbox SDKs for TypeScript, Python, and Go. Same surface, three runtimes."
+---
+
+Brimble ships **first-party SDKs** for the sandbox API in three runtimes. They wrap the REST endpoints in idiomatic clients with built-in retries, ready-state polling, error hierarchies, and convenience helpers, so you don't have to hand-roll any of it.
+
+The three SDKs are deliberately near-identical in surface: every method on one has a same-named counterpart on the others, every input shape matches, every default lines up. Pick the runtime that fits your stack and the rest of the page applies.
+
+| Runtime | Package |
+|---|---|
+| **TypeScript / JavaScript** | `@brimble/sandbox` |
+| **Python** | `brimble-sandbox` |
+| **Go** | `github.com/brimblehq/brimble/packages/sandbox-go` |
+
+## Install
+
+<CodeGroup>
+
+```bash npm
+npm install @brimble/sandbox
+```
+
+```bash pip
+pip install brimble-sandbox
+```
+
+```bash go
+go get github.com/brimblehq/brimble/packages/sandbox-go
+```
+
+</CodeGroup>
+
+**Runtime requirements:** Node 20+, Python 3.10+, Go 1.22+.
+
+## Authenticate
+
+All three SDKs read the same environment variable, **`BRIMBLE_SANDBOX_KEY`**, set it to your account-level API key from the profile drawer (avatar → **API key**) in the dashboard. You can also pass the key explicitly to the client constructor.
+
+<CodeGroup>
+
+```typescript TypeScript
+import { SandboxClient } from "@brimble/sandbox";
+
+// reads BRIMBLE_SANDBOX_KEY
+const client = new SandboxClient();
+
+// or pass explicitly
+const client = new SandboxClient({ apiKey: process.env.MY_KEY });
+```
+
+```python Python
+from brimble_sandbox import SandboxClient
+
+# reads BRIMBLE_SANDBOX_KEY
+client = SandboxClient()
+
+# or pass explicitly
+client = SandboxClient(api_key="...")
+```
+
+```go Go
+import sandbox "github.com/brimblehq/brimble/packages/sandbox-go"
+
+// reads BRIMBLE_SANDBOX_KEY
+client, err := sandbox.NewClient(sandbox.ClientConfig{})
+
+// or pass explicitly
+client, err := sandbox.NewClient(sandbox.ClientConfig{ APIKey: "..." })
+```
+
+</CodeGroup>
+
+Other constructor options (all optional):
+
+- **`baseUrl` / `base_url` / `BaseURL`** sets the API root. Defaults to `https://sandbox.brimble.io`.
+- **`timeoutMs` / `timeout_ms` / `Timeout`** sets the per-request HTTP timeout. Defaults to 30 seconds.
+- **`retry` / `retry` / `Retry`** lets you override the retry policy (see [Retries and idempotency](#retries-and-idempotency)).
+- TypeScript-only: **`fetchImpl`** supplies a custom `fetch` for tests.
+- Python-only: **`session`** supplies a `requests.Session` for connection pooling.
+- Go-only: **`HTTPClient`** supplies a custom `*http.Client`.
+
+The client errors out immediately if neither the constructor arg nor the env var is set.
+
+## The client surface
+
+Every client exposes three resource groups:
+
+| Resource | What it covers |
+|---|---|
+| `client.sandboxes` | Lifecycle: create, list, get, destroy, pause, resume. Discovery: list templates, list regions. Plus `use(id)` for scoped runtime ops. |
+| `client.snapshots` | Account-wide snapshot listing and deletion. (Per-sandbox snapshot ops live on the handle.) |
+| `client.volumes` | Volume lifecycle: create, list, get, delete. |
+
+Go also exposes `client.Ping(ctx)`, a one-shot connectivity and auth check.
+
+## Quickstart presets
+
+The shortest path to a running sandbox is a quickstart helper. They preconfigure the template, persistent disk, and ready-wait so you can get to work in a single call.
+
+<CodeGroup>
+
+```typescript TypeScript
+import { SandboxClient } from "@brimble/sandbox";
+
+const client = new SandboxClient();
+
+// Node 22, 20 GB persistent disk, waits for ready
+const handle = await client.sandboxes.quickstartNode({ region: "auto" });
+
+const result = await handle.exec({ cmd: "node -e 'console.log(2 + 2)'" });
+console.log(result.stdout);
+
+await handle.destroy();
+```
+
+```python Python
+from brimble_sandbox import SandboxClient
+
+client = SandboxClient()
+
+# Python 3.12, 20 GB persistent disk, waits for ready
+sandbox = client.sandboxes.quickstart_python(region="auto")
+
+result = sandbox.exec({"cmd": "python -c 'print(2 + 2)'"})
+print(result["stdout"])
+
+sandbox.destroy()
+```
+
+```go Go
+package main
+
+import (
+    "context"
+    "fmt"
+    sandbox "github.com/brimblehq/brimble/packages/sandbox-go"
+)
+
+func main() {
+    ctx := context.Background()
+    client, _ := sandbox.NewClient(sandbox.ClientConfig{})
+
+    // Node 22, 20 GB persistent disk, waits for ready (wait=true)
+    handle, _ := client.Sandboxes.QuickstartNode(ctx, "auto", true)
+
+    result, _ := handle.Exec(ctx, sandbox.ExecInput{
+        Cmd: "node -e 'console.log(2 + 2)'",
+    })
+    fmt.Println(result.Stdout)
+
+    _ = handle.Destroy(ctx)
+}
+```
+
+</CodeGroup>
+
+The presets bake in a sensible default for getting started: persistent storage so your files survive a restart, and a 20 GB disk so you have headroom. For finer control, drop down to `createReady` (next section).
+
+## Create-and-wait helpers
+
+`createReady` is the workhorse: provision a sandbox and block until it's `ready` in one call. You don't have to think about the `starting` → `ready` transition.
+
+<CodeGroup>
+
+```typescript TypeScript
+const handle = await client.sandboxes.createReady({
+  region: "auto",
+  template: "python-3.12",
+  persistent: true,
+  persistentDiskGB: 20,
+});
+// handle is ready to use immediately
+```
+
+```python Python
+sandbox = client.sandboxes.create_ready({
+    "region": "auto",
+    "template": "python-3.12",
+    "persistent": True,
+    "persistentDiskGB": 20,
+})
+```
+
+```go Go
+handle, err := client.Sandboxes.CreateReady(ctx, sandbox.CreateSandboxRequest{
+    Region:           "auto",
+    Template:         "python-3.12",
+    Persistent:       true,
+    PersistentDiskGB: 20,
+}, nil) // nil = default wait timeout (60s) and poll interval (2s)
+```
+
+</CodeGroup>
+
+The matching `getReady(id)` does the same for an existing sandbox: fetch + wait, so you can pick a sandbox back up after a process restart without coordinating the state check yourself.
+
+If you want manual control over the wait (longer timeout, custom poll interval), call `create()` then `handle.waitUntilReady()` separately:
+
+<CodeGroup>
+
+```typescript TypeScript
+const handle = await client.sandboxes.create({
+  region: "auto",
+  template: "node-22",
+});
+
+await handle.waitUntilReady({
+  timeoutMs: 120_000,
+  pollIntervalMs: 1_000,
+  signal: abortController.signal,  // optional
+});
+```
+
+```python Python
+sandbox = client.sandboxes.create({
+    "region": "auto",
+    "template": "node-22",
+})
+
+sandbox.wait_until_ready(
+    timeout_ms=120_000,
+    poll_interval_ms=1_000,
+)
+# raises TimeoutError on timeout
+```
+
+```go Go
+handle, _ := client.Sandboxes.Create(ctx, sandbox.CreateSandboxRequest{
+    Region:   "auto",
+    Template: "node-22",
+})
+
+_, err := handle.WaitUntilReadyWithOptions(ctx, 120*time.Second, 1*time.Second)
+```
+
+</CodeGroup>
+
+## Create a sandbox alongside a fresh volume
+
+`withVolume` provisions both in a single call. Use it when you want a per-sandbox persistent workspace and don't already have a volume.
+
+<CodeGroup>
+
+```typescript TypeScript
+const handle = await client.sandboxes.withVolume({
+  sandbox: {
+    region: "auto",
+    template: "node-22",
+  },
+  volume: {
+    name: "alice-workspace",
+    sizeGB: 20,
+    region: "auto",
+  },
+});
+```
+
+```python Python
+sandbox = client.sandboxes.with_volume({
+    "sandbox": {
+        "region": "auto",
+        "template": "node-22",
+    },
+    "volume": {
+        "name": "alice-workspace",
+        "sizeGB": 20,
+        "region": "auto",
+    },
+})
+```
+
+```go Go
+handle, err := client.Sandboxes.WithVolume(ctx, sandbox.CreateSandboxWithVolumeInput{
+    Sandbox: sandbox.CreateSandboxRequest{ Region: "auto", Template: "node-22" },
+    Volume:  sandbox.CreateVolumeInput{ Name: "alice-workspace", SizeGB: 20, Region: "auto" },
+})
+```
+
+</CodeGroup>
+
+The volume's `region` and the sandbox's `region` must resolve to the same region. Passing `"auto"` on both is the simplest path.
+
+## The sandbox handle
+
+`create()`, `createReady()`, `get()`, `getReady()`, and `withVolume()` all return a **handle**, an object that bundles the sandbox ID with runtime helpers. Most of what you do with a sandbox happens through the handle, not the client.
+
+You can also grab a handle for any sandbox by ID:
+
+<CodeGroup>
+
+```typescript TypeScript
+const handle = await client.sandboxes.get(sandboxId);
+
+// or a thinner scope (no cached state, no auto-wait)
+const scope = client.sandboxes.use(sandboxId);
+```
+
+```python Python
+sandbox = client.sandboxes.get(sandbox_id)
+
+# or a thinner scope
+scope = client.sandboxes.use(sandbox_id)
+```
+
+```go Go
+handle, _ := client.Sandboxes.Get(ctx, sandboxID)
+
+// or a thinner scope
+scope := client.Sandboxes.Use(sandboxID)
+```
+
+</CodeGroup>
+
+The handle exposes the sandbox's identity, last-known state, and the full set of runtime methods:
+
+| Surface | TypeScript | Python | Go |
+|---|---|---|---|
+| Sandbox ID | `handle.id` | `sandbox.id` | `handle.ID()` |
+| Cached status | `handle.status` | `sandbox.status` | `handle.Status()` |
+| Full record | `handle.data` | `sandbox.data` | `handle.Latest()` |
+| Refresh from API | `handle.refresh()` | `sandbox.refresh()` | `handle.Refresh(ctx)` |
+| Destroy | `handle.destroy()` | `sandbox.destroy()` | `handle.Destroy(ctx)` |
+| Pause / resume | `handle.pause()` / `handle.resume()` | `sandbox.pause()` / `sandbox.resume()` | `handle.Pause(ctx)` / `handle.Resume(ctx)` |
+| Wait until ready | `handle.waitUntilReady()` | `sandbox.wait_until_ready()` | `handle.WaitUntilReady(ctx)` |
+| Snapshots namespace | `handle.snapshots.create/list` | `sandbox.snapshots.create/list/iterate` | `handle.Snapshots.Create/List` |
+
+## Auto-wait on runtime ops
+
+Every runtime method (`exec`, `runCode`, `putFile`, `getFile`, `stats`, `createSnapshot`, `listSnapshots`) accepts an optional **`waitUntilReady`** flag. When set, the SDK polls the sandbox until it's `ready` before sending the actual call, so you don't have to coordinate the wait yourself.
+
+<CodeGroup>
+
+```typescript TypeScript
+const handle = await client.sandboxes.create({ region: "auto", template: "node-22" });
+
+// auto-waits until ready, then runs the command
+const result = await handle.exec(
+  { cmd: "echo hello" },
+  { waitUntilReady: true },
+);
+
+// or with custom wait config
+const result2 = await handle.exec(
+  { cmd: "echo hello" },
+  { waitUntilReady: { timeoutMs: 120_000, pollIntervalMs: 1_000 } },
+);
+```
+
+```python Python
+sandbox = client.sandboxes.create({"region": "auto", "template": "python-3.12"})
+
+# auto-waits until ready
+result = sandbox.exec(
+    {"cmd": "echo hello"},
+    wait_until_ready=True,
+)
+
+# or with custom wait config
+result = sandbox.exec(
+    {"cmd": "echo hello"},
+    wait_until_ready={"timeout_ms": 120_000, "poll_interval_ms": 1_000},
+)
+```
+
+```go Go
+handle, _ := client.Sandboxes.Create(ctx, sandbox.CreateSandboxRequest{
+    Region: "auto", Template: "node-22",
+})
+
+// auto-waits until ready
+result, _ := handle.Exec(ctx, sandbox.ExecInput{Cmd: "echo hello"},
+    sandbox.RuntimeOptions{WaitUntilReady: true})
+```
+
+</CodeGroup>
+
+Without the flag, runtime methods return an error if the sandbox isn't `ready`. The fast path for one-off scripts is therefore `create()` followed by `exec(..., { waitUntilReady: true })`. The fast path for a long-lived workflow is `createReady()` so the handle is hot the moment you reach for it.
+
+## Sandboxes resource (full surface)
+
+### Create
+
+`region` is required (use `"auto"` to let the server pick); everything else is optional.
+
+<CodeGroup>
+
+```typescript TypeScript
+const handle = await client.sandboxes.create({
+  region: "auto",                          // or a region ID
+  template: "python-3.12",
+  name: "scratch",
+  teamId: "<team-id>",                     // omit for personal
+  environmentId: "<env-id>",
+  specs: { cpu: 500, memory: 512, disk: 2 },
+  autoDestroy: true,
+  destroyTimeout: "1h",                    // 30m, 1h, 3h, 6h, 12h, 18h
+  oneShot: false,
+  blockOutbound: false,
+  persistent: true,
+  persistentDiskGB: 20,
+  // volumeId: "<existing-volume-id>",
+  // fromSnapshot: "<snapshot-id>",
+  snapshotMode: "automatic",
+  snapshotFrequency: "0 */2 * * *",
+});
+```
+
+```python Python
+sandbox = client.sandboxes.create({
+    "region": "auto",
+    "template": "python-3.12",
+    "name": "scratch",
+    "specs": {"cpu": 500, "memory": 512, "disk": 2},
+    "autoDestroy": True,
+    "destroyTimeout": "1h",
+    "persistent": True,
+    "persistentDiskGB": 20,
+})
+```
+
+```go Go
+handle, err := client.Sandboxes.Create(ctx, sandbox.CreateSandboxRequest{
+    Region:           "auto",
+    Template:         "python-3.12",
+    Name:             "scratch",
+    Specs:            &sandbox.SandboxSpecs{CPU: 500, Memory: 512, Disk: 2},
+    AutoDestroy:      true,
+    DestroyTimeout:   "1h",
+    Persistent:       true,
+    PersistentDiskGB: 20,
+})
+```
+
+</CodeGroup>
+
+Specs ranges: `cpu` 1 to 2000 (MHz units), `memory` 1 to 2048 MB, `disk` 1 to 5 GB ephemeral.
+
+### List, get, destroy
+
+<CodeGroup>
+
+```typescript TypeScript
+const page = await client.sandboxes.list({ page: 1, limit: 15, teamId: "<team>" });
+const handle = await client.sandboxes.get(sandboxId);
+await client.sandboxes.destroy(sandboxId);
+```
+
+```python Python
+page = client.sandboxes.list({"page": 1, "limit": 15})
+sandbox = client.sandboxes.get(sandbox_id)
+client.sandboxes.destroy(sandbox_id)
+```
+
+```go Go
+page, _ := client.Sandboxes.List(ctx, sandbox.TeamScopedPagination{Page: 1, Limit: 15})
+handle, _ := client.Sandboxes.Get(ctx, sandboxID)
+err := client.Sandboxes.Destroy(ctx, sandboxID)
+```
+
+</CodeGroup>
+
+`destroy` is idempotent: calling it on an already-destroyed sandbox is a no-op.
+
+### Iterate across pages
+
+For walking every sandbox without hand-rolling pagination:
+
+<CodeGroup>
+
+```typescript TypeScript
+for await (const handle of client.sandboxes.iterate({ limit: 50 })) {
+  console.log(handle.id, handle.status);
+}
+```
+
+```python Python
+for sandbox in client.sandboxes.iterate({"limit": 50}):
+    print(sandbox.id, sandbox.status)
+```
+
+```go Go
+err := client.Sandboxes.Iterate(ctx, sandbox.TeamScopedPagination{Limit: 50},
+    func(h *sandbox.SandboxHandle) error {
+        fmt.Println(h.ID(), h.Status())
+        return nil
+    })
+```
+
+</CodeGroup>
+
+### Pause and resume
+
+<CodeGroup>
+
+```typescript TypeScript
+await handle.pause();
+await handle.resume();
+```
+
+```python Python
+sandbox.pause()
+sandbox.resume()
+```
+
+```go Go
+_, _ = handle.Pause(ctx)
+_, _ = handle.Resume(ctx)
+```
+
+</CodeGroup>
+
+Both are async; the response acknowledges the request and the sandbox transitions a few seconds later. The handle auto-refreshes its cached state, so `handle.status` reflects the new value immediately.
+
+## Runtime operations
+
+Once the sandbox is `ready` (or you've passed `waitUntilReady`):
+
+### Exec
+
+<CodeGroup>
+
+```typescript TypeScript
+const result = await handle.exec({
+  cmd: "echo hello && uname -a",
+  timeout_seconds: 30,
+  cwd: "/work",
+});
+console.log(result.stdout, result.stderr, result.exit_code, result.duration_ms);
+```
+
+```python Python
+result = sandbox.exec({
+    "cmd": "echo hello && uname -a",
+    "timeout_seconds": 30,
+})
+print(result["stdout"], result["exit_code"])
+```
+
+```go Go
+result, _ := handle.Exec(ctx, sandbox.ExecInput{
+    Cmd: "echo hello && uname -a", TimeoutSeconds: 30,
+})
+```
+
+</CodeGroup>
+
+Exec output is buffered. If you need streaming for long-running commands, hit the REST endpoints directly.
+
+### Run code
+
+<CodeGroup>
+
+```typescript TypeScript
+const result = await handle.runCode({
+  language: "python",       // or "node"
+  code: "import sys; print(sys.version)",
+});
+```
+
+```python Python
+result = sandbox.run_code({"language": "python", "code": "print('hi')"})
+```
+
+```go Go
+result, _ := handle.RunCode(ctx, sandbox.CodeInput{
+    Language: "python", Code: "print('hi')",
+})
+```
+
+</CodeGroup>
+
+### Upload and download files
+
+<CodeGroup>
+
+```typescript TypeScript
+await handle.putFile("/app/index.js", "console.log('hello')");
+
+const stream = await handle.getFile("/app/index.js");
+// stream is a ReadableStream<Uint8Array>
+```
+
+```python Python
+sandbox.put_file("/app/index.js", b"console.log('hello')")
+
+response = sandbox.get_file("/app/index.js")
+for chunk in response.iter_content(chunk_size=8192):
+    ...
+```
+
+```go Go
+f, _ := os.Open("./local.bin")
+defer f.Close()
+info, _ := f.Stat()
+_ = handle.PutFile(ctx, "/data/local.bin", f, info.Size())
+
+body, _ := handle.GetFile(ctx, "/data/local.bin")
+defer body.Close()
+io.Copy(os.Stdout, body)
+```
+
+</CodeGroup>
+
+Parent directories must exist; uploads to a non-existent directory fail with a `400`.
+
+### Stats
+
+<CodeGroup>
+
+```typescript TypeScript
+const stats = await handle.stats({ hoursAgo: 1 });
+```
+
+```python Python
+stats = sandbox.stats({"hoursAgo": 1})
+```
+
+```go Go
+stats, _ := handle.Stats(ctx, sandbox.StatsQuery{HoursAgo: 1})
+```
+
+</CodeGroup>
+
+Returns averages and a time-series of CPU%, memory%, and network bytes/sec.
+
+## Snapshots
+
+Per-sandbox snapshot ops live on the handle. Account-wide ops live on `client.snapshots`.
+
+<CodeGroup>
+
+```typescript TypeScript
+// per-sandbox
+const snap = await handle.snapshots.create({ name: "before-migration" });
+const list = await handle.snapshots.list({ page: 1, limit: 15 });
+
+// account-wide
+const all = await client.snapshots.listAll({ limit: 50 });
+await client.snapshots.delete(snapshotId);
+
+// iterate every snapshot you own
+for await (const snap of client.snapshots.iterateAll({ limit: 100 })) {
+  console.log(snap.id, snap.status);
+}
+```
+
+```python Python
+# per-sandbox
+snap = sandbox.snapshots.create({"name": "before-migration"})
+listing = sandbox.snapshots.list({"page": 1, "limit": 15})
+
+# account-wide
+all_snaps = client.snapshots.list_all({"limit": 50})
+client.snapshots.delete(snapshot_id)
+
+for snap in client.snapshots.iterate_all({"limit": 100}):
+    print(snap["id"], snap["status"])
+```
+
+```go Go
+snap, _ := handle.Snapshots.Create(ctx, sandbox.CreateSnapshotInput{Name: "before-migration"})
+list, _ := handle.Snapshots.List(ctx, sandbox.Pagination{Page: 1, Limit: 15})
+
+all, _ := client.Snapshots.ListAll(ctx, sandbox.Pagination{Limit: 50})
+err := client.Snapshots.Delete(ctx, snapshotID)
+
+_ = client.Snapshots.IterateAll(ctx, sandbox.Pagination{Limit: 100},
+    func(s sandbox.Snapshot) error { fmt.Println(s.ID, s.Status); return nil })
+```
+
+</CodeGroup>
+
+Snapshot names match `^[a-z0-9-]{1,40}$`. Creation is async: the response returns `status: "creating"` and the snapshot flips to `ready` (or `failed`) a few minutes later. Poll `list` to see the transition.
+
+### Restore from a snapshot
+
+Pass `fromSnapshot` at sandbox create time to seed the new sandbox with the snapshot's filesystem:
+
+<CodeGroup>
+
+```typescript TypeScript
+const handle = await client.sandboxes.createReady({
+  region: "auto",
+  fromSnapshot: "<snapshot-id>",
+});
+```
+
+```python Python
+sandbox = client.sandboxes.create_ready({
+    "region": "auto",
+    "fromSnapshot": "<snapshot-id>",
+})
+```
+
+```go Go
+handle, _ := client.Sandboxes.CreateReady(ctx, sandbox.CreateSandboxRequest{
+    Region: "auto", FromSnapshot: "<snapshot-id>",
+}, nil)
+```
+
+</CodeGroup>
+
+## Volumes
+
+The SDKs only create **sandbox-type** volumes (`type: "sandbox"`); the `web` type is reserved for the dashboard's persistent-disk toggle on a project. All three SDKs enforce this client-side and reject any other value before the HTTP call.
+
+<CodeGroup>
+
+```typescript TypeScript
+const volume = await client.volumes.create({
+  name: "node-cache",
+  sizeGB: 20,                // min 10, max 50
+  region: "auto",
+  teamId: "<team-id>",       // optional
+});
+
+const list = await client.volumes.list({ page: 1, limit: 15 });
+const fetched = await client.volumes.get(volume.id);
+await client.volumes.delete(volume.id);
+```
+
+```python Python
+volume = client.volumes.create({
+    "name": "node-cache",
+    "sizeGB": 20,
+    "region": "auto",
+})
+listing = client.volumes.list({"page": 1, "limit": 15})
+v = client.volumes.get(volume["id"])
+client.volumes.delete(volume["id"])
+```
+
+```go Go
+volume, err := client.Volumes.Create(ctx, sandbox.CreateVolumeInput{
+    Name: "node-cache", SizeGB: 20, Region: "auto",
+})
+list,    _ := client.Volumes.List(ctx, sandbox.TeamScopedPagination{Page: 1, Limit: 15})
+v,       _ := client.Volumes.Get(ctx, volume.ID)
+err = client.Volumes.Delete(ctx, volume.ID)
+```
+
+</CodeGroup>
+
+Attach a volume to a sandbox by passing `volumeId` on create. See the [Volumes](../volumes/overview) doc for the full attach model.
+
+## Discovery
+
+Both templates and regions are first-class on the client. No need to hit a separate API.
+
+<CodeGroup>
+
+```typescript TypeScript
+const templates = await client.sandboxes.listTemplates();
+const node = await client.sandboxes.getTemplate("node-22");
+
+const regions = await client.sandboxes.listRegions();
+```
+
+```python Python
+templates = client.sandboxes.list_templates()
+node = client.sandboxes.get_template("node-22")
+
+regions = client.sandboxes.list_regions()
+```
+
+```go Go
+templates, _ := client.Sandboxes.ListTemplates(ctx)
+node, _      := client.Sandboxes.GetTemplate(ctx, "node-22")
+
+regions, _ := client.Sandboxes.ListRegions(ctx)
+```
+
+</CodeGroup>
+
+The Brimble team adds and retires templates without warning; calling `listTemplates()` is the authoritative way to see what's currently available.
+
+## Pagination
+
+All `list` endpoints accept `{ page, limit }` (plus `teamId` on team-scoped calls). Defaults are `page = 1`, `limit = 15`, max `limit = 100`. Responses include `totalCount`, `currentPage`, `totalPages`, `limit`, and a `data` array.
+
+For walking every result, prefer the `iterate` / `iterate_all` / `Iterate` helpers shown above; they handle pagination internally.
+
+## Errors
+
+Every SDK exposes a typed error hierarchy. All subclasses extend the base type so a single `catch` / `except` / `errors.As` block can still handle "anything from the API," but you can narrow when you want to.
+
+| Class | When |
+|---|---|
+| `SandboxApiError` / `APIError` | Base type. Any non-2xx response. |
+| `AuthError` | 401 / 403. Missing key, revoked key, insufficient permission. |
+| `ValidationError` | 400 / 422. Bad input shape, invalid state transition. |
+| `NotFoundError` | 404. Sandbox / volume / snapshot doesn't exist or isn't yours. |
+| `RateLimitError` | 429. Carries `retryAfterSeconds` / `retry_after_seconds` / `RetryAfterSeconds` when the server provides it. |
+
+Every instance carries `status`, `message`, `endpoint`, `responseBody`, and `requestId`.
+
+<CodeGroup>
+
+```typescript TypeScript
+import { RateLimitError, NotFoundError, SandboxApiError } from "@brimble/sandbox";
+
+try {
+  await client.sandboxes.get("missing");
+} catch (err) {
+  if (err instanceof RateLimitError) {
+    await new Promise((r) => setTimeout(r, (err.retryAfterSeconds ?? 1) * 1000));
+    // retry
+  } else if (err instanceof NotFoundError) {
+    console.warn("sandbox is gone");
+  } else if (err instanceof SandboxApiError) {
+    console.error(err.status, err.message, err.requestId);
+  } else {
+    throw err;
+  }
+}
+```
+
+```python Python
+import time
+from brimble_sandbox import RateLimitError, NotFoundError, SandboxApiError
+
+try:
+    client.sandboxes.get("missing")
+except RateLimitError as err:
+    time.sleep(err.retry_after_seconds or 1)
+    # retry
+except NotFoundError:
+    print("sandbox is gone")
+except SandboxApiError as err:
+    print(err.status, err.message, err.request_id)
+```
+
+```go Go
+import (
+    "errors"
+    "time"
+)
+
+_, err := client.Sandboxes.Get(ctx, "missing")
+if err != nil {
+    var rate *sandbox.RateLimitError
+    var notFound *sandbox.NotFoundError
+    var apiErr *sandbox.APIError
+    switch {
+    case errors.As(err, &rate):
+        if rate.RetryAfterSeconds != nil {
+            time.Sleep(time.Duration(*rate.RetryAfterSeconds) * time.Second)
+        }
+        // retry
+    case errors.As(err, &notFound):
+        fmt.Println("sandbox is gone")
+    case errors.As(err, &apiErr):
+        fmt.Println(apiErr.Status, apiErr.Message, apiErr.RequestID)
+    default:
+        return err
+    }
+}
+```
+
+</CodeGroup>
+
+A few SDK-specific sentinels:
+
+- **Python:** `wait_until_ready()` raises `TimeoutError` on deadline. `SandboxClient(api_key=...)` raises `ValueError` if no key is found. `volumes.create()` raises `ValueError` for size or type violations before the HTTP call.
+- **TypeScript:** the constructor throws a plain `Error` if no key is found.
+- **Go:** `context.DeadlineExceeded` / `context.Canceled` for caller-driven cancellation; check with `errors.Is`.
+
+## Retries and idempotency
+
+Each SDK ships a built-in retry policy you can configure at the client or per call. Defaults are conservative: **one attempt** (no retries) by default, base delay 300 ms, max delay 3 s, retry on `408, 429, 500, 502, 503, 504`. Bump `maxAttempts` to opt in.
+
+<CodeGroup>
+
+```typescript TypeScript
+const client = new SandboxClient({
+  retry: {
+    maxAttempts: 3,
+    baseDelayMs: 300,
+    maxDelayMs: 3_000,
+    retryStatuses: [408, 429, 500, 502, 503, 504],
+  },
+});
+
+// per-call override
+await client.sandboxes.create(input, {
+  retry: { maxAttempts: 5 },
+  idempotencyKey: crypto.randomUUID(),
+});
+
+// or disable retries on a single call
+await client.sandboxes.destroy(id, { retry: false });
+```
+
+```python Python
+from brimble_sandbox import SandboxClient, RetryOptions
+import uuid
+
+client = SandboxClient(retry=RetryOptions(max_attempts=3, base_delay_ms=300, max_delay_ms=3_000))
+
+client.sandboxes.create(
+    input,
+    retry=RetryOptions(max_attempts=5),
+    idempotency_key=str(uuid.uuid4()),
+)
+```
+
+```go Go
+client, _ := sandbox.NewClient(sandbox.ClientConfig{
+    Retry: &sandbox.RetryOptions{
+        MaxAttempts: 3, BaseDelayMs: 300, MaxDelayMs: 3000,
+    },
+})
+
+_, _ = client.Sandboxes.Create(ctx, input, sandbox.RequestOptions{
+    Retry:          &sandbox.RetryOptions{MaxAttempts: 5},
+    IdempotencyKey: "deploy-job-42",
+})
+```
+
+</CodeGroup>
+
+**Idempotency keys** make lifecycle calls safe to retry. The server deduplicates retries that carry the same `idempotencyKey` within a short window: `create`, `createReady`, `destroy`, `pause`, `resume`, `createSnapshot`, `deleteSnapshot`, and volume `create` / `delete` all accept the option. Pass a stable, unique-per-operation value (a UUID, a job ID, the SHA of the request body) and you can retry network failures without spinning up a duplicate sandbox.
+
+## Timeouts and cancellation
+
+| Operation | TypeScript | Python | Go |
+|---|---|---|---|
+| Default HTTP timeout | 30s | 30s | 30s |
+| Per-call override | `timeoutMs` in options | `timeout_ms=<n>` | `ctx` deadline / `RequestOptions.Timeout` |
+| Cancel mid-flight | `signal: AbortSignal` | not directly cancellable | `ctx.Done()` |
+| Wait-until-ready default | 60s timeout, 2s poll | 60s timeout, 2s poll | 60s timeout, 2s poll |
+| Wait-until-ready cancel | `signal: AbortSignal` | raises `TimeoutError` | `ctx.Done()` |
+
+Best practice in Go: pass a `context.Context` with a deadline matched to the operation. The SDK respects `ctx.Done()` everywhere, including the wait-until-ready polling loop.
+
+## Cleanup
+
+**None of the SDKs auto-destroy sandboxes when your process exits.** Either set `autoDestroy: true` with a `destroyTimeout`, use `oneShot: true` so the sandbox terminates when its main process exits, or wrap your work in a cleanup block:
+
+<CodeGroup>
+
+```typescript TypeScript
+const handle = await client.sandboxes.createReady({ region: "auto", template: "node-22" });
+try {
+  // ... do work
+} finally {
+  await handle.destroy().catch(() => {});
+}
+```
+
+```python Python
+sandbox = client.sandboxes.create_ready({"region": "auto", "template": "python-3.12"})
+try:
+    pass  # ... do work
+finally:
+    try:
+        sandbox.destroy()
+    except Exception:
+        pass
+```
+
+```go Go
+handle, _ := client.Sandboxes.CreateReady(ctx, sandbox.CreateSandboxRequest{
+    Region: "auto", Template: "node-22",
+}, nil)
+defer func() {
+    _ = handle.Destroy(context.Background())
+}()
+```
+
+</CodeGroup>
+
+## Versioning and stability
+
+All three SDKs are at **0.x** today; the public surface is shaped to stay stable, but minor bumps may break compatibility while we shake things out. Pin a specific version in production until we tag 1.0:
+
+<CodeGroup>
+
+```bash npm
+npm install @brimble/sandbox@^0.1.0
+```
+
+```bash pip
+pip install brimble-sandbox==0.1.0
+```
+
+```bash go
+go get github.com/brimblehq/brimble/packages/sandbox-go@v0.1.0
+```
+
+</CodeGroup>
+
+## Differences between SDKs
+
+- **Sync vs async.** TypeScript and Go are async by design (Promises / `context.Context`). Python is **sync-only**; no `AsyncClient` exists. Run SDK calls in a thread pool if you need async.
+- **Context manager / RAII.** Python's client and sandbox don't implement `__enter__` / `__exit__`. Use `try` / `finally`. Go has `defer`. TypeScript needs an explicit cleanup block.
+- **Streams.** TypeScript download returns `ReadableStream<Uint8Array>`. Python download returns `requests.Response` with `stream=True`. Go download returns `io.ReadCloser`. Exec output is always buffered in all three.
+- **Volume type lock.** All three SDKs force `type: "sandbox"` on `volumes.create()`. Use the dashboard's persistent-disk toggle for project (`web`-type) volumes.
+- **Go-only `client.Ping(ctx)`.** A one-shot connectivity / auth check that returns an error if the API key is bad or the service is unreachable.
+- **Python's `iterate_all` returns a flat list**, while TypeScript's `iterateAll` is an async generator and Go's `IterateAll` is callback-driven. The total set of snapshots fits in memory in all three, but be mindful of large accounts.
+
+## Next steps
+
+- [Sandboxes overview](overview), the lifecycle and billing model.
+- [Quickstart](quickstart), the dashboard-and-curl walkthrough.
+- [Cookbook](cookbook/untrusted-code), recipes for the highest-traffic use cases.
+- [Snapshots](snapshots), deep-dive on the snapshot lifecycle.
+- [Volumes](../volumes/overview), persistent volumes that survive sandbox destruction.
+- **Sandbox API** tab, the REST contract the SDKs wrap.

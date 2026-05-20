@@ -1,0 +1,250 @@
+---
+title: "A persistent dev environment"
+description: "A pause-and-resume remote workspace that survives sandbox tear-downs. Your files stay; you pay only for compute when you're working."
+---
+
+You want a remote machine, your own private dev environment, that you can step away from and pick back up tomorrow without losing state. The trick is to put your work on a persistent volume and treat the sandbox as a disposable computer in front of it.
+
+## When to use this recipe
+
+- A personal cloud dev environment for prototyping, demos, or pair work.
+- A coding playground backend where each user gets a persistent workspace tied to their account.
+- A shared environment a team can attach to in rotation, taking turns with the same files.
+- An always-available CI-like environment without the cost of always-on compute.
+
+## Prerequisites
+
+- A Brimble account with sandbox access (paid plan).
+- The SDK installed and `BRIMBLE_SANDBOX_KEY` set.
+- Persistent volumes available on your plan (10 to 50 GB depending on tier).
+
+## Recipe
+
+The pattern has three phases: **first run** (create the volume + sandbox together), **pause** (when you step away), and **resume** (pick back up later). The volume is the source of truth; sandboxes come and go in front of it.
+
+### Phase 1: first run
+
+`withVolume` provisions the volume and the sandbox in one call. Save the IDs locally (a config file, an env var, a row in your database) so you can find them later.
+
+<CodeGroup>
+
+```typescript TypeScript
+import { SandboxClient } from "@brimble/sandbox";
+import { writeFile } from "fs/promises";
+
+const client = new SandboxClient();
+
+const handle = await client.sandboxes.withVolume({
+  sandbox: {
+    region: "auto",
+    template: "node-22",
+    autoDestroy: false,            // don't auto-destroy; we want long-lived
+  },
+  volume: {
+    name: "alice-workspace",
+    sizeGB: 20,
+    region: "auto",
+  },
+});
+
+// Save IDs for next time
+await writeFile(".brimble-dev-env.json", JSON.stringify({
+  sandboxId: handle.id,
+  volumeName: "alice-workspace",
+}));
+
+console.log(`Sandbox ${handle.id} ready at status=${handle.status}`);
+```
+
+```python Python
+import json
+from brimble_sandbox import SandboxClient
+
+client = SandboxClient()
+
+sandbox = client.sandboxes.with_volume({
+    "sandbox": {
+        "region": "auto",
+        "template": "node-22",
+        "autoDestroy": False,
+    },
+    "volume": {
+        "name": "alice-workspace",
+        "sizeGB": 20,
+        "region": "auto",
+    },
+})
+
+with open(".brimble-dev-env.json", "w") as f:
+    json.dump({"sandbox_id": sandbox.id, "volume_name": "alice-workspace"}, f)
+
+print(f"Sandbox {sandbox.id} ready at status={sandbox.status}")
+```
+
+```go Go
+package main
+
+import (
+    "context"
+    "encoding/json"
+    "fmt"
+    "os"
+    sandbox "github.com/brimblehq/brimble/packages/sandbox-go"
+)
+
+func main() {
+    ctx := context.Background()
+    client, _ := sandbox.NewClient(sandbox.ClientConfig{})
+
+    handle, _ := client.Sandboxes.WithVolume(ctx, sandbox.CreateSandboxWithVolumeInput{
+        Sandbox: sandbox.CreateSandboxRequest{
+            Region: "auto", Template: "node-22", AutoDestroy: false,
+        },
+        Volume: sandbox.CreateVolumeInput{
+            Name: "alice-workspace", SizeGB: 20, Region: "auto",
+        },
+    })
+
+    state := map[string]string{
+        "sandbox_id":  handle.ID(),
+        "volume_name": "alice-workspace",
+    }
+    f, _ := os.Create(".brimble-dev-env.json")
+    defer f.Close()
+    _ = json.NewEncoder(f).Encode(state)
+
+    fmt.Printf("Sandbox %s ready at status=%s\n", handle.ID(), handle.Status())
+}
+```
+
+</CodeGroup>
+
+### Phase 2: pause when you step away
+
+Use the cached handle from your script (or fetch it via `client.sandboxes.use(savedSandboxId)`). Pause stops the container, releases CPU and memory billing, and keeps the volume attached.
+
+<CodeGroup>
+
+```typescript TypeScript
+const handle = await client.sandboxes.get(state.sandboxId);
+await handle.pause();
+console.log("Paused. Compute meter off; volume still attached.");
+```
+
+```python Python
+sandbox = client.sandboxes.get(state["sandbox_id"])
+sandbox.pause()
+print("Paused. Compute meter off; volume still attached.")
+```
+
+```go Go
+handle, _ := client.Sandboxes.Get(ctx, state["sandbox_id"])
+_, _ = handle.Pause(ctx)
+fmt.Println("Paused. Compute meter off; volume still attached.")
+```
+
+</CodeGroup>
+
+### Phase 3: resume later
+
+Resume kicks off a fresh container backed by the same volume. Your files are right where you left them.
+
+<CodeGroup>
+
+```typescript TypeScript
+const handle = await client.sandboxes.getReady(state.sandboxId);
+// The sandbox is back up. Your workspace volume is mounted.
+
+const ls = await handle.exec({ cmd: "ls /workspace" });
+console.log(ls.stdout);
+```
+
+```python Python
+sandbox = client.sandboxes.get_ready(state["sandbox_id"])
+ls = sandbox.exec({"cmd": "ls /workspace"})
+print(ls["stdout"])
+```
+
+```go Go
+handle, _ := client.Sandboxes.GetReady(ctx, state["sandbox_id"], nil)
+
+ls, _ := handle.Exec(ctx, sandbox.ExecInput{Cmd: "ls /workspace"})
+fmt.Println(ls.Stdout)
+```
+
+</CodeGroup>
+
+### If the sandbox is gone but the volume isn't
+
+If the sandbox hit max-lifetime and was destroyed, the volume is still there, **detached, not deleted**. Spin up a new sandbox and attach the same volume:
+
+<CodeGroup>
+
+```typescript TypeScript
+// Find the volume by name
+const volumes = await client.volumes.list();
+const vol = volumes.data.find((v) => v.name === "alice-workspace");
+if (!vol) throw new Error("volume gone");
+
+const handle = await client.sandboxes.createReady({
+  region: "auto",
+  template: "node-22",
+  volumeId: vol.id,
+});
+// /workspace contents are intact
+```
+
+```python Python
+volumes = client.volumes.list()
+vol = next((v for v in volumes["data"] if v["name"] == "alice-workspace"), None)
+if not vol:
+    raise RuntimeError("volume gone")
+
+sandbox = client.sandboxes.create_ready({
+    "region": "auto",
+    "template": "node-22",
+    "volumeId": vol["id"],
+})
+```
+
+```go Go
+volumes, _ := client.Volumes.List(ctx, sandbox.TeamScopedPagination{})
+var vol *sandbox.Volume
+for _, v := range volumes.Data {
+    if v.Name == "alice-workspace" {
+        vol = &v
+        break
+    }
+}
+if vol == nil {
+    panic("volume gone")
+}
+
+handle, _ := client.Sandboxes.CreateReady(ctx, sandbox.CreateSandboxRequest{
+    Region: "auto", Template: "node-22", VolumeID: vol.ID,
+}, nil)
+```
+
+</CodeGroup>
+
+## What's happening
+
+1. **`withVolume` on first run.** One call, one round-trip, creates both the volume and the sandbox. Atomic on the platform side.
+2. **`autoDestroy: false`.** We're explicit: don't terminate this sandbox on a timer. The whole point is a long-lived environment.
+3. **Pause when idle.** `handle.pause()` stops the container but keeps the volume attached. Billing for CPU and memory stops; you only pay for the volume's storage.
+4. **Resume into a fresh container.** `getReady` returns a hot handle. The container is new but the volume is the same, so your files are intact.
+5. **Volume outlives the sandbox.** If the platform terminates the sandbox for any reason (max-lifetime, host failure, manual destroy), the volume is detached but not deleted. Look it up by name and reattach to a new sandbox.
+
+## Variations
+
+- **Daily automatic snapshots.** Pass `snapshotMode: "automatic"` and `snapshotFrequency: "0 4 * * *"` (daily at 4am) when creating the sandbox. If the volume is ever unrecoverable, restore from the most recent snapshot.
+- **Shared team workspace.** Multiple users can attach the same volume in turn (one at a time). When you're done, destroy the sandbox; a teammate creates a fresh sandbox with the same `volumeId` and picks up exactly where you left off.
+- **Per-user playgrounds.** In a multi-tenant product, give each user their own named volume. Look it up on demand and attach a fresh sandbox; users get instant access to their environment without you maintaining always-on compute.
+- **Schedule auto-pause.** No first-class idle pause yet. Run a cron-like job that calls `pause` after N minutes of no activity, and `resume` when the user reconnects.
+- **Multiple sandboxes off one volume over time.** Detach, reattach, repeat. The volume is the long-lived artifact; sandboxes are the cheap, ephemeral wrapper.
+
+## Next steps
+
+- [Volumes](../../volumes/overview), the full attach model and limits.
+- [Snapshots](../snapshots), snapshot the volume's contents for backups or hand-offs.
+- [Sandboxes overview](../overview), lifecycle, sizing, billing.

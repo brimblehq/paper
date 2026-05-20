@@ -1,0 +1,162 @@
+---
+title: "Sandboxes"
+description: "Ephemeral, isolated compute environments for running code, scripts, and short-lived workloads on demand."
+---
+
+A **sandbox** is a short-lived, isolated compute environment you can spin up on Brimble to run code, execute shell commands, write and read files, snapshot state, and pause or resume. It's the right tool when you need a remote machine for a task, not a long-running production service.
+
+Sandboxes are different from [projects](../projects/overview): a project is a deployed application that serves traffic over a URL; a sandbox is a machine you reach into and use, more like an SSH-able worker than a website.
+
+## When to use a sandbox
+
+- Running untrusted or AI-generated code without it touching your laptop.
+- Spinning up a remote dev environment from a template (Node, Python, etc.) for a quick experiment.
+- One-shot data jobs: process a file, run a model, generate a report, exit.
+- Long-running interactive tasks where you want to pause, walk away, and resume tomorrow without losing state.
+- Hosting per-user execution environments for an app you're building (think coding playgrounds, AI agents, evaluation pipelines).
+
+Use a [web service](../projects/service-types#web-service) instead if you want a public URL, autoscaling, and a service that's always on.
+
+<Info>
+  **Image needed:** screenshot of the Sandboxes tab in the dashboard showing a list of sandboxes with status chips (ready, paused, starting), region, template, and the **New sandbox** button.
+</Info>
+
+## Templates
+
+A sandbox starts from a **template**, a preconfigured base image with a runtime (and, in some cases, an AI coding agent) already installed. You pick the template at creation by passing its `name`. If you don't pass one, you get the platform default.
+
+### Language runtimes
+
+| Name | Description |
+|---|---|
+| `python-3.12` *(default)* | Python 3.12 for general-purpose scripting, data processing, and backend dev. |
+| `node-22` | Node.js 22 LTS for JavaScript / TypeScript server-side apps. |
+| `bun-1` | Bun 1.x, fast all-in-one JS runtime, bundler, and package manager. |
+| `deno-2` | Deno 2, secure runtime for JS / TS with built-in tooling. |
+| `ubuntu-24` | Ubuntu 24.04 LTS, a clean base image for custom environments and general Linux workloads. |
+
+### AI coding agents
+
+These come with the agent already installed and configured to run autonomously inside the sandbox, useful for delegating coding tasks to an agent loop.
+
+| Name | Description |
+|---|---|
+| `claude-code` | Anthropic's Claude Code CLI. |
+| `codex` | OpenAI Codex CLI. |
+| `opencode` | OpenCode, the open-source terminal-based AI coding agent. |
+| `droid` | Factory's Droid coding agent, autonomous-mode preset. |
+
+### Get the live list
+
+The template catalog is updated by the Brimble team without warning, new templates appear, and stale ones are deprecated. The authoritative current list is available three ways:
+
+**Via an SDK:**
+
+```typescript
+const templates = await client.sandboxes.listTemplates();
+```
+
+See [SDKs](sdks#discovery) for the Python and Go equivalents.
+
+**Via the REST API:**
+
+```bash
+curl https://sandbox.brimble.io/sandbox/templates \
+  -H "x-brimble-key: $BRIMBLE_API_KEY"
+```
+
+**Via the dashboard:** open the **New sandbox** dialog. The template picker is populated from the same source.
+
+## Lifecycle
+
+A sandbox moves through a small state machine:
+
+```text
+starting → ready ⇄ paused
+   │         │
+   │         ↓
+   └────→ destroyed (or failed)
+```
+
+- **`starting`**, provisioning is in flight. Operations that need a live sandbox (`exec`, file ops, `pause`) are rejected.
+- **`ready`**, the container is up; you can exec, write files, snapshot, or pause.
+- **`paused`**, the container is scaled to zero. CPU and memory billing stops. Persistent volumes (if any) stay attached.
+- **`resuming`** / **`pausing`**, transient transitions; brief.
+- **`destroyed`**, terminal. The sandbox is gone; persistent volumes (if any) are detached, not deleted.
+- **`failed`**, provisioning hit an error and the sandbox can't be used. Destroy it and create a new one.
+
+Provisioning is **asynchronous**: the create endpoint returns immediately with `status: "starting"`. The sandbox transitions to `ready` (or `failed`) a few moments later. Poll the detail endpoint, or watch the dashboard, which receives live state-change events.
+
+## Operations you can run
+
+Once a sandbox is `ready`:
+
+| Operation | Endpoint | What it does |
+|---|---|---|
+| Exec command | `POST /sandboxes/{id}/exec` | Runs a shell command; returns stdout, stderr, exit code, duration. |
+| Run code | `POST /sandboxes/{id}/code` | Runs a Python or Node snippet you pass in the body. Same return shape as exec. |
+| Write file | `PUT /sandboxes/{id}/files/{path}` | Streams the body to the file at `path` inside the sandbox. |
+| Read file | `GET /sandboxes/{id}/files/{path}` | Streams the file at `path` back to you. |
+| Pause | `POST /sandboxes/{id}/pause` | Scales the container to zero. Persistent volumes stay attached. |
+| Resume | `POST /sandboxes/{id}/resume` | Starts a fresh container and reattaches the volume. |
+| Snapshot | `POST /sandboxes/{id}/snapshots` | Captures the sandbox's filesystem as a restorable image. See [Snapshots](snapshots). |
+| Destroy | `DELETE /sandboxes/{id}` | Terminal cleanup. |
+
+The full API is documented under the [Sandbox API](/sandboxes) tab.
+
+## Resource sizing
+
+You pick CPU, memory, and ephemeral scratch disk per sandbox:
+
+- **CPU**, Nomad MHz units; ranges from light (1 share) up to a few thousand MHz.
+- **Memory**, megabytes; ranges from 1 MB up to 2 GB.
+- **Disk**, ephemeral scratch space in GB; 1 to 5 GB.
+
+If you need durable storage that survives pause and destroy, see the next section.
+
+## Persistence
+
+By default a sandbox is fully **ephemeral**: when it's destroyed, everything written to disk is gone. Two opt-in patterns add durability:
+
+- **`persistent: true` + `persistentDiskGB`**, provisions a fresh persistent volume (10 to 50 GB) mounted at the sandbox's workspace directory. The volume survives pause and is detached (not deleted) on destroy.
+- **`volumeId`**, attaches an existing detached volume you've used before. Useful for resuming work on the same files from a fresh sandbox.
+
+Sandbox volumes are backed by **Brimble's globally distributed S3-compatible object storage**, the same backing layer used for [persistent disks](../projects/persistent-disk) on web-service projects. Your data isn't pinned to the local SSD of a specific host; if the sandbox lands on a different host on resume, the volume reattaches with the same files.
+
+Pause and resume work on any sandbox, but only persistent volumes survive a pause. On an ephemeral sandbox, anything you wrote to disk is gone when you resume; on a persistent sandbox, the workspace directory is reattached on resume and your files come back. RAM state, running processes, and open sockets never survive a pause regardless.
+
+## Auto-destroy
+
+You can ask Brimble to destroy a sandbox automatically when it stops being useful:
+
+- **`autoDestroy: true` + `destroyTimeout`**, destroy after a fixed wall-clock window. Allowed values: `30m`, `1h`, `3h`, `6h`, `12h`, `18h`.
+- **`oneShot: true`**, destroy when the sandbox's main process exits. Good for one-off scripts.
+- Every sandbox also has a hard **max-lifetime ceiling** set at the platform level; sandboxes that hit it are destroyed regardless of `autoDestroy`.
+
+Each sandbox's `expires_at` field shows when it'll auto-destroy if nothing intervenes.
+
+<Warning>
+  **Destroyed sandboxes are gone.** No grace period, no undelete. If the work needs to survive, take a [snapshot](snapshots) or use a [persistent volume](#persistence) before you destroy. Plan for the destroy or take action ahead of it.
+</Warning>
+
+## Network egress
+
+Sandboxes get a normal outbound network by default: they can `curl`, install dependencies, hit third-party APIs. For workloads you don't fully trust (AI-generated code, public dev environments), set `blockOutbound: true` at create time to deny all outbound traffic. The sandbox still accepts inbound calls from Brimble's API (exec, files, snapshots) but can't initiate connections to the public internet.
+
+## Billing and plan caveats
+
+- Each running sandbox bills against your compute meter for the time it's `ready` or `resuming`. **Paused** sandboxes don't accrue compute charges; persistent volumes (if attached) bill at storage rates.
+- Free plan accounts have a small sandbox quota and can only create sandboxes in regions marked free; paid regions are rejected at create time with a clear error.
+- Each plan has a maximum concurrent sandbox count. Once you hit it, new create requests are rejected until you destroy one.
+- A workspace-level spending limit (set under **Billing → Limits**) can pause sandbox creation entirely. The limit applies platform-wide, so if you hit it, every new sandbox is rejected with a *"spending limit reached"* error until you raise the limit or the cycle rolls over.
+
+<Warning>
+  **Spending limits hard-stop new sandboxes.** When the limit fires, existing sandboxes keep running, but you can't create more until you raise the cap or the billing cycle rolls. If you depend on creating sandboxes on demand (a coding playground app, a CI tool), monitor your limit ahead of usage spikes.
+</Warning>
+
+## Next steps
+
+- [Quickstart](quickstart), create your first sandbox in five minutes.
+- [Snapshots](snapshots), save and restore sandbox state.
+- [Inside the Brimble Sandbox runtime](sandbox-system), how Brimble provisions and manages sandboxes underneath.
+- [Sandbox API](/sandboxes), the full REST contract.

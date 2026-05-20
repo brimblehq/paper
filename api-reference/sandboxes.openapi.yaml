@@ -1,0 +1,1402 @@
+openapi: 3.0.3
+info:
+  title: Brimble Sandbox API
+  description: |
+    REST API for managing Brimble sandboxes, ephemeral compute environments with
+    optional persistent storage. Covers lifecycle (create / pause / resume / destroy),
+    runtime operations (exec, runCode, file upload/download), observability
+    (logs, stats), and snapshots.
+
+    ## Conventions
+
+    - **Response envelope:** non-`204` JSON responses use `{ "message": string, "data"?: <payload> }`.
+      The schemas below describe the **`data`** payload only.
+    - **Errors:** every non-2xx response uses `{ "message": string }`. The message is
+      user-facing.
+    - **Async transitions:** create / pause / resume / destroy return immediately;
+      the actual state change happens shortly after. Poll the detail endpoint or
+      watch the dashboard for the new status.
+    - **IDs:** every `id` is a 24-char hex string.
+  version: 1.0.0
+  contact:
+    name: Brimble Engineering
+    url: https://brimble.io
+
+servers:
+  - url: https://sandbox.brimble.io
+    description: Production
+
+security:
+  - brimbleKey: []
+
+tags:
+  - name: Sandboxes
+    description: Lifecycle and metadata
+  - name: Runtime
+    description: Exec, code, files
+  - name: Observability
+    description: Logs and stats
+  - name: Snapshots
+    description: Manual & automatic snapshots
+  - name: Volumes
+    description: Persistent disks, pre-provisioned independently of sandbox lifecycle, then attached to a sandbox or project
+
+paths:
+  /sandbox/templates:
+    get:
+      tags: [Sandboxes]
+      summary: List available sandbox templates
+      description: |
+        Returns the templates registered in `SandboxImage`. Pass `name` back as
+        the `template` field on `POST /sandboxes`. If no template is sent on
+        create, the server's configured default is used.
+      operationId: listSandboxTemplates
+      responses:
+        '200':
+          description: Templates
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SandboxTemplatesEnvelope'
+
+  /sandboxes:
+    post:
+      tags: [Sandboxes]
+      summary: Create a sandbox
+      description: |
+        Provisions a sandbox asynchronously. The response returns immediately with
+        `status: "starting"`; the sandbox transitions to `ready` (or `failed`) a few
+        moments later. Poll `GET /sandboxes/{id}` until `status` flips, or watch the
+        dashboard.
+      operationId: createSandbox
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateSandboxInput'
+      responses:
+        '200':
+          description: Sandbox provisioning queued
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CreateSandboxEnvelope'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+    get:
+      tags: [Sandboxes]
+      summary: List sandboxes
+      description: Returns sandboxes owned by the caller, sorted by `created_at` descending.
+      operationId: listSandboxes
+      parameters:
+        - $ref: '#/components/parameters/PageParam'
+        - $ref: '#/components/parameters/LimitParam'
+      responses:
+        '200':
+          description: Paginated sandboxes
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedSandboxesEnvelope'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+
+  /sandboxes/regions:
+    get:
+      tags: [Sandboxes]
+      summary: List sandbox-enabled regions
+      description: Returns regions where sandboxes can be provisioned.
+      operationId: listSandboxRegions
+      responses:
+        '200':
+          description: Available sandbox regions
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SandboxRegionsEnvelope'
+
+  /sandboxes/snapshots:
+    get:
+      tags: [Snapshots]
+      summary: List all snapshots for the caller
+      description: Returns every snapshot owned by the caller across all sandboxes.
+      operationId: listAllSnapshots
+      parameters:
+        - $ref: '#/components/parameters/PageParam'
+        - $ref: '#/components/parameters/LimitParam'
+      responses:
+        '200':
+          description: Paginated snapshots
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedSnapshotsEnvelope'
+
+  /sandboxes/snapshots/{snapshotId}:
+    delete:
+      tags: [Snapshots]
+      summary: Delete a snapshot
+      description: Hard-deletes the snapshot and its underlying image. Cannot be undone.
+      operationId: deleteSnapshot
+      parameters:
+        - $ref: '#/components/parameters/SnapshotIdParam'
+      responses:
+        '204':
+          description: Snapshot deleted
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /sandboxes/{id}:
+    get:
+      tags: [Sandboxes]
+      summary: Get a sandbox
+      operationId: getSandbox
+      parameters:
+        - $ref: '#/components/parameters/SandboxIdParam'
+      responses:
+        '200':
+          description: Sandbox detail
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SandboxEnvelope'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+    delete:
+      tags: [Sandboxes]
+      summary: Destroy a sandbox
+      description: |
+        Tears down the sandbox immediately. The HTTP response is `204` once the
+        destroy is queued; the sandbox's `status` transitions to `destroyed`
+        shortly after.
+
+        Idempotent, calling DELETE on an already-destroyed sandbox is a no-op
+        that still returns `204`.
+
+        Attached volumes are detached but **not** deleted; they can be re-attached
+        to a future sandbox.
+      operationId: destroySandbox
+      parameters:
+        - $ref: '#/components/parameters/SandboxIdParam'
+      responses:
+        '204':
+          description: Destroy queued (or already destroyed)
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /sandboxes/{id}/stats:
+    get:
+      tags: [Observability]
+      summary: Get CPU / memory / network stats
+      description: |
+        Returns an average and a time-series of CPU%, memory%, and network
+        bytes/sec for the requested lookback window. Server targets ~250 evenly
+        spaced data points; step interval adjusts with `hoursAgo`.
+      operationId: getSandboxStats
+      parameters:
+        - $ref: '#/components/parameters/SandboxIdParam'
+        - in: query
+          name: hoursAgo
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            default: 1
+          description: Lookback window in hours.
+      responses:
+        '200':
+          description: Stats payload
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StatsEnvelope'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /sandboxes/{id}/exec:
+    post:
+      tags: [Runtime]
+      summary: Run a shell command
+      description: |
+        Runs `cmd` inside the sandbox via a shell, so pipes, `&&`, redirects, and
+        installed CLI tools all work. Sandbox must be in status `ready`.
+
+        Pass `stream: true` to receive `stdout` / `stderr` as they arrive. The
+        response then uses `Content-Type: application/x-ndjson` with one JSON
+        frame per line; the final frame is `{ "type": "done", ... }`. See
+        `ExecStreamFrame` for the frame shape.
+      operationId: execCommand
+      parameters:
+        - $ref: '#/components/parameters/SandboxIdParam'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ExecInput'
+      responses:
+        '200':
+          description: |
+            Command completed.
+
+            When the request body has `stream: true`, the response is
+            `application/x-ndjson`, one `ExecStreamFrame` per line, the last
+            being a `done` frame.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ExecResultEnvelope'
+            application/x-ndjson:
+              schema:
+                type: string
+                description: Newline-delimited stream of `ExecStreamFrame` objects.
+              example: |
+                {"type":"stdout","data":"hello\n"}
+                {"type":"stderr","data":"warn\n"}
+                {"type":"done","exit_code":0,"duration_ms":142}
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /sandboxes/{id}/code:
+    post:
+      tags: [Runtime]
+      summary: Run a code snippet
+      description: |
+        Writes `code` to a temp file and runs it with the chosen interpreter.
+        Cleaner than `/exec` for multi-line scripts because you don't have to
+        deal with shell escaping. Response shape matches `/exec`.
+
+        Supports the same `stream: true` opt-in as `/exec`; see that endpoint's
+        description for the NDJSON frame shape.
+      operationId: runCode
+      parameters:
+        - $ref: '#/components/parameters/SandboxIdParam'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CodeInput'
+      responses:
+        '200':
+          description: |
+            Code completed.
+
+            When the request body has `stream: true`, the response is
+            `application/x-ndjson`, one `ExecStreamFrame` per line.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ExecResultEnvelope'
+            application/x-ndjson:
+              schema:
+                type: string
+                description: Newline-delimited stream of `ExecStreamFrame` objects.
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /sandboxes/{id}/files/{filePath}:
+    parameters:
+      - $ref: '#/components/parameters/SandboxIdParam'
+      - in: path
+        name: filePath
+        required: true
+        schema:
+          type: string
+        description: |
+          Absolute path inside the sandbox, **with literal forward slashes** (do not
+          URL-encode `/` as `%2F`; the edge proxy will reject `%2F` with a generic
+          400 before the request reaches the API).
+
+          Example: `tmp/notes.txt` resolves to `/tmp/notes.txt` inside the sandbox.
+        style: simple
+        explode: false
+    put:
+      tags: [Runtime]
+      summary: Upload a file
+      description: |
+        Streams the raw request body to the destination path inside the sandbox.
+
+        **Body is the file bytes, not JSON, not multipart, not form-data.**
+
+        The parent directory must already exist; the server does **not** `mkdir -p`.
+
+        Size cap: 50 MB by default (`SANDBOX_MAX_FILE_SIZE_BYTES`). Include
+        `Content-Length` so oversize uploads are rejected before the body is read.
+      operationId: putSandboxFile
+      requestBody:
+        required: true
+        content:
+          application/octet-stream:
+            schema:
+              type: string
+              format: binary
+      responses:
+        '204':
+          description: File written
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+    get:
+      tags: [Runtime]
+      summary: Download a file
+      description: Returns the raw file bytes as `application/octet-stream`. No JSON envelope.
+      operationId: getSandboxFile
+      responses:
+        '200':
+          description: File contents
+          content:
+            application/octet-stream:
+              schema:
+                type: string
+                format: binary
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /sandboxes/{id}/pause:
+    post:
+      tags: [Sandboxes]
+      summary: Pause a sandbox
+      description: |
+        Stops the sandbox's container while keeping its workspace volume (if any)
+        attached. Files under the sandbox's workspace directory survive; RAM state,
+        running processes, and open sockets do not.
+
+        Sandbox must be in status `ready`.
+
+        Async, the HTTP response acknowledges the request; `status` transitions
+        from `ready` to `paused` shortly after.
+      operationId: pauseSandbox
+      parameters:
+        - $ref: '#/components/parameters/SandboxIdParam'
+      responses:
+        '200':
+          description: Pause queued
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AckMessage'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /sandboxes/{id}/resume:
+    post:
+      tags: [Sandboxes]
+      summary: Resume a paused sandbox
+      description: |
+        Starts a fresh container of the same template and reattaches the persistent
+        volume. Files under the sandbox's workspace directory come back; nothing else
+        does.
+
+        Sandbox must be in status `paused`. `status` transitions from `paused` to
+        `ready` once the container is up.
+      operationId: resumeSandbox
+      parameters:
+        - $ref: '#/components/parameters/SandboxIdParam'
+      responses:
+        '200':
+          description: Resume queued
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AckMessage'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /sandboxes/{id}/snapshots:
+    post:
+      tags: [Snapshots]
+      summary: Create a snapshot
+      description: |
+        Triggers a snapshot of the sandbox's current state. Sandbox must be `ready`.
+        Snapshot transitions through `creating` → `ready` (or `failed`); poll
+        `GET /sandboxes/{id}/snapshots` to see the new status.
+      operationId: createSnapshot
+      parameters:
+        - $ref: '#/components/parameters/SandboxIdParam'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateSnapshotInput'
+      responses:
+        '202':
+          description: Snapshot creation started
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SnapshotEnvelope'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+    get:
+      tags: [Snapshots]
+      summary: List snapshots for a sandbox
+      operationId: listSnapshotsForSandbox
+      parameters:
+        - $ref: '#/components/parameters/SandboxIdParam'
+        - $ref: '#/components/parameters/PageParam'
+        - $ref: '#/components/parameters/LimitParam'
+      responses:
+        '200':
+          description: Paginated snapshots
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedSnapshotsEnvelope'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /volumes:
+    post:
+      tags: [Volumes]
+      summary: Create a volume
+      description: |
+        Provisions a persistent volume synchronously. Volumes are backed by Brimble's
+        globally distributed S3-compatible object storage; when the response returns
+        the disk is allocated and ready to attach to a sandbox or project.
+
+        Names are unique per user. Region is permanently pinned at creation;
+        volumes can only attach to sandboxes / projects in the same region.
+
+        `type` declares the surface this volume is intended for and drives where
+        it shows up in attach pickers:
+        - `web`, project disk (default)
+        - `sandbox`, sandbox disk
+      operationId: createVolume
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateVolumeInput'
+      responses:
+        '201':
+          description: Volume created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/VolumeEnvelope'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
+    get:
+      tags: [Volumes]
+      summary: List volumes
+      description: Returns volumes owned by the caller, sorted by `created_at` descending.
+      operationId: listVolumes
+      parameters:
+        - $ref: '#/components/parameters/PageParam'
+        - $ref: '#/components/parameters/LimitParam'
+      responses:
+        '200':
+          description: Paginated volumes
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedVolumesEnvelope'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+
+  /volumes/{volumeId}:
+    get:
+      tags: [Volumes]
+      summary: Get a volume
+      operationId: getVolume
+      parameters:
+        - $ref: '#/components/parameters/VolumeIdParam'
+      responses:
+        '200':
+          description: Volume detail
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/VolumeEnvelope'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+    delete:
+      tags: [Volumes]
+      summary: Delete a volume
+      description: |
+        Hard-deletes the volume. The underlying disk and all data on it are
+        destroyed, irreversible.
+
+        Fails with `400 "Volume is attached; detach it before deleting"` if the
+        volume is currently attached to a sandbox or project. Detach the volume
+        first (destroy the sandbox or detach via the project flow), then delete.
+      operationId: deleteVolume
+      parameters:
+        - $ref: '#/components/parameters/VolumeIdParam'
+      responses:
+        '204':
+          description: Volume deleted
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+components:
+  securitySchemes:
+    brimbleKey:
+      type: apiKey
+      in: header
+      name: x-brimble-key
+      description: |
+        Your account-level Brimble API key. Find it in the dashboard under
+        your profile drawer → **API key** (click the avatar in the sidebar).
+        Available on paid plans only.
+
+  parameters:
+    SandboxIdParam:
+      in: path
+      name: id
+      required: true
+      schema:
+        type: string
+        pattern: '^[a-f0-9]{24}$'
+      description: 24-char hex id of the sandbox.
+    SnapshotIdParam:
+      in: path
+      name: snapshotId
+      required: true
+      schema:
+        type: string
+        pattern: '^[a-f0-9]{24}$'
+      description: 24-char hex id of the snapshot.
+    VolumeIdParam:
+      in: path
+      name: volumeId
+      required: true
+      schema:
+        type: string
+        pattern: '^[a-f0-9]{24}$'
+      description: 24-char hex id of the volume.
+    PageParam:
+      in: query
+      name: page
+      required: false
+      schema:
+        type: integer
+        minimum: 1
+        default: 1
+    LimitParam:
+      in: query
+      name: limit
+      required: false
+      schema:
+        type: integer
+        minimum: 1
+        maximum: 100
+        default: 15
+
+  responses:
+    BadRequest:
+      description: Validation error / invalid state transition
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          examples:
+            invalidId:
+              summary: Invalid sandbox id
+              value: { message: 'Invalid sandbox id' }
+            statusTransition:
+              summary: Wrong status
+              value: { message: 'Sandbox is paused; only ready sandboxes can be paused' }
+            fileNotDir:
+              summary: Parent dir missing on upload
+              value: { message: 'Destination directory does not exist: /work' }
+            duplicateVolumeName:
+              summary: Duplicate volume name
+              value: { message: 'A volume named "node-cache" already exists' }
+            volumeAttached:
+              summary: Delete attempted on attached volume
+              value: { message: 'Volume is attached; detach it before deleting' }
+    Forbidden:
+      description: Plan / spending-limit / permission error
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          examples:
+            planLimit:
+              value: { message: 'Your plan allows up to 3 sandboxes. Destroy an existing one or upgrade.' }
+            spendingLimit:
+              value: { message: 'Sandbox creation paused, spending limit reached. Raise the limit or wait for the next billing cycle.' }
+            writePerm:
+              value: { message: 'Permission denied writing to /etc/passwd' }
+            volumeSizeCap:
+              summary: Volume size exceeds plan cap
+              value: { message: 'Your plan allows volumes up to 20GB. Reduce size or upgrade.' }
+            volumeCountCap:
+              summary: Volume count exceeds plan cap
+              value: { message: 'Your plan allows up to 2 volumes. Delete an existing one or upgrade.' }
+    NotFound:
+      description: Sandbox or related resource not found (also returned when owned by another user)
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          examples:
+            sandboxNotFound:
+              value: { message: 'Sandbox not found' }
+            snapshotNotFound:
+              value: { message: 'Snapshot not found' }
+            volumeNotFound:
+              value: { message: 'Volume not found' }
+
+  schemas:
+    # ----- Errors / envelopes ---------------------------------------------------
+    ErrorResponse:
+      type: object
+      required: [message]
+      properties:
+        message:
+          type: string
+          description: Human-readable, user-facing error reason.
+
+    AckMessage:
+      type: object
+      required: [message]
+      properties:
+        message:
+          type: string
+          example: 'Sandbox pause requested'
+
+    # ----- Inputs ---------------------------------------------------------------
+    CreateSandboxInput:
+      type: object
+      required: [region]
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 64
+          description: Display name. Auto-generated (random animal) if omitted.
+        template:
+          type: string
+          description: Template name from the available sandbox images (e.g. `node-22`, `python-3.12`). Defaults to the server's configured default.
+        teamId:
+          type: string
+          pattern: '^[a-f0-9]{24}$'
+          description: Create the sandbox under a team you're a member of. Copy the team ID from the team's settings page in the dashboard. Omit for a personal sandbox.
+        environmentId:
+          type: string
+          pattern: '^[a-f0-9]{24}$'
+          description: Project-environment ObjectId to scope the sandbox to.
+        region:
+          type: string
+          description: Region `_id` from `GET /v1/regions`.
+        specs:
+          $ref: '#/components/schemas/SandboxSpecs'
+        autoDestroy:
+          type: boolean
+          description: If true, sandbox auto-destroys after `destroyTimeout`.
+        destroyTimeout:
+          type: string
+          enum: [30m, 1h, 3h, 6h, 12h, 18h]
+          description: Required when `autoDestroy=true`. Ignored otherwise.
+        oneShot:
+          type: boolean
+          description: If true, sandbox auto-destroys when its main process exits.
+        blockOutbound:
+          type: boolean
+          description: If true, outbound network traffic from the sandbox is denied.
+        persistent:
+          type: boolean
+          description: Provision a fresh per-sandbox persistent volume for the sandbox's workspace directory.
+        persistentDiskGB:
+          type: integer
+          minimum: 10
+          maximum: 50
+          description: Required when `persistent=true`. Mutually exclusive with `volumeId`.
+        volumeId:
+          type: string
+          pattern: '^[a-f0-9]{24}$'
+          description: Attach an existing detached volume. Mutually exclusive with `persistent` / `persistentDiskGB`.
+        fromSnapshot:
+          type: string
+          pattern: '^[a-f0-9]{24}$'
+          description: Restore from a snapshot you own; replaces the template image.
+        snapshotMode:
+          type: string
+          enum: [manual, automatic]
+          default: manual
+        snapshotFrequency:
+          type: string
+          description: |
+            5-field cron expression (e.g. `0 */2 * * *`).
+            Required when `snapshotMode=automatic`, forbidden otherwise.
+
+    SandboxSpecs:
+      type: object
+      properties:
+        cpu:
+          type: integer
+          minimum: 1
+          maximum: 2000
+          description: CPU shares in Nomad MHz units.
+        memory:
+          type: integer
+          minimum: 1
+          maximum: 2048
+          description: Memory in MB.
+        disk:
+          type: integer
+          minimum: 1
+          maximum: 5
+          description: Ephemeral scratch disk in GB. Separate from persistent storage.
+
+    ExecInput:
+      type: object
+      required: [cmd]
+      properties:
+        cmd:
+          type: string
+          description: Shell command to run. Pipes / `&&` / redirects all work.
+        timeout_seconds:
+          type: integer
+          minimum: 1
+          maximum: 300
+          description: Defaults to 30. Process is killed at the limit.
+        cwd:
+          type: string
+          description: Absolute path inside the sandbox. Defaults to `/`.
+        stream:
+          type: boolean
+          description: |
+            When true, the server keeps the connection open and streams
+            stdout/stderr chunks as NDJSON (`application/x-ndjson`) instead of
+            buffering. The last frame is always `{ "type": "done", ... }`.
+
+    CodeInput:
+      type: object
+      required: [language, code]
+      properties:
+        language:
+          type: string
+          enum: [python, node]
+        code:
+          type: string
+          description: Snippet source. Multi-line via `\n` in the JSON string.
+        timeout_seconds:
+          type: integer
+          minimum: 1
+          maximum: 300
+        cwd:
+          type: string
+        stream:
+          type: boolean
+          description: |
+            When true, the response is NDJSON streamed as the snippet runs —
+            same behaviour as `/exec` with `stream: true`.
+
+    ExecStreamFrame:
+      type: object
+      description: |
+        One frame in the NDJSON stream returned when `stream: true`. Exactly
+        one frame type per line. The last frame is always `done` (on success
+        or non-zero exit) or `error` (on upstream failure after headers were
+        sent).
+      oneOf:
+        - type: object
+          required: [type, data]
+          properties:
+            type:
+              type: string
+              enum: [stdout]
+            data:
+              type: string
+        - type: object
+          required: [type, data]
+          properties:
+            type:
+              type: string
+              enum: [stderr]
+            data:
+              type: string
+        - type: object
+          required: [type, exit_code, duration_ms]
+          properties:
+            type:
+              type: string
+              enum: [done]
+            exit_code:
+              type: integer
+            duration_ms:
+              type: integer
+        - type: object
+          required: [type, message]
+          properties:
+            type:
+              type: string
+              enum: [error]
+            message:
+              type: string
+
+    CreateSnapshotInput:
+      type: object
+      required: [name]
+      properties:
+        name:
+          type: string
+          pattern: '^[a-z0-9-]{1,40}$'
+          description: Lowercase letters, digits, hyphens; 1–40 chars.
+
+    # ----- Domain objects -------------------------------------------------------
+    RegionSummary:
+      type: object
+      required: [id, name, country, provider, is_paid]
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        country:
+          type: string
+        continent:
+          type: string
+          nullable: true
+        provider:
+          type: string
+        is_paid:
+          type: boolean
+
+    SandboxRegion:
+      type: object
+      required: [id, name, country]
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        country:
+          type: string
+        continent:
+          type: string
+          nullable: true
+
+    SandboxRegionsEnvelope:
+      type: object
+      required: [message, data]
+      properties:
+        message:
+          type: string
+        data:
+          type: object
+          required: [regions]
+          properties:
+            regions:
+              type: array
+              items:
+                $ref: '#/components/schemas/SandboxRegion'
+
+    SandboxStatus:
+      type: string
+      enum: [starting, ready, pausing, paused, resuming, failed, destroyed]
+
+    DestroyReason:
+      type: string
+      enum: [user, idle_ttl, max_lifetime, one_shot_stopped, failed, paused_too_long]
+
+    Sandbox:
+      type: object
+      required: [id, name, template, status, region, specs, created_at, last_activity_at, expires_at]
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        template:
+          type: string
+        status:
+          $ref: '#/components/schemas/SandboxStatus'
+        region:
+          oneOf:
+            - $ref: '#/components/schemas/RegionSummary'
+            - type: string
+          description: |
+            Region. Currently the create and list endpoints serialize this as the raw region `_id` string;
+            future work may align it with the `RegionSummary` shape used elsewhere.
+        specs:
+          $ref: '#/components/schemas/SandboxSpecs'
+        team:
+          type: string
+          nullable: true
+        project_environment:
+          type: string
+          nullable: true
+        auto_destroy:
+          type: boolean
+        destroy_timeout:
+          type: string
+          nullable: true
+          enum: [30m, 1h, 3h, 6h, 12h, 18h, null]
+        one_shot:
+          type: boolean
+        block_outbound:
+          type: boolean
+        persistent:
+          type: boolean
+        persistent_disk_gb:
+          type: integer
+          nullable: true
+        paused_at:
+          type: string
+          format: date-time
+          nullable: true
+        from_snapshot:
+          type: string
+          nullable: true
+        snapshot_mode:
+          type: string
+          enum: [manual, automatic]
+        snapshot_frequency:
+          type: string
+          nullable: true
+        created_at:
+          type: string
+          format: date-time
+        last_activity_at:
+          type: string
+          format: date-time
+        expires_at:
+          type: string
+          format: date-time
+        destroyed_at:
+          type: string
+          format: date-time
+          nullable: true
+        destroy_reason:
+          allOf:
+            - $ref: '#/components/schemas/DestroyReason'
+          nullable: true
+
+    CreateSandboxResult:
+      type: object
+      required: [id, name, template, status, created_at, expires_at]
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        template:
+          type: string
+        status:
+          $ref: '#/components/schemas/SandboxStatus'
+        created_at:
+          type: string
+          format: date-time
+        expires_at:
+          type: string
+          format: date-time
+
+    ExecResult:
+      type: object
+      required: [stdout, stderr, exit_code, duration_ms]
+      properties:
+        stdout:
+          type: string
+        stderr:
+          type: string
+        exit_code:
+          type: integer
+        duration_ms:
+          type: integer
+
+    Snapshot:
+      type: object
+      required: [id, sandbox_id, name, image_tag, source_template, status, created_at]
+      properties:
+        id:
+          type: string
+        sandbox_id:
+          type: string
+        name:
+          type: string
+        image_tag:
+          type: string
+        source_template:
+          type: string
+        status:
+          type: string
+          enum: [creating, ready, failed]
+        failure_reason:
+          type: string
+          nullable: true
+        size_bytes:
+          type: integer
+          nullable: true
+        created_at:
+          type: string
+          format: date-time
+
+    # ----- Stats / Logs --------------------------------------------------------
+    StatsAverageNumeric:
+      type: object
+      required: [totalInPercentage, size]
+      properties:
+        totalInPercentage:
+          type: number
+          description: Mean utilization 0–100.
+        size:
+          type: number
+          description: |
+            Cap value. For memory this is MB, for CPU this is MHz.
+
+    StatsAverageNetwork:
+      type: object
+      properties:
+        value:
+          type: number
+          nullable: true
+        total:
+          type: number
+          nullable: true
+        totalInPercentage:
+          type: number
+          nullable: true
+        bytesPerSecond:
+          type: number
+          nullable: true
+
+    StatsTimelinePoint:
+      type: object
+      required: [date, memory, cpu, network]
+      properties:
+        date:
+          type: string
+          format: date-time
+        memory:
+          type: number
+        cpu:
+          type: number
+        network:
+          type: object
+          required: [bytesPerSecond]
+          properties:
+            bytesPerSecond:
+              type: number
+              nullable: true
+
+    Stats:
+      type: object
+      required: [average, replicaCount, results, responseTime]
+      properties:
+        average:
+          type: object
+          required: [memory, cpu, network]
+          properties:
+            memory:
+              $ref: '#/components/schemas/StatsAverageNumeric'
+            cpu:
+              $ref: '#/components/schemas/StatsAverageNumeric'
+            network:
+              $ref: '#/components/schemas/StatsAverageNetwork'
+        replicaCount:
+          type: integer
+          description: Always `1` for sandboxes.
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/StatsTimelinePoint'
+        responseTime:
+          type: object
+          nullable: true
+          description: Always `null` for sandboxes (no HTTP-facing proxy).
+
+    # ----- Pagination ----------------------------------------------------------
+    PaginatedSandboxes:
+      type: object
+      required: [data, totalCount, currentPage, totalPages, limit]
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/Sandbox'
+        totalCount:
+          type: integer
+        currentPage:
+          type: integer
+        totalPages:
+          type: integer
+        limit:
+          type: integer
+
+    PaginatedSnapshots:
+      type: object
+      required: [data, totalCount, currentPage, totalPages, limit]
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/Snapshot'
+        totalCount:
+          type: integer
+        currentPage:
+          type: integer
+        totalPages:
+          type: integer
+        limit:
+          type: integer
+
+    # ----- Response envelopes --------------------------------------------------
+    SandboxEnvelope:
+      type: object
+      required: [message, data]
+      properties:
+        message:
+          type: string
+          example: 'Sandbox fetched'
+        data:
+          $ref: '#/components/schemas/Sandbox'
+
+    CreateSandboxEnvelope:
+      type: object
+      required: [message, data]
+      properties:
+        message:
+          type: string
+          example: 'Sandbox creation started'
+        data:
+          $ref: '#/components/schemas/CreateSandboxResult'
+
+    PaginatedSandboxesEnvelope:
+      type: object
+      required: [message, data]
+      properties:
+        message:
+          type: string
+          example: 'Sandboxes fetched'
+        data:
+          $ref: '#/components/schemas/PaginatedSandboxes'
+
+    PaginatedSnapshotsEnvelope:
+      type: object
+      required: [message, data]
+      properties:
+        message:
+          type: string
+          example: 'Snapshots fetched'
+        data:
+          $ref: '#/components/schemas/PaginatedSnapshots'
+
+    SnapshotEnvelope:
+      type: object
+      required: [message, data]
+      properties:
+        message:
+          type: string
+          example: 'Snapshot creation started'
+        data:
+          $ref: '#/components/schemas/Snapshot'
+
+    ExecResultEnvelope:
+      type: object
+      required: [message, data]
+      properties:
+        message:
+          type: string
+          example: 'Exec completed'
+        data:
+          $ref: '#/components/schemas/ExecResult'
+
+    StatsEnvelope:
+      type: object
+      required: [message, data]
+      properties:
+        message:
+          type: string
+          example: 'Sandbox stats fetched'
+        data:
+          $ref: '#/components/schemas/Stats'
+
+    SandboxTemplate:
+      type: object
+      required: [name, display_name, description]
+      properties:
+        name:
+          type: string
+          description: Identifier to pass as `template` on sandbox create (e.g. `node-22`, `python-3.12`).
+        display_name:
+          type: string
+          description: Human-readable label for the picker UI.
+        description:
+          type: string
+
+    SandboxTemplatesEnvelope:
+      type: object
+      required: [message, data]
+      properties:
+        message:
+          type: string
+          example: 'Templates fetched'
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/SandboxTemplate'
+
+    # ----- Volumes -------------------------------------------------------------
+    VolumeType:
+      type: string
+      enum: [web, sandbox]
+      description: |
+        Which surface a volume is intended for:
+        - `web`, project disk (default)
+        - `sandbox`, sandbox disk
+
+    CreateVolumeInput:
+      type: object
+      required: [name, sizeGB, region]
+      properties:
+        name:
+          type: string
+          pattern: '^[a-z0-9-]{1,40}$'
+          description: Lowercase letters, digits, hyphens; 1–40 chars. Unique per user.
+        sizeGB:
+          type: integer
+          minimum: 10
+          maximum: 50
+          description: Disk size in GB. Subject to plan caps.
+        region:
+          type: string
+          pattern: '^[a-f0-9]{24}$'
+          description: Region id from `GET /v1/regions`. Cannot be changed after creation.
+        type:
+          allOf:
+            - $ref: '#/components/schemas/VolumeType'
+          description: Defaults to `web` when omitted.
+        teamId:
+          type: string
+          pattern: '^[a-f0-9]{24}$'
+          description: Create the volume under a team you're a member of. Copy the team ID from the team's settings page in the dashboard. Omit for a personal volume.
+
+    Volume:
+      type: object
+      required: [id, name, type, size, attached_sandbox_id, attached_project_id]
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+          description: Matches `^[a-z0-9-]{1,40}$`.
+        type:
+          $ref: '#/components/schemas/VolumeType'
+        team:
+          type: string
+          nullable: true
+          description: Team id if team-scoped.
+        volume_handle:
+          type: string
+          nullable: true
+          description: Storage-layer handle for the volume. Surfaced in advanced / debug views only.
+        size:
+          type: integer
+          description: Disk size in GB (10–50).
+        region:
+          allOf:
+            - $ref: '#/components/schemas/RegionSummary'
+          nullable: true
+          description: |
+            Populated server-side; the volume response carries the full region
+            summary inline, no separate `/v1/regions` lookup needed to render.
+        mount_path:
+          type: string
+          nullable: true
+          description: Where the volume mounts inside the attached sandbox or project.
+        attached_sandbox_id:
+          type: string
+          nullable: true
+          description: Non-null when the volume is currently attached to a sandbox.
+        attached_project_id:
+          type: string
+          nullable: true
+          description: Non-null when the volume is currently attached to a project.
+        last_attached_at:
+          type: string
+          format: date-time
+          nullable: true
+        created_at:
+          type: string
+          format: date-time
+          nullable: true
+        updated_at:
+          type: string
+          format: date-time
+          nullable: true
+
+    PaginatedVolumes:
+      type: object
+      required: [data, totalCount, currentPage, totalPages, limit]
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/Volume'
+        totalCount:
+          type: integer
+        currentPage:
+          type: integer
+        totalPages:
+          type: integer
+        limit:
+          type: integer
+
+    VolumeEnvelope:
+      type: object
+      required: [message, data]
+      properties:
+        message:
+          type: string
+          example: 'Volume fetched'
+        data:
+          $ref: '#/components/schemas/Volume'
+
+    PaginatedVolumesEnvelope:
+      type: object
+      required: [message, data]
+      properties:
+        message:
+          type: string
+          example: 'Volumes fetched'
+        data:
+          $ref: '#/components/schemas/PaginatedVolumes'

@@ -1,0 +1,173 @@
+---
+title: "Run untrusted code"
+description: "Execute AI-generated or user-submitted code in an isolated sandbox with no network egress and automatic cleanup."
+---
+
+You have code you didn't write, from an LLM, from a user-submitted form, from a third-party plugin, and you want to actually run it, capture stdout and stderr, and not let it touch anything important. Sandboxes are built for this.
+
+## When to use this recipe
+
+- Running snippets an LLM produced as part of a tool-use loop.
+- Evaluating user-submitted answers in a coding interview or learning product.
+- Sandboxing third-party plugins or untrusted webhook payloads that happen to contain code.
+- A "scratch interpreter" backend for an internal tool.
+
+## Prerequisites
+
+- A Brimble account with API access enabled (paid plan, API key from the profile drawer).
+- The TypeScript, Python, or Go SDK installed (see [SDKs](../sdks#install)).
+- `BRIMBLE_SANDBOX_KEY` set in your environment.
+
+## Recipe
+
+The key options here are **`blockOutbound: true`** (no outbound network), **`oneShot: true`** (auto-destroy when the main process exits), and a tight **`timeout_seconds`** on the exec call. Together they give you a single-use, networkless, time-bounded executor.
+
+<CodeGroup>
+
+```typescript TypeScript
+import { SandboxClient } from "@brimble/sandbox";
+
+const client = new SandboxClient();
+
+async function runUntrusted(code: string) {
+  const handle = await client.sandboxes.createReady({
+    region: "auto",
+    template: "python-3.12",
+    blockOutbound: true,        // no outbound network
+    oneShot: true,              // auto-destroy on process exit
+    destroyTimeout: "30m",      // hard ceiling, even if oneShot misfires
+    specs: { cpu: 500, memory: 512, disk: 2 },
+  });
+
+  try {
+    const result = await handle.runCode({
+      language: "python",
+      code,
+      timeout_seconds: 30,      // wall-clock cap
+    });
+
+    return {
+      exitCode: result.exit_code,
+      stdout: result.stdout,
+      stderr: result.stderr,
+      durationMs: result.duration_ms,
+    };
+  } finally {
+    // belt-and-suspenders: oneShot should already destroy on exit
+    await handle.destroy().catch(() => {});
+  }
+}
+
+const out = await runUntrusted(`
+import math
+print(math.factorial(20))
+`);
+console.log(out);
+```
+
+```python Python
+from brimble_sandbox import SandboxClient
+
+client = SandboxClient()
+
+def run_untrusted(code: str) -> dict:
+    sandbox = client.sandboxes.create_ready({
+        "region": "auto",
+        "template": "python-3.12",
+        "blockOutbound": True,
+        "oneShot": True,
+        "destroyTimeout": "30m",
+        "specs": {"cpu": 500, "memory": 512, "disk": 2},
+    })
+
+    try:
+        result = sandbox.run_code({
+            "language": "python",
+            "code": code,
+            "timeout_seconds": 30,
+        })
+        return {
+            "exit_code": result["exit_code"],
+            "stdout": result["stdout"],
+            "stderr": result["stderr"],
+            "duration_ms": result["duration_ms"],
+        }
+    finally:
+        try:
+            sandbox.destroy()
+        except Exception:
+            pass
+
+out = run_untrusted("""
+import math
+print(math.factorial(20))
+""")
+print(out)
+```
+
+```go Go
+package main
+
+import (
+    "context"
+    "fmt"
+    sandbox "github.com/brimblehq/brimble/packages/sandbox-go"
+)
+
+func runUntrusted(ctx context.Context, client *sandbox.Client, code string) (*sandbox.ExecResult, error) {
+    handle, err := client.Sandboxes.CreateReady(ctx, sandbox.CreateSandboxRequest{
+        Region:         "auto",
+        Template:       "python-3.12",
+        BlockOutbound:  true,
+        OneShot:        true,
+        DestroyTimeout: "30m",
+        Specs:          &sandbox.SandboxSpecs{CPU: 500, Memory: 512, Disk: 2},
+    }, nil)
+    if err != nil {
+        return nil, err
+    }
+    defer handle.Destroy(context.Background())
+
+    return handle.RunCode(ctx, sandbox.CodeInput{
+        Language:       "python",
+        Code:           code,
+        TimeoutSeconds: 30,
+    })
+}
+
+func main() {
+    ctx := context.Background()
+    client, _ := sandbox.NewClient(sandbox.ClientConfig{})
+    result, _ := runUntrusted(ctx, client, `
+import math
+print(math.factorial(20))
+`)
+    fmt.Println(result.Stdout, result.ExitCode)
+}
+```
+
+</CodeGroup>
+
+## What's happening
+
+1. **`createReady` over `create`.** We block until the sandbox is `ready`, so the next call doesn't need to coordinate the wait.
+2. **`blockOutbound: true`.** Outbound network is denied. The sandbox can't `curl` external services, exfiltrate data, or pivot. Inbound calls from the Brimble API (your exec, your file ops) still work.
+3. **`oneShot: true`.** When the main process exits, the sandbox auto-destroys. You don't have to remember to clean up.
+4. **`destroyTimeout: "30m"`.** A backstop: even if `oneShot` misfires (the process never returns, hangs in a loop), the sandbox is gone after 30 minutes.
+5. **Small `specs`.** 0.5 vCPU equivalent, 512 MB memory, 2 GB ephemeral disk. Pick a size that matches the work; the sandbox is hard-capped at these limits.
+6. **`timeout_seconds: 30`.** Wall-clock cap on the exec itself. The process is killed at the limit and you get a non-zero exit code.
+7. **`try` / `finally` plus `destroy`.** Belt and suspenders. The `oneShot` flag should already handle cleanup, but if the SDK call itself fails before the process can exit, the explicit `destroy` ensures we don't leave an idle sandbox running.
+
+## Variations
+
+- **Use `runCode` with `language: "node"`** for JavaScript snippets. Pick a Node-friendly template like `node-22`.
+- **Capture larger output** by lifting `timeout_seconds` and increasing `specs.memory` and `specs.disk`. The exec result is fully buffered; very large stdout streams should be written to a file inside the sandbox and downloaded with `getFile` instead.
+- **Reuse a sandbox for many calls** by dropping `oneShot: true` and calling `runCode` repeatedly. Cheaper per-call (no provisioning latency) but you're responsible for cleanup.
+- **Provide read-only inputs** by pre-uploading files with `putFile` before the `runCode` call. The snippet can read them at known paths.
+- **Surface failures cleanly** by mapping non-zero `exit_code` to your own error type. Non-zero doesn't throw, the SDK returns a normal result with the exit code and stderr.
+
+## Next steps
+
+- [Sandboxes overview](../overview), the lifecycle and billing model.
+- [Run an AI coding agent](ai-coding-agent), the same untrusted-code idea scaled up to a multi-step agent loop.
+- [Persistent dev environment](persistent-dev-env), the opposite end of the spectrum: long-lived, stateful sandboxes.

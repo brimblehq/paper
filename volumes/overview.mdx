@@ -1,0 +1,159 @@
+---
+title: "Volumes"
+description: "Persistent disks pre-provisioned independently of any project or sandbox, then attached when you need them."
+---
+
+A **volume** is a persistent disk on Brimble, pre-provisioned once, attached to a sandbox or a web-service project when you need it. Volumes have their own lifecycle: they outlive the workload they're attached to, you can detach and reattach them, and you delete them explicitly.
+
+Volumes are backed by **Brimble's globally distributed S3-compatible object storage**. Your data isn't pinned to the local SSD of any single host; if your workload moves between hosts on a redeploy or a resume, the volume reattaches with the same files.
+
+Two attach surfaces use volumes:
+
+- **Web-service projects**, use volumes for SQLite, file uploads, self-hosted-tool data dirs, anything you need to survive a redeploy. The dashboard's [Persistent disk](../projects/persistent-disk) toggle is the same thing under the hood: it provisions a `web` volume and attaches it for you.
+- **Sandboxes**, use volumes to keep a workspace directory alive across pause/resume and across whole sandbox tear-downs. See [Sandboxes](../sandboxes/overview).
+
+## When to use a volume
+
+Reach for a volume when:
+
+- You want files to survive a redeploy, a sandbox destroy, or a pause/resume cycle.
+- You want to swap workloads in front of the same data (destroy one sandbox, attach the same volume to a fresh one).
+- You don't want the workload's lifecycle to also be the data's lifecycle.
+
+Skip volumes when:
+
+- The work is throwaway and ephemeral disk is enough.
+- You need a managed database with backups, point-in-time recovery, and engine-level tooling. Use [managed databases](../projects/deploy-a-database) instead.
+
+## Volume types
+
+Pick the type at creation. It can't be changed later.
+
+| Type | For | Notes |
+|---|---|---|
+| `web` | Web-service projects | The default. Shows up in the **Persistent disk** attach picker on a project's Configuration tab. |
+| `sandbox` | Sandboxes | Shows up in the sandbox-create flow's `volumeId` selector. |
+
+A volume of one type can't be attached to the other surface, type defines where it's eligible.
+
+## Create a volume
+
+From the API:
+
+```bash
+curl -X POST https://sandbox.brimble.io/volumes \
+  -H "x-brimble-key: $BRIMBLE_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "name": "node-cache",
+    "sizeGB": 20,
+    "region": "<region-id>",
+    "type": "sandbox"
+  }'
+```
+
+Creation is **synchronous**: when the response returns, the underlying disk is allocated and the volume is ready to attach.
+
+Rules:
+
+- **Name** is lowercase letters, digits, and hyphens, 1 to 40 chars. Unique per user; two volumes can't share a name in your account.
+- **Size** is 10 to 50 GB at the platform level; your plan may cap it lower.
+- **Region** is permanently pinned at creation. Volumes can only attach to sandboxes or projects in the same region.
+- **Type** defaults to `web` if omitted. Pick `sandbox` if you'll use it from a sandbox.
+
+<Info>
+  **Image needed:** Create-volume modal in the dashboard, showing the name input, size dropdown, region selector, and type radio (Web / Sandbox).
+</Info>
+
+## Attach a volume
+
+A volume attaches to **one sandbox OR one project at a time**. There's no concurrent multi-attach; if you need the same volume from a second workload, detach it from the first.
+
+### To a sandbox
+
+Pass `volumeId` when creating the sandbox:
+
+```bash
+curl -X POST https://sandbox.brimble.io/sandboxes \
+  -H "x-brimble-key: $BRIMBLE_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "template": "node-22",
+    "region": "<region-id>",
+    "volumeId": "<volume-id>"
+  }'
+```
+
+The volume mounts at the sandbox's workspace directory. Files you wrote in a previous sandbox are right there.
+
+### To a web-service project
+
+From the dashboard: open the project's **Configuration** tab, scroll to **Persistent disk**, and pick an existing volume from the dropdown (or toggle on a new one, which provisions a fresh `web` volume implicitly). The volume mounts at the mount path you set.
+
+The toggle and the API path produce the same underlying volume; pick whichever fits the flow.
+
+## Detach a volume
+
+There's no explicit "detach" endpoint. Detaching happens as a side effect of removing the volume from its current workload:
+
+- **Sandbox**, destroy the sandbox. The volume is detached, not deleted.
+- **Project**, toggle **Persistent disk** off in the project's Configuration tab, or swap to a different volume.
+
+Once detached, the volume can be reattached to any sandbox or project of the same type and region.
+
+## List, get, delete
+
+```bash
+# List your volumes
+curl https://sandbox.brimble.io/volumes \
+  -H "x-brimble-key: $BRIMBLE_API_KEY"
+
+# Get one
+curl https://sandbox.brimble.io/volumes/$VOLUME_ID \
+  -H "x-brimble-key: $BRIMBLE_API_KEY"
+
+# Delete (must be detached)
+curl -X DELETE https://sandbox.brimble.io/volumes/$VOLUME_ID \
+  -H "x-brimble-key: $BRIMBLE_API_KEY"
+```
+
+Delete is **permanent**: the underlying disk and all data on it are destroyed. You can't delete a volume while it's attached, detach first.
+
+<Warning>
+  **Deletion is irreversible.** The disk is wiped; there's no undelete and no recycle bin. If the data matters, copy it off the volume before you delete.
+</Warning>
+
+## Lifecycle
+
+```text
+created   →  attached   →  detached   →  attached (new workload)
+                                  ↘
+                                   →  deleted
+```
+
+A volume can cycle through attach / detach as many times as you need over its lifetime. Each detach is automatic when the workload it was attached to goes away; you don't call a detach endpoint.
+
+## Limitations
+
+- **Single-attach.** One volume, one workload at a time. No concurrent reads from multiple sandboxes or projects.
+- **Region-pinned.** A volume created in `fra1` only attaches to workloads in `fra1`. To work in another region, copy the data to a new volume in that region.
+- **Type is fixed.** A `web` volume can't be attached to a sandbox, and vice versa.
+- **Size is fixed once created.** Resize isn't supported today; create a larger volume and copy the data.
+- **Networked-storage shape.** Reads and writes go over the storage backplane, not a local SSD. Throughput and latency are higher than ephemeral disk; fine for most workloads, slower for write-heavy databases. Use [managed databases](../projects/deploy-a-database) for those.
+
+## Pricing and plan caps
+
+Volumes meter by GB-month at the same rate as the rest of [persistent storage](../billing/plans#persistent-storage). The exact monthly cost for each size is shown in the dashboard when you create a volume.
+
+Each plan caps:
+
+- The **maximum volume size** you can create. Above-cap requests return `403` with *"Your plan allows volumes up to NN GB. Reduce size or upgrade."*
+- The **maximum number of volumes** per account. Above-cap creates return `403` with *"Your plan allows up to N volumes. Delete an existing one or upgrade."*
+
+See your current caps in **Billing → Plan**.
+
+## Next steps
+
+- [Persistent disk](../projects/persistent-disk), the project-side toggle that uses a `web` volume under the hood.
+- [Sandboxes](../sandboxes/overview), the sandbox flow that consumes `sandbox` volumes.
+- **Sandbox API** tab, the full REST contract for volume endpoints (`/volumes` and `/volumes/{volumeId}`).

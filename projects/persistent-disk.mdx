@@ -37,6 +37,15 @@ Use a persistent disk for:
 
 The next deployment provisions the volume and mounts it at the path you set.
 
+## How persistent disks are stored
+
+Brimble persistent disks (for projects and for [sandboxes](../sandboxes/overview)) are backed by **Brimble's globally distributed S3-compatible object storage**, not local SSDs on the host that's running your container. Two practical consequences:
+
+- **Your data survives host failure.** If the host running your project goes down, Nomad reschedules onto another host in the region and the volume reattaches. The disk follows the workload.
+- **I/O semantics are closer to networked storage than local disk.** Random write throughput on a persistent disk is lower than what you'd get from a local SSD. For most workloads (SQLite, file uploads, caches) this is fine; for write-heavy databases, use a [managed database](deploy-a-database) instead.
+
+The same model backs sandbox volumes; volumes are interchangeable between projects (`type: web`) and sandboxes (`type: sandbox`) at the surface level, but pick the right `type` when creating a volume so it shows up in the right attach picker.
+
 ## Disk sizes and pricing
 
 Disks are available in 10 GB steps from 10 GB up to 150 GB. The default is 10 GB.
