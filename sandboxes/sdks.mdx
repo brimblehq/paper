@@ -1187,17 +1187,6 @@ go get github.com/brimblehq/brimble-sdks/sandbox-go@v0.1.0
 
 </CodeGroup>
 
-## Differences between SDKs
-
-- **Sync vs async.** TypeScript and Go are async by design (Promises / `context.Context`). Python is **sync-only**; no `AsyncClient` exists. Run SDK calls in a thread pool if you need async.
-- **Context manager / RAII.** Python's client and sandbox don't implement `__enter__` / `__exit__`. Use `try` / `finally`. Go has `defer`. TypeScript needs an explicit cleanup block.
-- **Streams.** TypeScript file download returns `ReadableStream<Uint8Array>`. Python returns a `requests.Response` (use `iter_content` / `iter_lines`). Go returns `io.ReadCloser`. The same shapes apply to streaming `exec` / `runCode`, see [Stream exec output](#stream-exec-output).
-- **Streaming exec/code.** TypeScript narrows on `stream: true` (the call returns `ReadableStream<Uint8Array>`). Python and Go expose dedicated `exec_stream` / `ExecStream` and `run_code_stream` / `RunCodeStream` methods that return their language-native stream type.
-- **Batch uploads.** All three SDKs ship `putFiles` / `put_files` / `PutFiles` on the handle (`putFiles` / `put_batch` / `PutBatch` on the lower-level `FilesResource`). The cap is 100 files per request.
-- **Volume type lock.** All three SDKs force `type: "sandbox"` on `volumes.create()`. Use the dashboard's persistent-disk toggle for project (`web`-type) volumes.
-- **Go-only `client.Ping(ctx)`.** A one-shot connectivity / auth check that returns an error if the API key is bad or the service is unreachable.
-- **Python's `iterate_all` returns a flat list**, while TypeScript's `iterateAll` is an async generator and Go's `IterateAll` is callback-driven. The total set of snapshots fits in memory in all three, but be mindful of large accounts.
-
 ## Next steps
 
 - [Sandboxes overview](overview), the lifecycle and billing model.
