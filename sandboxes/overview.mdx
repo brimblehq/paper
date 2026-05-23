@@ -17,9 +17,9 @@ Sandboxes are different from [projects](../projects/overview): a project is a de
 
 Use a [web service](../projects/service-types#web-service) instead if you want a public URL, autoscaling, and a service that's always on.
 
-<Info>
-  **Image needed:** screenshot of the Sandboxes tab in the dashboard showing a list of sandboxes with status chips (ready, paused, starting), region, template, and the **New sandbox** button.
-</Info>
+<Frame caption="The Sandboxes tab in the dashboard, with status chips, region, template, and the New sandbox button.">
+  <img src="/images/sandboxes/sandboxes-list.jpg" alt="Sandboxes tab listing several sandboxes with status chips (ready, paused, starting), region, template, and a New sandbox button" />
+</Frame>
 
 ## Templates
 
@@ -48,24 +48,13 @@ These come with the agent already installed and configured to run autonomously i
 
 ### Get the live list
 
-The template catalog is updated by the Brimble team without warning, new templates appear, and stale ones are deprecated. The authoritative current list is available three ways:
-
-**Via an SDK:**
+The template catalog is updated by the Brimble team without warning, new templates appear, and stale ones are deprecated. Pull the authoritative current list from the SDK:
 
 ```typescript
 const templates = await client.sandboxes.listTemplates();
 ```
 
-See [SDKs](sdks#discovery) for the Python and Go equivalents.
-
-**Via the REST API:**
-
-```bash
-curl https://sandbox.brimble.io/sandbox/templates \
-  -H "x-brimble-key: $BRIMBLE_API_KEY"
-```
-
-**Via the dashboard:** open the **New sandbox** dialog. The template picker is populated from the same source.
+See [SDKs → Discovery](sdks#discovery) for the Python and Go equivalents. The **New sandbox** dialog in the dashboard is populated from the same source.
 
 ## Lifecycle
 
@@ -91,18 +80,20 @@ Provisioning is **asynchronous**: the create endpoint returns immediately with `
 
 Once a sandbox is `ready`, the SDK exposes one method per operation. All three SDKs ([TypeScript, Python, Go](sdks)) share the same surface.
 
-| Operation | SDK call | Underlying endpoint | What it does |
-|---|---|---|---|
-| Exec command | `handle.exec({ cmd })` | `POST /sandboxes/{id}/exec` | Runs a shell command; returns stdout, stderr, exit code, duration. |
-| Run code | `handle.runCode({ language, code })` | `POST /sandboxes/{id}/code` | Runs a Python or Node snippet you pass in. Same return shape as exec. |
-| Write file | `handle.putFile(path, body)` | `PUT /sandboxes/{id}/files/{path}` | Streams the body to the file at `path` inside the sandbox. |
-| Read file | `handle.getFile(path)` | `GET /sandboxes/{id}/files/{path}` | Streams the file at `path` back to you. |
-| Pause | `handle.pause()` | `POST /sandboxes/{id}/pause` | Scales the container to zero. Persistent volumes stay attached. |
-| Resume | `handle.resume()` | `POST /sandboxes/{id}/resume` | Starts a fresh container and reattaches the volume. |
-| Snapshot | `handle.snapshots.create({ name })` | `POST /sandboxes/{id}/snapshots` | Captures the sandbox's filesystem as a restorable image. See [Snapshots](snapshots). |
-| Destroy | `handle.destroy()` | `DELETE /sandboxes/{id}` | Terminal cleanup. |
+| Operation | SDK call | What it does |
+|---|---|---|
+| Exec command | `handle.exec({ cmd })` | Runs a shell command; returns stdout, stderr, exit code, duration. |
+| Run code | `handle.runCode({ language, code })` | Runs a Python or Node snippet you pass in. Same return shape as exec. |
+| Stream exec / code | `handle.exec({ cmd, stream: true })` | Streams stdout / stderr frames as they arrive. See [Stream exec output](sdks#stream-exec-output). |
+| Write file | `handle.putFile(path, body)` | Streams the body to the file at `path` inside the sandbox. |
+| Read file | `handle.getFile(path)` | Streams the file at `path` back to you. |
+| Batch upload | `handle.putFiles([...])` | Uploads up to 100 files in one round trip. |
+| Pause | `handle.pause()` | Scales the container to zero. Persistent volumes stay attached. |
+| Resume | `handle.resume()` | Starts a fresh container and reattaches the volume. |
+| Snapshot | `handle.snapshots.create({ name })` | Captures the sandbox's filesystem as a restorable image. See [Snapshots](snapshots). |
+| Destroy | `handle.destroy()` | Terminal cleanup. |
 
-Start with the [SDKs](sdks). The raw REST contract for every endpoint is documented under the [Sandbox API](/sandboxes) tab if you need it.
+Start with the [SDKs](sdks). If you have to call the API directly (a runtime without an SDK, debugging, scripting from a shell), the [Sandbox API](/sandboxes) tab has the raw REST contract for every endpoint.
 
 ## Resource sizing
 
@@ -145,7 +136,7 @@ Sandboxes get a normal outbound network by default: they can `curl`, install dep
 
 ## Billing and plan caveats
 
-- Each running sandbox bills against your compute meter for the time it's `ready` or `resuming`. **Paused** sandboxes don't accrue compute charges; persistent volumes (if attached) bill at storage rates.
+- Each running sandbox bills sandbox CPU/memory usage for the time it's `ready` or `resuming` (with plan-included allowances applied). **Paused** sandboxes stop sandbox CPU/memory billing; snapshot storage and persistent volumes bill separately at storage rates.
 - Free plan accounts have a small sandbox quota and can only create sandboxes in regions marked free; paid regions are rejected at create time with a clear error.
 - Each plan has a maximum concurrent sandbox count. Once you hit it, new create requests are rejected until you destroy one.
 - A workspace-level spending limit (set under **Billing → Limits**) can pause sandbox creation entirely. The limit applies platform-wide, so if you hit it, every new sandbox is rejected with a *"spending limit reached"* error until you raise the limit or the cycle rolls over.
@@ -159,5 +150,5 @@ Sandboxes get a normal outbound network by default: they can `curl`, install dep
 - [SDKs](sdks), full reference for the TypeScript, Python, and Go SDKs.
 - [Quickstart](quickstart), create your first sandbox in five minutes.
 - [Snapshots](snapshots), save and restore sandbox state.
+- [Cookbook](cookbook/untrusted-code), recipes for the most common sandbox patterns.
 - [Inside the Brimble Sandbox runtime](sandbox-system), how Brimble provisions and manages sandboxes underneath.
-- [Sandbox API](/sandboxes), the full REST contract.

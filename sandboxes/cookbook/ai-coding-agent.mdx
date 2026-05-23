@@ -33,9 +33,9 @@ The shape below uses `claude-code`. Swap the template name and the invocation co
 <CodeGroup>
 
 ```typescript TypeScript
-import { SandboxClient } from "@brimble/sandbox";
+import { Sandbox } from "@brimble/sandbox";
 
-const client = new SandboxClient();
+const client = new Sandbox();
 
 async function runAgent({
   repoUrl,
@@ -56,16 +56,17 @@ async function runAgent({
     // Seed the task description on disk
     await handle.putFile("/work/task.md", task);
 
-    // Clone and run the agent
+    // Clone and run the agent. Pass the agent's API key via `env`, never bake
+    // a secret into the cmd string.
     const run = await handle.exec({
       cmd: [
         "set -e",
         "mkdir -p /work && cd /work",
-        `export ANTHROPIC_API_KEY='${anthropicKey}'`,
         `git clone --depth 1 ${repoUrl} repo`,
         "cd repo",
         "claude --print --dangerously-skip-permissions < /work/task.md > /work/agent.log 2>&1",
       ].join(" && "),
+      env: { ANTHROPIC_API_KEY: anthropicKey },
       timeout_seconds: 1800,       // 30 min cap
     });
 
@@ -98,9 +99,9 @@ console.log(result.diff);
 
 ```python Python
 import os
-from brimble_sandbox import SandboxClient
+from brimble_sandbox import Sandbox
 
-client = SandboxClient()
+client = Sandbox()
 
 def run_agent(*, repo_url: str, task: str, anthropic_key: str) -> dict:
     sandbox = client.sandboxes.create_ready({
@@ -119,11 +120,11 @@ def run_agent(*, repo_url: str, task: str, anthropic_key: str) -> dict:
             "cmd": " && ".join([
                 "set -e",
                 "mkdir -p /work && cd /work",
-                f"export ANTHROPIC_API_KEY='{anthropic_key}'",
                 f"git clone --depth 1 {repo_url} repo",
                 "cd repo",
                 "claude --print --dangerously-skip-permissions < /work/task.md > /work/agent.log 2>&1",
             ]),
+            "env": {"ANTHROPIC_API_KEY": anthropic_key},
             "timeout_seconds": 1800,
         })
         if run["exit_code"] != 0:
@@ -157,7 +158,7 @@ import (
     "fmt"
     "os"
     "strings"
-    sandbox "github.com/brimblehq/brimble/packages/sandbox-go"
+    sandbox "github.com/brimblehq/brimble-sdks/sandbox-go"
 )
 
 func runAgent(ctx context.Context, client *sandbox.Client, repoURL, task, anthropicKey string) (string, string, error) {
@@ -181,13 +182,16 @@ func runAgent(ctx context.Context, client *sandbox.Client, repoURL, task, anthro
     cmd := strings.Join([]string{
         "set -e",
         "mkdir -p /work && cd /work",
-        fmt.Sprintf("export ANTHROPIC_API_KEY='%s'", anthropicKey),
         fmt.Sprintf("git clone --depth 1 %s repo", repoURL),
         "cd repo",
         "claude --print --dangerously-skip-permissions < /work/task.md > /work/agent.log 2>&1",
     }, " && ")
 
-    run, err := handle.Exec(ctx, sandbox.ExecInput{Cmd: cmd, TimeoutSeconds: 1800})
+    run, err := handle.Exec(ctx, sandbox.ExecInput{
+        Cmd:            cmd,
+        Env:            map[string]string{"ANTHROPIC_API_KEY": anthropicKey},
+        TimeoutSeconds: 1800,
+    })
     if err != nil {
         return "", "", err
     }

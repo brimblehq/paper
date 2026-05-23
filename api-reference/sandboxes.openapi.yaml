@@ -705,7 +705,6 @@ components:
     # ----- Inputs ---------------------------------------------------------------
     CreateSandboxInput:
       type: object
-      required: [region]
       properties:
         name:
           type: string
@@ -725,7 +724,9 @@ components:
           description: Project-environment ObjectId to scope the sandbox to.
         region:
           type: string
-          description: Region `_id` from `GET /v1/regions`.
+          description: |
+            Region `id` from `GET /v1/regions`, or `"auto"` to let the server
+            pick one for you. Optional; defaults to `"auto"` when omitted.
         specs:
           $ref: '#/components/schemas/SandboxSpecs'
         autoDestroy:
@@ -801,6 +802,19 @@ components:
         cwd:
           type: string
           description: Absolute path inside the sandbox. Defaults to `/`.
+        env:
+          type: object
+          additionalProperties:
+            type: string
+          description: |
+            Extra environment variables for this command only. Layered on top of
+            the sandbox's existing environment; same-named keys here override the
+            sandbox-level ones for this call. Values must be strings. Scoped to a
+            single invocation, the next call starts with the sandbox defaults
+            again.
+          example:
+            NODE_ENV: production
+            DATABASE_URL: postgres://...
         stream:
           type: boolean
           description: |
@@ -824,10 +838,20 @@ components:
           maximum: 300
         cwd:
           type: string
+        env:
+          type: object
+          additionalProperties:
+            type: string
+          description: |
+            Extra environment variables for this snippet only. Same semantics as
+            `env` on `/exec`, per-call override on top of the sandbox's default
+            environment.
+          example:
+            OPENAI_API_KEY: sk-...
         stream:
           type: boolean
           description: |
-            When true, the response is NDJSON streamed as the snippet runs —
+            When true, the response is NDJSON streamed as the snippet runs,
             same behaviour as `/exec` with `stream: true`.
 
     ExecStreamFrame:
@@ -883,37 +907,29 @@ components:
           description: Lowercase letters, digits, hyphens; 1–40 chars.
 
     # ----- Domain objects -------------------------------------------------------
-    RegionSummary:
-      type: object
-      required: [id, name, country, provider, is_paid]
-      properties:
-        id:
-          type: string
-        name:
-          type: string
-        country:
-          type: string
-        continent:
-          type: string
-          nullable: true
-        provider:
-          type: string
-        is_paid:
-          type: boolean
-
     SandboxRegion:
       type: object
-      required: [id, name, country]
+      required: [id, name, country, continent, enabled, type]
       properties:
         id:
           type: string
+          example: '6a06df21cc6bef51342e199e'
         name:
           type: string
+          example: 'eu-west'
         country:
           type: string
+          example: 'France'
         continent:
           type: string
-          nullable: true
+          example: 'Europe'
+        enabled:
+          type: boolean
+          description: Whether the region is currently accepting new sandboxes.
+        type:
+          type: string
+          enum: [sandbox]
+          description: Region kind. Sandbox endpoints only return sandbox-eligible regions.
 
     SandboxRegionsEnvelope:
       type: object
@@ -951,12 +967,7 @@ components:
         status:
           $ref: '#/components/schemas/SandboxStatus'
         region:
-          oneOf:
-            - $ref: '#/components/schemas/RegionSummary'
-            - type: string
-          description: |
-            Region. Currently the create and list endpoints serialize this as the raw region `_id` string;
-            future work may align it with the `RegionSummary` shape used elsewhere.
+          $ref: '#/components/schemas/SandboxRegion'
         specs:
           $ref: '#/components/schemas/SandboxSpecs'
         team:
@@ -1334,11 +1345,11 @@ components:
           description: Disk size in GB (10–50).
         region:
           allOf:
-            - $ref: '#/components/schemas/RegionSummary'
+            - $ref: '#/components/schemas/SandboxRegion'
           nullable: true
           description: |
             Populated server-side; the volume response carries the full region
-            summary inline, no separate `/v1/regions` lookup needed to render.
+            object inline, no separate `/v1/regions` lookup needed to render.
         mount_path:
           type: string
           nullable: true

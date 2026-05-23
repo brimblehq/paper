@@ -163,7 +163,10 @@
           {
             "group": "Security",
             "icon": "shield-halved",
-            "pages": ["security/two-factor-authentication"]
+            "pages": [
+              "security/api-keys",
+              "security/two-factor-authentication"
+            ]
           },
           {
             "group": "Billing",

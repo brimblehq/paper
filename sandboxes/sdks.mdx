@@ -11,7 +11,7 @@ The three SDKs are deliberately near-identical in surface: every method on one h
 |---|---|
 | **TypeScript / JavaScript** | `@brimble/sandbox` |
 | **Python** | `brimble-sandbox` |
-| **Go** | `github.com/brimblehq/brimble/packages/sandbox-go` |
+| **Go** | `github.com/brimblehq/brimble-sdks/sandbox-go` |
 
 ## Install
 
@@ -26,41 +26,43 @@ pip install brimble-sandbox
 ```
 
 ```bash go
-go get github.com/brimblehq/brimble/packages/sandbox-go
+go get github.com/brimblehq/brimble-sdks/sandbox-go
 ```
 
 </CodeGroup>
 
 **Runtime requirements:** Node 20+, Python 3.10+, Go 1.22+.
 
+Go API docs are hosted at [pkg.go.dev/github.com/brimblehq/brimble-sdks/sandbox-go](https://pkg.go.dev/github.com/brimblehq/brimble-sdks/sandbox-go).
+
 ## Authenticate
 
-All three SDKs read the same environment variable, **`BRIMBLE_SANDBOX_KEY`**, set it to your account-level API key from the profile drawer (avatar → **API key**) in the dashboard. You can also pass the key explicitly to the client constructor.
+All three SDKs read the same environment variable, **`BRIMBLE_SANDBOX_KEY`**, set it to your account-level API key from the profile drawer (avatar → **API key**) in the dashboard. You can also pass the key explicitly to the client constructor. See [API keys](/security/api-keys) for how to generate, rotate, and rate-limit.
 
 <CodeGroup>
 
 ```typescript TypeScript
-import { SandboxClient } from "@brimble/sandbox";
+import { Sandbox } from "@brimble/sandbox";
 
 // reads BRIMBLE_SANDBOX_KEY
-const client = new SandboxClient();
+const client = new Sandbox();
 
 // or pass explicitly
-const client = new SandboxClient({ apiKey: process.env.MY_KEY });
+const client = new Sandbox({ apiKey: process.env.MY_KEY });
 ```
 
 ```python Python
-from brimble_sandbox import SandboxClient
+from brimble_sandbox import Sandbox
 
 # reads BRIMBLE_SANDBOX_KEY
-client = SandboxClient()
+client = Sandbox()
 
 # or pass explicitly
-client = SandboxClient(api_key="...")
+client = Sandbox(api_key="...")
 ```
 
 ```go Go
-import sandbox "github.com/brimblehq/brimble/packages/sandbox-go"
+import sandbox "github.com/brimblehq/brimble-sdks/sandbox-go"
 
 // reads BRIMBLE_SANDBOX_KEY
 client, err := sandbox.NewClient(sandbox.ClientConfig{})
@@ -101,9 +103,9 @@ The shortest path to a running sandbox is a quickstart helper. They preconfigure
 <CodeGroup>
 
 ```typescript TypeScript
-import { SandboxClient } from "@brimble/sandbox";
+import { Sandbox } from "@brimble/sandbox";
 
-const client = new SandboxClient();
+const client = new Sandbox();
 
 // Node 22, 20 GB persistent disk, waits for ready
 const handle = await client.sandboxes.quickstartNode({ region: "auto" });
@@ -115,9 +117,9 @@ await handle.destroy();
 ```
 
 ```python Python
-from brimble_sandbox import SandboxClient
+from brimble_sandbox import Sandbox
 
-client = SandboxClient()
+client = Sandbox()
 
 # Python 3.12, 20 GB persistent disk, waits for ready
 sandbox = client.sandboxes.quickstart_python(region="auto")
@@ -134,7 +136,7 @@ package main
 import (
     "context"
     "fmt"
-    sandbox "github.com/brimblehq/brimble/packages/sandbox-go"
+    sandbox "github.com/brimblehq/brimble-sdks/sandbox-go"
 )
 
 func main() {
@@ -160,6 +162,8 @@ The presets bake in a sensible default for getting started: persistent storage s
 ## Create-and-wait helpers
 
 `createReady` is the workhorse: provision a sandbox and block until it's `ready` in one call. You don't have to think about the `starting` → `ready` transition.
+
+`region` is optional, omit it (or pass `"auto"`) to let the server pick. Pass a specific region ID from `listRegions()` to pin one.
 
 <CodeGroup>
 
@@ -545,7 +549,7 @@ result, _ := handle.Exec(ctx, sandbox.ExecInput{
 
 </CodeGroup>
 
-Exec output is buffered. If you need streaming for long-running commands, hit the REST endpoints directly.
+By default `exec` buffers, you get `stdout`, `stderr`, `exit_code`, and `duration_ms` once the command finishes. For long-running commands where you want output as it arrives, see [Stream exec output](#stream-exec-output) below.
 
 ### Run code
 
@@ -569,6 +573,147 @@ result, _ := handle.RunCode(ctx, sandbox.CodeInput{
 ```
 
 </CodeGroup>
+
+### Per-call environment variables
+
+Both `exec` and `runCode` accept an **`env`** object that's layered on top of the sandbox's existing environment for a single call. Same-named keys override the sandbox-level value for that invocation only; the next call starts from the sandbox defaults again. Cleaner than shelling out `export FOO=bar &&` in front of every command, and stops secrets from showing up in argv / shell history.
+
+<CodeGroup>
+
+```typescript TypeScript
+const result = await handle.exec({
+  cmd: "node script.js",
+  env: {
+    NODE_ENV: "production",
+    OPENAI_API_KEY: process.env.OPENAI_API_KEY!,
+    REQUEST_ID: requestId,
+  },
+});
+
+// Same shape on runCode
+await handle.runCode({
+  language: "python",
+  code: "import os; print(os.environ['MY_KEY'])",
+  env: { MY_KEY: "value" },
+});
+```
+
+```python Python
+result = sandbox.exec({
+    "cmd": "node script.js",
+    "env": {
+        "NODE_ENV": "production",
+        "OPENAI_API_KEY": os.environ["OPENAI_API_KEY"],
+        "REQUEST_ID": request_id,
+    },
+})
+
+# Same shape on run_code
+sandbox.run_code({
+    "language": "python",
+    "code": "import os; print(os.environ['MY_KEY'])",
+    "env": {"MY_KEY": "value"},
+})
+```
+
+```go Go
+result, _ := handle.Exec(ctx, sandbox.ExecInput{
+    Cmd: "node script.js",
+    Env: map[string]string{
+        "NODE_ENV":       "production",
+        "OPENAI_API_KEY": os.Getenv("OPENAI_API_KEY"),
+        "REQUEST_ID":     requestID,
+    },
+})
+
+// Same shape on RunCode
+_, _ = handle.RunCode(ctx, sandbox.CodeInput{
+    Language: "python",
+    Code:     "import os; print(os.environ['MY_KEY'])",
+    Env:      map[string]string{"MY_KEY": "value"},
+})
+```
+
+</CodeGroup>
+
+Values must be strings; numbers and booleans need to be stringified first. The map is scoped to the one call, sandbox-wide environment changes are not supported.
+
+### Stream exec output
+
+Both `exec` and `runCode` can stream output as it's produced, useful for long-running commands, AI-agent runs, or anywhere you want to surface partial output to a user instead of waiting for the whole command to finish. The server emits one NDJSON frame per chunk (`stdout`, `stderr`, `done`, or `error`); each SDK gives you back a stream you read with native primitives.
+
+<CodeGroup>
+
+```typescript TypeScript
+// Pass `stream: true` and the return type narrows to ReadableStream<Uint8Array>
+const stream = await handle.exec({
+  cmd: "pip install -r requirements.txt",
+  stream: true,
+});
+
+const reader = stream.getReader();
+const decoder = new TextDecoder();
+let buffer = "";
+while (true) {
+  const { value, done } = await reader.read();
+  if (done) break;
+  buffer += decoder.decode(value, { stream: true });
+  let nl;
+  while ((nl = buffer.indexOf("\n")) >= 0) {
+    const frame = JSON.parse(buffer.slice(0, nl));
+    buffer = buffer.slice(nl + 1);
+    if (frame.type === "stdout" || frame.type === "stderr") process.stdout.write(frame.data);
+    if (frame.type === "done") console.log("\nexit:", frame.exit_code);
+  }
+}
+```
+
+```python Python
+# Dedicated stream method returns a requests.Response with iter_lines()
+response = sandbox.exec_stream({"cmd": "pip install -r requirements.txt"})
+
+import json
+for line in response.iter_lines(decode_unicode=True):
+    if not line:
+        continue
+    frame = json.loads(line)
+    if frame["type"] in ("stdout", "stderr"):
+        print(frame["data"], end="")
+    elif frame["type"] == "done":
+        print("exit:", frame["exit_code"])
+```
+
+```go Go
+// Dedicated stream method returns an io.ReadCloser of newline-delimited JSON
+rc, err := handle.ExecStream(ctx, sandbox.ExecInput{
+    Cmd: "pip install -r requirements.txt",
+})
+if err != nil { panic(err) }
+defer rc.Close()
+
+scanner := bufio.NewScanner(rc)
+for scanner.Scan() {
+    var frame map[string]any
+    _ = json.Unmarshal(scanner.Bytes(), &frame)
+    switch frame["type"] {
+    case "stdout", "stderr":
+        fmt.Print(frame["data"])
+    case "done":
+        fmt.Println("exit:", frame["exit_code"])
+    }
+}
+```
+
+</CodeGroup>
+
+The Python and Go SDKs also expose dedicated `run_code_stream` / `RunCodeStream` for streaming the language-aware variant. In TypeScript, the same `stream: true` opt-in works on `runCode` as well, the return type narrows to a readable stream.
+
+Frame shapes (typed as `ExecStreamFrame` in TS, returned as JSON in all three):
+
+- `{ "type": "stdout", "data": "..." }`, a chunk of stdout text.
+- `{ "type": "stderr", "data": "..." }`, a chunk of stderr text.
+- `{ "type": "done", "exit_code": 0, "duration_ms": 142 }`, the final frame on a clean run.
+- `{ "type": "error", "message": "..." }`, a transport-level error after streaming began.
 
 ### Upload and download files
 
@@ -603,6 +748,57 @@ io.Copy(os.Stdout, body)
 </CodeGroup>
 
 Parent directories must exist; uploads to a non-existent directory fail with a `400`.
+
+### Batch file uploads
+
+For seeding many small files in one round trip (a fresh repo checkout, a set of config files, a directory of fixtures), use the batch upload. It sends the files as base64-encoded JSON in a single POST and returns a per-file success/failure summary.
+
+<CodeGroup>
+
+```typescript TypeScript
+const summary = await handle.putFiles([
+  { path: "/work/package.json", body: JSON.stringify({ name: "demo" }) },
+  { path: "/work/index.js", body: "console.log('hello')" },
+  { path: "/work/README.md", body: "# demo\n" },
+]);
+
+console.log(summary.uploaded, "uploaded,", summary.failed, "failed");
+for (const r of summary.results) {
+  if (!r.success) console.warn("failed:", r.path, r.error);
+}
+```
+
+```python Python
+summary = sandbox.put_files([
+    {"path": "/work/package.json", "body": '{"name": "demo"}'},
+    {"path": "/work/index.js", "body": "console.log('hello')"},
+    {"path": "/work/README.md", "body": "# demo\n"},
+])
+
+print(summary["uploaded"], "uploaded,", summary["failed"], "failed")
+for r in summary["results"]:
+    if not r["success"]:
+        print("failed:", r["path"], r.get("error"))
+```
+
+```go Go
+summary, _ := handle.PutFiles(ctx, []sandbox.BatchFileUploadItem{
+    {Path: "/work/package.json", Content: []byte(`{"name":"demo"}`)},
+    {Path: "/work/index.js", Content: []byte("console.log('hello')")},
+    {Path: "/work/README.md", Content: []byte("# demo\n")},
+})
+
+fmt.Printf("%d uploaded, %d failed\n", summary.Uploaded, summary.Failed)
+for _, r := range summary.Results {
+    if !r.Success {
+        fmt.Println("failed:", r.Path, r.Error)
+    }
+}
+```
+
+</CodeGroup>
+
+Per-call cap is **100 files**, and the payload counts toward the same file-size limit as single uploads, the SDKs reject more than 100 files client-side. For larger transfers (single big files, or more than 100 files), loop `putFile` instead.
 
 ### Stats
 
@@ -862,7 +1058,7 @@ if err != nil {
 
 A few SDK-specific sentinels:
 
-- **Python:** `wait_until_ready()` raises `TimeoutError` on deadline. `SandboxClient(api_key=...)` raises `ValueError` if no key is found. `volumes.create()` raises `ValueError` for size or type violations before the HTTP call.
+- **Python:** `wait_until_ready()` raises `TimeoutError` on deadline. `Sandbox(api_key=...)` raises `ValueError` if no key is found. `volumes.create()` raises `ValueError` for size or type violations before the HTTP call.
 - **TypeScript:** the constructor throws a plain `Error` if no key is found.
 - **Go:** `context.DeadlineExceeded` / `context.Canceled` for caller-driven cancellation; check with `errors.Is`.
 
@@ -873,7 +1069,7 @@ Each SDK ships a built-in retry policy you can configure at the client or per ca
 <CodeGroup>
 
 ```typescript TypeScript
-const client = new SandboxClient({
+const client = new Sandbox({
   retry: {
     maxAttempts: 3,
     baseDelayMs: 300,
@@ -893,10 +1089,10 @@ await client.sandboxes.destroy(id, { retry: false });
 ```
 
 ```python Python
-from brimble_sandbox import SandboxClient, RetryOptions
+from brimble_sandbox import Sandbox, RetryOptions
 import uuid
 
-client = SandboxClient(retry=RetryOptions(max_attempts=3, base_delay_ms=300, max_delay_ms=3_000))
+client = Sandbox(retry=RetryOptions(max_attempts=3, base_delay_ms=300, max_delay_ms=3_000))
 
 client.sandboxes.create(
     input,
@@ -978,7 +1174,7 @@ All three SDKs are at **0.x** today; the public surface is shaped to stay stable
 <CodeGroup>
 
 ```bash npm
-npm install @brimble/sandbox@^0.1.0
+npm install @brimble/sandbox@^0.1.2
 ```
 
 ```bash pip
@@ -986,7 +1182,7 @@ pip install brimble-sandbox==0.1.0
 ```
 
 ```bash go
-go get github.com/brimblehq/brimble/packages/sandbox-go@v0.1.0
+go get github.com/brimblehq/brimble-sdks/sandbox-go@v0.1.0
 ```
 
 </CodeGroup>
@@ -995,7 +1191,9 @@ go get github.com/brimblehq/brimble/packages/sandbox-go@v0.1.0
 
 - **Sync vs async.** TypeScript and Go are async by design (Promises / `context.Context`). Python is **sync-only**; no `AsyncClient` exists. Run SDK calls in a thread pool if you need async.
 - **Context manager / RAII.** Python's client and sandbox don't implement `__enter__` / `__exit__`. Use `try` / `finally`. Go has `defer`. TypeScript needs an explicit cleanup block.
-- **Streams.** TypeScript download returns `ReadableStream<Uint8Array>`. Python download returns `requests.Response` with `stream=True`. Go download returns `io.ReadCloser`. Exec output is always buffered in all three.
+- **Streams.** TypeScript file download returns `ReadableStream<Uint8Array>`. Python returns a `requests.Response` (use `iter_content` / `iter_lines`). Go returns `io.ReadCloser`. The same shapes apply to streaming `exec` / `runCode`, see [Stream exec output](#stream-exec-output).
+- **Streaming exec/code.** TypeScript narrows on `stream: true` (the call returns `ReadableStream<Uint8Array>`). Python and Go expose dedicated `exec_stream` / `ExecStream` and `run_code_stream` / `RunCodeStream` methods that return their language-native stream type.
+- **Batch uploads.** All three SDKs ship `putFiles` / `put_files` / `PutFiles` on the handle (`putFiles` / `put_batch` / `PutBatch` on the lower-level `FilesResource`). The cap is 100 files per request.
 - **Volume type lock.** All three SDKs force `type: "sandbox"` on `volumes.create()`. Use the dashboard's persistent-disk toggle for project (`web`-type) volumes.
 - **Go-only `client.Ping(ctx)`.** A one-shot connectivity / auth check that returns an error if the API key is bad or the service is unreachable.
 - **Python's `iterate_all` returns a flat list**, while TypeScript's `iterateAll` is an async generator and Go's `IterateAll` is callback-driven. The total set of snapshots fits in memory in all three, but be mindful of large accounts.
@@ -1003,7 +1201,7 @@ go get github.com/brimblehq/brimble/packages/sandbox-go@v0.1.0
 ## Next steps
 
 - [Sandboxes overview](overview), the lifecycle and billing model.
-- [Quickstart](quickstart), the dashboard-and-curl walkthrough.
+- [Quickstart](quickstart), the five-minute end-to-end walkthrough with all three SDKs side by side.
 - [Cookbook](cookbook/untrusted-code), recipes for the highest-traffic use cases.
 - [Snapshots](snapshots), deep-dive on the snapshot lifecycle.
 - [Volumes](../volumes/overview), persistent volumes that survive sandbox destruction.

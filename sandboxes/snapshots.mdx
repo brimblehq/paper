@@ -17,22 +17,34 @@ You create snapshots in two modes: manually whenever you want, or on a schedule.
 
 ### Manual
 
-From the dashboard, click **Snapshot** on a sandbox's detail page and name it. From the API:
+From the dashboard, click **Snapshot** on a sandbox's detail page and name it. From the SDK, call `snapshots.create` on the handle:
 
-```bash
-curl -X POST https://sandbox.brimble.io/sandboxes/$SANDBOX_ID/snapshots \
-  -H "x-brimble-key: $BRIMBLE_API_KEY" \
-  -H "Content-Type: application/json" \
-  -d '{ "name": "before-migration" }'
+<CodeGroup>
+
+```typescript TypeScript
+const snap = await handle.snapshots.create({ name: "before-migration" });
+console.log(snap.id, snap.status); // status starts as "creating"
 ```
+
+```python Python
+snap = sandbox.snapshots.create({"name": "before-migration"})
+print(snap["id"], snap["status"])
+```
+
+```go Go
+snap, _ := handle.Snapshots.Create(ctx, sandbox.CreateSnapshotInput{Name: "before-migration"})
+fmt.Println(snap.ID, snap.Status)
+```
+
+</CodeGroup>
 
 The name is lowercase letters, digits, and hyphens, 1–40 chars.
 
 The response is immediate with `status: "creating"`. The snapshot transitions to `ready` once the image is built, typically within a couple of minutes for typical sandbox sizes. If the build fails, the snapshot moves to `failed` and stays there; failed snapshots don't auto-retry.
 
-<Info>
-  **Image needed:** sandbox detail page with the **Take snapshot** modal open, showing the name input and the **Create** button.
-</Info>
+<Frame caption="The Take snapshot modal on a sandbox's detail page.">
+  <img src="/images/sandboxes/snapshot-modal.jpg" alt="Sandbox detail page with the Take snapshot modal open, showing the name input and the Create button" />
+</Frame>
 
 You can only snapshot a `ready` sandbox. Sandboxes that are `paused`, `starting`, or anything else reject the snapshot call. Only one snapshot per sandbox can be in-flight at a time; back-to-back requests serialize.
 
@@ -40,16 +52,39 @@ You can only snapshot a `ready` sandbox. Sandboxes that are `paused`, `starting`
 
 To snapshot on a schedule, set `snapshotMode: "automatic"` and `snapshotFrequency` (a five-field cron expression) at sandbox creation:
 
-```json
-{
-  "template": "node-22",
-  "region": "<region-id>",
-  "persistent": true,
-  "persistentDiskGB": 20,
-  "snapshotMode": "automatic",
-  "snapshotFrequency": "0 */2 * * *"
-}
+<CodeGroup>
+
+```typescript TypeScript
+const handle = await client.sandboxes.createReady({
+  template: "node-22",
+  persistent: true,
+  persistentDiskGB: 20,
+  snapshotMode: "automatic",
+  snapshotFrequency: "0 */2 * * *", // every two hours
+});
 ```
+
+```python Python
+sandbox = client.sandboxes.create_ready({
+    "template": "node-22",
+    "persistent": True,
+    "persistentDiskGB": 20,
+    "snapshotMode": "automatic",
+    "snapshotFrequency": "0 */2 * * *",
+})
+```
+
+```go Go
+handle, _ := client.Sandboxes.CreateReady(ctx, sandbox.CreateSandboxRequest{
+    Template:          "node-22",
+    Persistent:        true,
+    PersistentDiskGB:  20,
+    SnapshotMode:      "automatic",
+    SnapshotFrequency: "0 */2 * * *",
+}, nil)
+```
+
+</CodeGroup>
 
 The example above snapshots every two hours. The scheduler only fires when the sandbox is `ready` and no snapshot is already in flight; if the sandbox is paused or busy, the tick is skipped (it doesn't queue up missed runs).
 
@@ -57,17 +92,29 @@ The example above snapshots every two hours. The scheduler only fires when the s
 
 ## Restoring from a snapshot
 
-Restoring doesn't modify the snapshot; it creates a **new** sandbox whose initial filesystem is the snapshot's image.
+Restoring doesn't modify the snapshot; it creates a **new** sandbox whose initial filesystem is the snapshot's image. Pass `fromSnapshot` to any create call:
 
-```bash
-curl -X POST https://sandbox.brimble.io/sandboxes \
-  -H "x-brimble-key: $BRIMBLE_API_KEY" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "region": "<region-id>",
-    "fromSnapshot": "<snapshot-id>"
-  }'
+<CodeGroup>
+
+```typescript TypeScript
+const handle = await client.sandboxes.createReady({
+  fromSnapshot: snapshotId,
+});
 ```
+
+```python Python
+sandbox = client.sandboxes.create_ready({
+    "fromSnapshot": snapshot_id,
+})
+```
+
+```go Go
+handle, _ := client.Sandboxes.CreateReady(ctx, sandbox.CreateSandboxRequest{
+    FromSnapshot: snapshotID,
+}, nil)
+```
+
+</CodeGroup>
 
 A few things to know:
 
@@ -76,25 +123,61 @@ A few things to know:
 - The new sandbox gets a fresh ID and is otherwise independent; pause, exec, destroy, all behave normally.
 - You can restore the same snapshot any number of times. Each restore is a separate sandbox.
 
-<Info>
-  **Image needed:** the **Snapshots** tab in the dashboard showing a list of snapshots with name, source sandbox, status, created date, and a **Restore** button on each row.
-</Info>
+<Frame caption="The Snapshots tab listing snapshots with name, source sandbox, status, and a Restore button per row.">
+  <img src="/images/sandboxes/snapshots-list.jpg" alt="Snapshots tab in the dashboard with name, source sandbox, status, created date, and a Restore button on each row" />
+</Frame>
 
 ## Listing snapshots
 
-Two endpoints, depending on scope:
+Two views, depending on scope:
 
-- `GET /sandboxes/snapshots`, every snapshot you own across all sandboxes, paginated.
-- `GET /sandboxes/{id}/snapshots`, snapshots created from a specific sandbox.
+<CodeGroup>
 
-Both return the snapshot's `id`, `name`, `source_template`, `status`, `created_at`, and `sandbox_id`. The image bytes themselves aren't downloadable; snapshots are restore-only.
+```typescript TypeScript
+// Every snapshot you own across all sandboxes, paginated
+const all = await client.snapshots.listAll({ page: 1, limit: 50 });
+
+// Just the snapshots from one sandbox
+const mine = await handle.snapshots.list({ page: 1, limit: 50 });
+```
+
+```python Python
+# Every snapshot you own across all sandboxes
+all_snaps = client.snapshots.list_all({"page": 1, "limit": 50})
+
+# Just the snapshots from one sandbox
+mine = sandbox.list_snapshots({"page": 1, "limit": 50})
+```
+
+```go Go
+// Every snapshot you own across all sandboxes
+all, _ := client.Snapshots.ListAll(ctx, sandbox.Pagination{Page: 1, Limit: 50})
+
+// Just the snapshots from one sandbox
+mine, _ := handle.ListSnapshots(ctx, sandbox.Pagination{Page: 1, Limit: 50})
+```
+
+</CodeGroup>
+
+Each snapshot exposes `id`, `name`, `source_template`, `status`, `created_at`, and `sandbox_id`. The image bytes themselves aren't downloadable; snapshots are restore-only.
 
 ## Deleting snapshots
 
-```bash
-curl -X DELETE https://sandbox.brimble.io/sandboxes/snapshots/$SNAPSHOT_ID \
-  -H "x-brimble-key: $BRIMBLE_API_KEY"
+<CodeGroup>
+
+```typescript TypeScript
+await client.snapshots.delete(snapshotId);
 ```
+
+```python Python
+client.snapshots.delete(snapshot_id)
+```
+
+```go Go
+_ = client.Snapshots.Delete(ctx, snapshotID)
+```
+
+</CodeGroup>
 
 Deletion is **permanent**. The snapshot's underlying image is removed; restore stops working immediately for anyone holding the ID.
 
@@ -125,6 +208,6 @@ Restoring isn't free either: the new sandbox bills from the moment it goes `read
 
 ## Next steps
 
+- [SDKs](sdks), the full reference, including snapshot helpers on the handle and at the client level.
 - [Sandboxes overview](overview), lifecycle and operations.
 - [Sandbox internals](sandbox-system), how snapshot images are stored and restored.
-- [Sandbox API](/sandboxes), the snapshot endpoints with full request/response schemas.

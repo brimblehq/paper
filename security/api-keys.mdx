@@ -1,0 +1,150 @@
+---
+title: "API keys"
+description: "Create, manage, and rotate the API key that authenticates you against Brimble's HTTP API and SDKs."
+---
+
+An **API key** is a long-lived secret you use to authenticate against Brimble's HTTP API and SDKs. The dashboard uses session cookies, everything else (the Sandbox SDKs, raw curl, custom integrations, and Brimble-gated [MCP servers](/projects/deploy-an-mcp-server)) uses an API key.
+
+You authenticate every request by sending the key in the `x-brimble-key` header:
+
+```bash
+curl https://sandbox.brimble.io/sandboxes \
+  -H "x-brimble-key: $BRIMBLE_API_KEY"
+```
+
+The SDKs read the same key from the `BRIMBLE_SANDBOX_KEY` environment variable, or you can pass it explicitly to the client constructor. See [SDKs → Authenticate](/sandboxes/sdks#authenticate).
+
+## Prerequisites
+
+- A paid plan. API keys are not available on the Free tier.
+- The key is scoped to a single subscription, so:
+  - On a **personal account**, the key belongs to your personal subscription.
+  - On a **team workspace**, the key belongs to that team's subscription. Create it from inside the team workspace; copy the team's ID from the team's settings page if you need it for SDK calls that ask for `teamId`.
+
+## Create an API key
+
+1. Open the dashboard.
+2. Click your avatar → **API key** (or open your team's settings → **API key** for a team-scoped key).
+3. Click **Generate API key**.
+4. Copy the key immediately, **this is the only time the plaintext key is shown**. After you close the modal, you can rotate but you can't view the previous one.
+5. Store it somewhere safe: your password manager, your CI/CD secret store, a `.env` file outside source control.
+
+You get **one** API key per subscription. If you need a fresh one (suspected exposure, key handoff, rotation policy), see [Reset](#reset-an-api-key) below.
+
+<Warning>
+  **Treat the key like a password.** It grants the same level of access as your account does to the API. Anyone holding it can create sandboxes, deploy projects, and run up your bill. Don't commit it, paste it into chats, or hard-code it in client-side JavaScript.
+</Warning>
+
+## Use the key
+
+### With an SDK
+
+```bash
+export BRIMBLE_SANDBOX_KEY="bk_..."
+```
+
+The TypeScript, Python, and Go SDKs all read this variable automatically. To pass it explicitly:
+
+```typescript
+import { Sandbox } from "@brimble/sandbox";
+const client = new Sandbox({ apiKey: process.env.MY_KEY });
+```
+
+### With raw HTTP
+
+Pass the key in the `x-brimble-key` header on every request:
+
+```bash
+curl -X POST https://sandbox.brimble.io/sandboxes \
+  -H "x-brimble-key: $BRIMBLE_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{ "template": "node-22" }'
+```
+
+The header name is **`x-brimble-key`**, not `Authorization: Bearer ...`. Bearer-style auth is rejected.
+
+### To gate an MCP server you deploy on Brimble
+
+If you deploy an [MCP server](/projects/deploy-an-mcp-server) on Brimble and turn on **MCP authentication** in **Settings → Configuration**, every request to that server has to carry your API key in the `x-brimble-key` header. Brimble validates the header at the edge and rejects unauthenticated calls with `401` before they reach your container, you don't write any auth code yourself.
+
+The same key gates every MCP server in your account; there's no per-project key. Configure your MCP client (Claude Desktop, Cursor, etc.) to send the header:
+
+```json
+{
+  "mcpServers": {
+    "my-server": {
+      "url": "https://my-mcp.brimble.app/mcp",
+      "headers": {
+        "x-brimble-key": "<your-key>"
+      }
+    }
+  }
+}
+```
+
+If you'd rather handle auth yourself (per-user tokens, rotation, custom scopes), leave the MCP authentication toggle off and validate auth headers inside your handler. See [Deploy an MCP server → Choose authentication](/projects/deploy-an-mcp-server#step-3-choose-authentication).
+
+## Reset an API key
+
+If a key is exposed, lost, or you just want to rotate on a schedule, generate a fresh one:
+
+1. Open the dashboard.
+2. Go to the **API key** page (personal or team).
+3. Click **Reset API key**.
+4. Copy the new key right away.
+
+The moment the reset completes, the **old key stops working**. Any process still using it will start getting `401 Unauthorized`. Update your secret stores, redeploy services that read the env var, and refresh any local `.env` files before resetting.
+
+<Tip>
+  **Roll secrets gradually for production services.** If you have many services using the same key, plan the rotation: update secret stores first, redeploy in a controlled order, then reset. You can't pre-warm a new key alongside the old one because there's only one per subscription.
+</Tip>
+
+## Rate limits
+
+Each API key has a **daily request quota** that depends on your plan. The window is a rolling 24 hours, not a calendar day, the quota refills as old requests age out.
+
+When you exceed the quota, the server returns:
+
+```http
+HTTP/1.1 429 Too Many Requests
+```
+
+The SDK surfaces this as a `RateLimitError` (`AuthError` subclass tree, see [SDKs → Error handling](/sandboxes/sdks#error-handling)). The error carries a `retryAfterSeconds` (TS), `retry_after_seconds` (Python), or `RetryAfterSeconds` (Go) field telling you how long to wait before retrying. The Sandbox SDKs honour `Retry-After` automatically when their built-in retry policy is on; see [Retries and idempotency](/sandboxes/sdks#retries-and-idempotency).
+
+A handful of practical guidelines:
+
+- **Cache reads where you can.** Listing templates, regions, or sandboxes hasn't usually changed between consecutive calls. Holding the response for a few seconds drops your request count materially.
+- **Batch file uploads** with `putFiles` instead of looping `putFile` per file, one HTTP call for up to 100 files. See [SDKs → Batch file uploads](/sandboxes/sdks#batch-file-uploads).
+- **Backoff on 429.** If you write your own client, treat a 429 as terminal-for-now: stop, wait the time the server indicates, then resume.
+- **Hammering retries doesn't unblock the quota.** Each retry is another counted request. If you're stuck at 429, slow your callers down, the limit only clears as the rolling window slides forward.
+
+Higher plans get higher quotas. If your workload regularly hits the ceiling and you've already cached and batched what you can, upgrade your plan or contact support.
+
+<Info>
+  **Looking for the exact number?** Your current quota is shown on the **API key** page in the dashboard. The number depends on the plan attached to the subscription that owns the key.
+</Info>
+
+## Troubleshooting
+
+**`401 Unauthorized` ("Invalid API key").** Either the header is missing or the key is wrong. Check:
+- The header name is exactly `x-brimble-key` (lowercase, hyphens, not underscores).
+- The value is the full key including the `bk_` prefix.
+- The key hasn't been reset since you copied it.
+- You're hitting the right base URL (`https://sandbox.brimble.io` for the Sandbox API).
+
+**`401 Unauthorized` ("API key is required").** No `x-brimble-key` header was sent. Most likely the env var isn't set in the process making the call. Print `process.env.BRIMBLE_SANDBOX_KEY` (or your language's equivalent) to confirm.
+
+**`429 Too Many Requests`.** You've exhausted the daily quota. See [Rate limits](#rate-limits) above. Respect the retry-after window before issuing more calls.
+
+**"You don't have an API key, you can create one if you want to."** You're calling the dashboard's get-key endpoint but you've never generated one. Click **Generate API key** on the dashboard's API key page.
+
+**"You already have an API key, you can reset it if you want to create a new one."** A key already exists for this subscription. Click **Reset API key** to rotate, the old one will be invalidated.
+
+**Key works locally but fails in CI.** The CI runner doesn't have `BRIMBLE_SANDBOX_KEY` set. Add it to your CI secret store and reference it in the job config.
+
+## Next steps
+
+- [SDKs](/sandboxes/sdks), authenticate, configure retries, handle `RateLimitError`.
+- [Sandbox API](/sandboxes), the raw REST contract that the key authenticates.
+- [Deploy an MCP server](/projects/deploy-an-mcp-server), gate your MCP project behind the same key.
+- [Two-factor authentication](/security/two-factor-authentication), protect the account that owns the key.

@@ -25,9 +25,9 @@ The key options here are **`blockOutbound: true`** (no outbound network), **`one
 <CodeGroup>
 
 ```typescript TypeScript
-import { SandboxClient } from "@brimble/sandbox";
+import { Sandbox } from "@brimble/sandbox";
 
-const client = new SandboxClient();
+const client = new Sandbox();
 
 async function runUntrusted(code: string) {
   const handle = await client.sandboxes.createReady({
@@ -66,9 +66,9 @@ console.log(out);
 ```
 
 ```python Python
-from brimble_sandbox import SandboxClient
+from brimble_sandbox import Sandbox
 
-client = SandboxClient()
+client = Sandbox()
 
 def run_untrusted(code: str) -> dict:
     sandbox = client.sandboxes.create_ready({
@@ -111,7 +111,7 @@ package main
 import (
     "context"
     "fmt"
-    sandbox "github.com/brimblehq/brimble/packages/sandbox-go"
+    sandbox "github.com/brimblehq/brimble-sdks/sandbox-go"
 )
 
 func runUntrusted(ctx context.Context, client *sandbox.Client, code string) (*sandbox.ExecResult, error) {

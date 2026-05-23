@@ -29,10 +29,10 @@ The pattern has three phases: **first run** (create the volume + sandbox togethe
 <CodeGroup>
 
 ```typescript TypeScript
-import { SandboxClient } from "@brimble/sandbox";
+import { Sandbox } from "@brimble/sandbox";
 import { writeFile } from "fs/promises";
 
-const client = new SandboxClient();
+const client = new Sandbox();
 
 const handle = await client.sandboxes.withVolume({
   sandbox: {
@@ -58,9 +58,9 @@ console.log(`Sandbox ${handle.id} ready at status=${handle.status}`);
 
 ```python Python
 import json
-from brimble_sandbox import SandboxClient
+from brimble_sandbox import Sandbox
 
-client = SandboxClient()
+client = Sandbox()
 
 sandbox = client.sandboxes.with_volume({
     "sandbox": {
@@ -89,7 +89,7 @@ import (
     "encoding/json"
     "fmt"
     "os"
-    sandbox "github.com/brimblehq/brimble/packages/sandbox-go"
+    sandbox "github.com/brimblehq/brimble-sdks/sandbox-go"
 )
 
 func main() {

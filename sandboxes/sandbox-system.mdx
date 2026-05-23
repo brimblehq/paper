@@ -64,7 +64,7 @@ Two things worth calling out:
 
 **Sandboxes have their own host pool.** They share Nomad and Consul with the rest of Brimble, but the hosts that actually run sandbox containers are pinned to the sandbox pool. That separation matters for two reasons: a heavy sandbox can't crowd out a customer's web service, and a sandbox compromise's blast radius stops at the pool boundary.
 
-**Provisioning is asynchronous from the create request.** `POST /sandboxes` returns immediately with `status: "starting"`; the sandbox isn't usable until the container is up. Poll the detail endpoint or watch the dashboard for the `ready` flip.
+**Provisioning is asynchronous from the create request.** Creating a sandbox returns immediately with `status: "starting"`; the sandbox isn't usable until the container is up. The SDK's `createReady` / `getReady` helpers wait for the flip for you; in the dashboard, the status chip updates on its own.
 
 ## Life of a sandbox
 
@@ -72,7 +72,7 @@ Walking through one sandbox from request to destroy.
 
 ### 1. Create request
 
-`POST /sandboxes` arrives with a template, region, optional specs, and optional persistence flags. Brimble validates the request synchronously:
+The create request (SDK call, dashboard form, or raw API hit) arrives with a template, optional region, optional specs, and optional persistence flags. Brimble validates it synchronously:
 
 - The template exists.
 - The region is allowed for the caller's plan (free-plan accounts can't pick paid regions).
@@ -151,5 +151,5 @@ Concretely, the architecture above buys you:
 ## Next steps
 
 - [Sandboxes overview](overview), the user-facing lifecycle and operations.
-- [Sandbox API](/sandboxes), the full REST contract.
+- [SDKs](sdks), the recommended way to drive sandboxes from code.
 - [Inside the Brimble Builder](../projects/build-system), the companion deep-dive for the builds path.

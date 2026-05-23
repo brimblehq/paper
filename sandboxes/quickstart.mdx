@@ -5,7 +5,7 @@ description: "Create a sandbox with the SDK, run code in it, write a file, take 
 
 Create a sandbox, run a command, write a file, take a snapshot, and tear it down. The whole loop, end-to-end, in about five minutes.
 
-The recommended path is the **SDK**. It handles polling, retries, idempotency, and serialization for you, so the snippets below are the shortest working version of the full lifecycle. The dashboard and REST paths are linked at the bottom if you prefer to click or curl your way through.
+Everything below uses the **SDK**, which handles polling, retries, idempotency, and serialization for you. The dashboard path is at the bottom if you'd rather click through; raw HTTP is documented in the [Sandbox API](/sandboxes) tab if you need it.
 
 ## Prerequisites
 
@@ -26,7 +26,7 @@ export BRIMBLE_SANDBOX_KEY="sk_..."
 ```
 
 ```bash Go
-go get github.com/brimblehq/brimble/packages/sandbox-go
+go get github.com/brimblehq/brimble-sdks/sandbox-go
 export BRIMBLE_SANDBOX_KEY="sk_..."
 ```
 
@@ -39,9 +39,9 @@ export BRIMBLE_SANDBOX_KEY="sk_..."
 <CodeGroup>
 
 ```typescript TypeScript
-import { SandboxClient } from "@brimble/sandbox";
+import { Sandbox } from "@brimble/sandbox";
 
-const client = new SandboxClient();
+const client = new Sandbox();
 
 const sandbox = await client.sandboxes.createReady({
   region: "auto",
@@ -53,9 +53,9 @@ console.log(sandbox.id, sandbox.status); // ..., "ready"
 ```
 
 ```python Python
-from brimble_sandbox import SandboxClient
+from brimble_sandbox import Sandbox
 
-client = SandboxClient()
+client = Sandbox()
 
 sandbox = client.sandboxes.create_ready({
     "region": "auto",
@@ -72,7 +72,7 @@ package main
 import (
     "context"
     "fmt"
-    sandbox "github.com/brimblehq/brimble/packages/sandbox-go"
+    sandbox "github.com/brimblehq/brimble-sdks/sandbox-go"
 )
 
 func main() {
@@ -93,7 +93,7 @@ func main() {
 
 </CodeGroup>
 
-`region: "auto"` lets the server pick the best region for your account. Pass a specific region ID to pin one.
+`region` is optional. `"auto"` lets the server pick the best region for your account; omit the field entirely for the same behaviour. Pass a specific region ID from `listRegions()` to pin one.
 
 ## Step 2: Run a command
 
@@ -248,9 +248,9 @@ Persistent volumes (if you created the sandbox with `persistent: true`) are **de
 - Restore a sandbox from a snapshot by passing `fromSnapshot: "<snapshot-id>"` on create.
 - Use `client.sandboxes.quickstartNode()` or `quickstartPython()` for one-line "give me a persistent dev box" presets. See [SDKs](sdks#quickstart-presets).
 
-## Alternative paths
+## From the dashboard
 
-### From the dashboard
+If you'd rather click through it first:
 
 1. Open the dashboard.
 2. Click **Sandboxes** in the sidebar, then **New sandbox**.
@@ -259,43 +259,13 @@ Persistent volumes (if you created the sandbox with `persistent: true`) are **de
 5. Optionally set CPU, memory, and ephemeral disk under **Specs**.
 6. Click **Create**. The dashboard takes you to the sandbox detail page; status starts as **starting** and flips to **ready** in a few seconds. From there, **Terminal**, **Files**, and **Snapshots** tabs cover the rest of this flow.
 
-<Info>
-  **Image needed:** screenshot of the **New sandbox** form showing the template picker, region selector, and the specs sliders (CPU, memory, disk).
-</Info>
-
-### From the REST API (curl)
-
-If you can't use an SDK, every step above maps to a single HTTP call:
-
-```bash
-# Create
-curl -X POST https://sandbox.brimble.io/sandboxes \
-  -H "x-brimble-key: $BRIMBLE_API_KEY" \
-  -H "Content-Type: application/json" \
-  -d '{ "template": "node-22", "region": "auto", "name": "my-first-sandbox" }'
-
-# Exec
-curl -X POST https://sandbox.brimble.io/sandboxes/$SANDBOX_ID/exec \
-  -H "x-brimble-key: $BRIMBLE_API_KEY" \
-  -H "Content-Type: application/json" \
-  -d '{ "cmd": "echo hello && uname -a" }'
-
-# Snapshot
-curl -X POST https://sandbox.brimble.io/sandboxes/$SANDBOX_ID/snapshots \
-  -H "x-brimble-key: $BRIMBLE_API_KEY" \
-  -H "Content-Type: application/json" \
-  -d '{ "name": "first-snapshot" }'
-
-# Destroy
-curl -X DELETE https://sandbox.brimble.io/sandboxes/$SANDBOX_ID \
-  -H "x-brimble-key: $BRIMBLE_API_KEY"
-```
-
-The REST endpoints are documented under the [Sandbox API](/sandboxes) tab.
+<Frame caption="The New sandbox form with template, region, and the specs sliders.">
+  <img src="/images/sandboxes/new-sandbox-form.jpg" alt="New sandbox form with template picker, region selector, and CPU, memory, and disk specs sliders" />
+</Frame>
 
 ## Next steps
 
-- [SDKs](sdks), full reference for the TypeScript, Python, and Go SDKs.
+- [SDKs](sdks), full reference for the TypeScript, Python, and Go SDKs, all the helpers, streaming, batch uploads, retries.
 - [Sandboxes overview](overview), lifecycle, sizing, billing.
 - [Snapshots](snapshots), manual + automatic snapshot flows.
-- [Sandbox API](/sandboxes), every endpoint with full schemas.
+- [Cookbook](cookbook/untrusted-code), end-to-end recipes for common sandbox use cases.
