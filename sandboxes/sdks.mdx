@@ -395,7 +395,6 @@ const handle = await client.sandboxes.create({
   template: "python-3.12",
   name: "scratch",
   teamId: "<team-id>",                     // omit for personal
-  environmentId: "<env-id>",
   specs: { cpu: 500, memory: 512, disk: 2 },
   autoDestroy: true,
   destroyTimeout: "1h",                    // 30m, 1h, 3h, 6h, 12h, 18h

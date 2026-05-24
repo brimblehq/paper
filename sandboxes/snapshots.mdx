@@ -123,6 +123,10 @@ A few things to know:
 - The new sandbox gets a fresh ID and is otherwise independent; pause, exec, destroy, all behave normally.
 - You can restore the same snapshot any number of times. Each restore is a separate sandbox.
 
+<Note>
+  **Restores boot a few seconds slower than a fresh template sandbox.** Snapshots aren't pre-warmed, the image has to be pulled and unpacked before the container can start. Expect a small extra delay on the `starting` → `ready` transition compared to a regular create. `createReady` / `getReady` waits for you; if you're driving the create manually, give `waitUntilReady` a slightly longer timeout.
+</Note>
+
 <Frame caption="The Snapshots tab listing snapshots with name, source sandbox, status, and a Restore button per row.">
   <img src="/images/sandboxes/snapshots-list.jpg" alt="Snapshots tab in the dashboard with name, source sandbox, status, created date, and a Restore button on each row" />
 </Frame>
