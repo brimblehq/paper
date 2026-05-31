@@ -56,11 +56,11 @@ The endpoint is shown on the bucket's detail page in the dashboard. The same end
 | Resource | Rate |
 |---|---|
 | **Storage** | **$0.032 per GB-month** |
-| Requests | Free during preview. |
-| Egress | Free during preview. |
+| **Egress (outbound bandwidth)** | **Free** |
+| **Requests** (`PUT` / `GET` / `LIST` / etc.) | **Free** |
 
 <Info>
-  **Currently storage-only billing.** Brimble doesn't bill for request count or outbound bandwidth on object storage today. Once that changes you'll see it on your invoice with a separate line; nothing about the storage line item changes.
+  **Egress and per-request charges are free.** Today, object storage bills only for the data you hold at rest. There's no fee for downloads, uploads, or the number of API calls you make. If that ever changes you'll see the new line item on your invoice; the storage line stays as-is.
 </Info>
 
 Storage is metered hourly and billed as GB-months on your invoice (`GB-month = GB-hours / 720`). A 50 GB bucket held for the full month bills as 50 × $0.032 = **$1.60**. A 50 GB bucket held for 12 hours bills as 50 × (12 / 720) × $0.032 ≈ **$0.027**. Bucket usage rolls into the same invoice as the rest of your account.
