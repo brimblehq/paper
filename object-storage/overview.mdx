@@ -1,0 +1,84 @@
+---
+title: "Object storage"
+description: "S3-compatible buckets for storing application data, user uploads, backups, and static assets."
+---
+
+**Brimble Object Storage** gives you S3-compatible buckets to store application data, user uploads, backups, static assets, and anything else you'd put in an object store. Buckets are independent of any project; you create them once, use them from any service in your account, and pay only for what you store.
+
+<Frame caption="The Object storage home with aggregate usage and the list of buckets in the workspace.">
+  <img src="/images/object-storage/bucket-home-overview.jpg" alt="Object storage home with total storage, bucket count, and a table of buckets showing name, region, object count, and size" />
+</Frame>
+
+The API surface is S3-compatible, so anything that talks to S3 (the AWS SDKs, the AWS CLI, `boto3`, `aws-sdk` for Node, `rclone`, `mc`, `s3cmd`, and the like) works against a Brimble bucket the moment you give it an endpoint, region, and access key pair.
+
+## When to use it
+
+Reach for object storage when:
+
+- You serve **user uploads** (avatars, attachments, video, photo libraries) from a web app.
+- You generate **build artifacts, backups, or exports** and need a durable place to put them.
+- You're hosting **static assets** that don't fit a static-site deploy (large media files, generated reports).
+- You want a **data plane that's independent of your compute**, so you can swap services in front of the same data without copying anything.
+
+Skip object storage when:
+
+- The data is small, structured, and queried frequently. Use a [managed database](/projects/deploy-a-database).
+- The files only need to survive a redeploy on one service. A [persistent disk](/projects/persistent-disk) is simpler.
+
+## Concepts
+
+| Term | What it means |
+|---|---|
+| **Bucket** | A named container for objects. The unit of access control, CORS configuration, and billing visibility. |
+| **Object** | A single file in a bucket, addressed by its path (`folder/sub/file.png`). Object sizes go up to the per-object cap; for files above a few hundred MB use multipart upload. |
+| **Folder** | A path prefix. There are no real directories; an object at `images/2026/cover.jpg` is just one object whose key starts with `images/2026/`. The dashboard renders prefixes as folders. |
+| **Storage credential** | An access key pair (`accessKeyId` + `secretAccessKey`) scoped to one bucket with a role (`ReadOnly` or `Editor`). Use it from any S3-compatible client. |
+| **Region** | Where the bucket physically lives. Pick the one closest to your readers; cross-region access works but pays the distance penalty. |
+
+## Regions
+
+Buckets live in a single region; objects don't replicate across regions automatically. Pull the current region list from the dashboard's **New bucket** dialog, the catalog changes from time to time as Brimble brings new regions online.
+
+## S3 compatibility
+
+Once you've created a bucket and issued credentials, point any S3 client at it:
+
+```bash
+aws s3 ls s3://<bucket-name>/ \
+  --endpoint-url https://<bucket-endpoint> \
+  --region <bucket-region>
+```
+
+The endpoint is shown on the bucket's detail page in the dashboard. The same endpoint accepts the standard S3 verbs you'd expect: list, head, get, put, delete, multipart upload, and copy. Access is gated by [storage credentials](/object-storage/credentials), not by per-object ACLs. See [Working with objects](/object-storage/objects) for code snippets in the major SDKs.
+
+## Pricing
+
+| Resource | Rate |
+|---|---|
+| **Storage** | **$0.032 per GB-month** |
+| Requests | Free during preview. |
+| Egress | Free during preview. |
+
+<Info>
+  **Currently storage-only billing.** Brimble doesn't bill for request count or outbound bandwidth on object storage today. Once that changes you'll see it on your invoice with a separate line; nothing about the storage line item changes.
+</Info>
+
+Storage is metered hourly and billed as GB-months on your invoice (`GB-month = GB-hours / 720`). A 50 GB bucket held for the full month bills as 50 × $0.032 = **$1.60**. A 50 GB bucket held for 12 hours bills as 50 × (12 / 720) × $0.032 ≈ **$0.027**. Bucket usage rolls into the same invoice as the rest of your account.
+
+## Limits
+
+| Limit | Value |
+|---|---|
+| Buckets per account | Soft cap; contact support for higher. |
+| Bucket name | 3+ characters, lowercase, dashes, slugified on create. |
+| CORS rules per bucket | 100 |
+| Bulk delete | Up to 100 objects per call |
+| Multipart upload part size | 5 MB minimum (S3 standard), 5 GB maximum |
+| Search results | Up to 1000 keys per page |
+
+## Next steps
+
+- [Buckets](/object-storage/buckets), create and configure buckets.
+- [Working with objects](/object-storage/objects), upload, download, list, delete.
+- [Storage credentials](/object-storage/credentials), issue and rotate access keys.
+- [Migrate from another provider](/object-storage/migrate), bring an existing bucket over.

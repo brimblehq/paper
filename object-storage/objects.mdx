@@ -1,0 +1,250 @@
+---
+title: "Working with objects"
+description: "Upload, download, list, and delete objects. Use the dashboard, the API, or any S3-compatible SDK."
+---
+
+Once you have a bucket and credentials, you can read and write objects three ways:
+
+1. **From the dashboard.** Drag-and-drop file uploads, single-file downloads, a tree-style browser.
+2. **From an S3-compatible SDK or CLI.** AWS SDK for JS / Python / Go, the AWS CLI, `boto3`, `rclone`, `mc`, anything that speaks S3.
+3. **With presigned URLs.** Generate a short-lived URL on your server and hand it to a browser to upload or download directly, no proxying through your app.
+
+This page covers all three.
+
+## Dashboard
+
+Open the bucket's **Objects** tab. From there:
+
+- **Upload**, click **Upload** and pick files, or drag them onto the file list. Folder uploads are supported on browsers that allow it.
+- **New folder**, click **New folder** to create a path prefix. Note: empty folders are a dashboard convenience; once you upload an object below them, the folder is real on the object store.
+- **Download**, click a file's overflow menu and choose **Download**. Large files stream.
+- **Delete**, single-file via overflow menu, or select multiple files and click **Delete** for bulk delete (up to 100 at a time).
+- **Search**, type into the search box to filter the current prefix.
+
+## S3-compatible SDKs
+
+Every Brimble bucket exposes the same S3 endpoints the AWS SDKs expect. Configure the client with:
+
+- **Endpoint:** the URL shown on the bucket detail page.
+- **Region:** the bucket's region (also on the detail page).
+- **Credentials:** the access key pair from [Storage credentials](/object-storage/credentials).
+- **`forcePathStyle: true`** (or your SDK's equivalent). Path-style addressing keeps the bucket name in the URL path instead of the hostname.
+
+<CodeGroup>
+
+```typescript Node (AWS SDK v3)
+import { S3Client, PutObjectCommand, GetObjectCommand } from "@aws-sdk/client-s3";
+
+const s3 = new S3Client({
+  endpoint: process.env.BRIMBLE_S3_ENDPOINT,    // https://<bucket-endpoint>
+  region: process.env.BRIMBLE_S3_REGION,
+  credentials: {
+    accessKeyId: process.env.BRIMBLE_ACCESS_KEY_ID!,
+    secretAccessKey: process.env.BRIMBLE_SECRET_ACCESS_KEY!,
+  },
+  forcePathStyle: true,
+});
+
+await s3.send(new PutObjectCommand({
+  Bucket: "my-bucket",
+  Key: "reports/2026/q1.pdf",
+  Body: pdfBytes,
+  ContentType: "application/pdf",
+}));
+
+const obj = await s3.send(new GetObjectCommand({
+  Bucket: "my-bucket",
+  Key: "reports/2026/q1.pdf",
+}));
+```
+
+```python Python (boto3)
+import boto3, os
+
+s3 = boto3.client(
+    "s3",
+    endpoint_url=os.environ["BRIMBLE_S3_ENDPOINT"],
+    region_name=os.environ["BRIMBLE_S3_REGION"],
+    aws_access_key_id=os.environ["BRIMBLE_ACCESS_KEY_ID"],
+    aws_secret_access_key=os.environ["BRIMBLE_SECRET_ACCESS_KEY"],
+    config=boto3.session.Config(s3={"addressing_style": "path"}),
+)
+
+s3.put_object(
+    Bucket="my-bucket",
+    Key="reports/2026/q1.pdf",
+    Body=pdf_bytes,
+    ContentType="application/pdf",
+)
+
+obj = s3.get_object(Bucket="my-bucket", Key="reports/2026/q1.pdf")
+data = obj["Body"].read()
+```
+
+```bash AWS CLI
+export AWS_ACCESS_KEY_ID="<access-key-id>"
+export AWS_SECRET_ACCESS_KEY="<secret>"
+
+# Upload
+aws s3 cp ./report.pdf s3://my-bucket/reports/2026/q1.pdf \
+  --endpoint-url https://<bucket-endpoint>
+
+# Download
+aws s3 cp s3://my-bucket/reports/2026/q1.pdf ./report.pdf \
+  --endpoint-url https://<bucket-endpoint>
+
+# Sync a directory
+aws s3 sync ./build s3://my-bucket/site \
+  --endpoint-url https://<bucket-endpoint>
+```
+
+</CodeGroup>
+
+### Listing and deleting
+
+```typescript
+import { ListObjectsV2Command, DeleteObjectCommand } from "@aws-sdk/client-s3";
+
+const page = await s3.send(new ListObjectsV2Command({
+  Bucket: "my-bucket",
+  Prefix: "reports/2026/",
+  MaxKeys: 100,
+}));
+
+for (const obj of page.Contents ?? []) {
+  console.log(obj.Key, obj.Size, obj.LastModified);
+}
+
+await s3.send(new DeleteObjectCommand({
+  Bucket: "my-bucket",
+  Key: "reports/2026/q1.pdf",
+}));
+```
+
+For very deep listings, page through `ContinuationToken` until `IsTruncated` is `false`. The standard S3 pagination shape applies.
+
+## Presigned URLs
+
+A **presigned URL** is a temporary, signed URL that lets the holder upload or download an object without your credentials being involved. Generate it server-side, hand it to a browser, let the browser talk to the bucket directly.
+
+### Presigned download
+
+<CodeGroup>
+
+```typescript Node (AWS SDK v3)
+import { GetObjectCommand } from "@aws-sdk/client-s3";
+import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
+
+const url = await getSignedUrl(
+  s3,
+  new GetObjectCommand({ Bucket: "my-bucket", Key: "reports/2026/q1.pdf" }),
+  { expiresIn: 60 * 15 } // 15 minutes
+);
+```
+
+```python Python (boto3)
+url = s3.generate_presigned_url(
+    "get_object",
+    Params={"Bucket": "my-bucket", "Key": "reports/2026/q1.pdf"},
+    ExpiresIn=60 * 15,
+)
+```
+
+</CodeGroup>
+
+### Presigned upload
+
+<CodeGroup>
+
+```typescript Node (AWS SDK v3)
+import { PutObjectCommand } from "@aws-sdk/client-s3";
+import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
+
+const uploadUrl = await getSignedUrl(
+  s3,
+  new PutObjectCommand({
+    Bucket: "my-bucket",
+    Key: `uploads/${userId}/${Date.now()}-${filename}`,
+    ContentType: mimeType,
+  }),
+  { expiresIn: 60 * 5 } // 5 minutes
+);
+
+// Browser does the actual upload:
+// await fetch(uploadUrl, { method: "PUT", headers: { "Content-Type": mimeType }, body: file });
+```
+
+```python Python (boto3)
+upload_url = s3.generate_presigned_url(
+    "put_object",
+    Params={
+        "Bucket": "my-bucket",
+        "Key": f"uploads/{user_id}/{int(time.time())}-{filename}",
+        "ContentType": mime_type,
+    },
+    ExpiresIn=60 * 5,
+)
+```
+
+</CodeGroup>
+
+<Tip>
+  **Keep expiries short.** A 5-minute upload window and a 15-minute download window cover most flows. Longer expiries widen the time a leaked URL can be used.
+</Tip>
+
+## Multipart upload
+
+For files larger than ~100 MB, use multipart upload. The S3 SDKs handle this for you (`@aws-sdk/lib-storage`'s `Upload` class in Node, `upload_file` in boto3); use those instead of the lower-level multipart APIs.
+
+```typescript
+import { Upload } from "@aws-sdk/lib-storage";
+import { createReadStream } from "fs";
+
+const upload = new Upload({
+  client: s3,
+  params: {
+    Bucket: "my-bucket",
+    Key: "video/long-cut.mp4",
+    Body: createReadStream("./long-cut.mp4"),
+    ContentType: "video/mp4",
+  },
+  partSize: 10 * 1024 * 1024, // 10 MB per part
+  queueSize: 4,
+});
+
+upload.on("httpUploadProgress", (p) => console.log(p.loaded, "/", p.total));
+await upload.done();
+```
+
+Part size minimum is 5 MB (S3 standard), part size maximum is 5 GB. Aborted multipart uploads leave orphan parts; the SDKs clean these up automatically on retry.
+
+## Folders
+
+There are no real directories. A path like `reports/2026/q1.pdf` is one object with a key that contains slashes; "the folder `reports/2026/`" is just every object whose key starts with that prefix. Creating an empty folder via the dashboard puts a placeholder marker; uploading any object under that prefix removes the placeholder.
+
+## Access model
+
+Objects are **private**. The only way to read or write a bucket is with a valid storage credential, no per-object public toggle, no anonymous public-read URLs. Two ways to hand out access:
+
+- **Server-side, with an `Editor` or `ReadOnly` credential.** Embed the credential in your app and use the S3 SDK directly.
+- **To a browser, with a presigned URL.** Generate a short-lived signed `GET` or `PUT` server-side and hand it to the client. See [Presigned URLs](#presigned-urls).
+
+To make a static asset reachable from a browser without a presigned URL, put a CDN or your application in front of the bucket and serve the bytes through that. See [Storage credentials](/object-storage/credentials) for the role split.
+
+## Troubleshooting
+
+**`AccessDenied` from an S3 client.** Most likely the credentials are wrong, expired, or scoped read-only for a write call. Re-check the access key pair, and confirm the credential's role under [Storage credentials](/object-storage/credentials).
+
+**`SignatureDoesNotMatch`.** Region mismatch, the bucket's region must match what you configured on the S3 client. Copy the region from the bucket detail page.
+
+**`NoSuchBucket`.** The bucket name in the URL doesn't exist in this region. Double-check `forcePathStyle: true` so the bucket name lives in the URL path, not the hostname.
+
+**Presigned URL "expired" before the user uploaded.** Lengthen the `expiresIn` window, or generate the URL closer to when the user actually uploads (typically after they pick the file).
+
+**Multipart upload stuck.** Aborts happen client-side. Use the SDK's high-level `Upload` / `upload_file` instead of stitching multipart parts yourself; those handle retries and aborts for you.
+
+## Next steps
+
+- [Storage credentials](/object-storage/credentials), issue and rotate access keys.
+- [Buckets](/object-storage/buckets), configure CORS for browser-driven access.
+- [Migrate from another provider](/object-storage/migrate), bring existing objects in.

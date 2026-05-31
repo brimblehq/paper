@@ -107,6 +107,17 @@
             "pages": ["volumes/overview"]
           },
           {
+            "group": "Object storage",
+            "icon": "database",
+            "pages": [
+              "object-storage/overview",
+              "object-storage/buckets",
+              "object-storage/objects",
+              "object-storage/credentials",
+              "object-storage/migrate"
+            ]
+          },
+          {
             "group": "Domains",
             "icon": "globe",
             "pages": [

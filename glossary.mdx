@@ -29,6 +29,8 @@ Terms you'll see across Brimble docs and the dashboard, in alphabetical order.
 
 **Block outbound.** A sandbox flag (`blockOutbound: true`) that denies all outbound network traffic from the container. The sandbox can still receive API calls from Brimble (exec, files, snapshots) but can't initiate connections to the public internet. Use for untrusted or AI-generated code.
 
+**Bucket.** A named container for objects in Brimble Object Storage. The unit of access control, CORS configuration, and billing visibility. See [Object storage](/object-storage/overview).
+
 **BuildKit.** The container build engine Brimble uses for `Dockerfile` and Railpack builds. Reuses cached layers when their inputs haven't changed.
 
 **Build cache.** The persistent layer cache attached to your project. Survives across builds; clears automatically after 15 days of inactivity.
@@ -125,11 +127,17 @@ Terms you'll see across Brimble docs and the dashboard, in alphabetical order.
 
 **Metered.** Pricing where you pay for what you use, like compute above plan default or bandwidth above the included amount.
 
+**Multipart upload.** S3 protocol pattern for uploading a large object as a series of parts (5 MB minimum per part, 5 GB max) that the bucket assembles into the final object on completion. Use the high-level helpers in your S3 SDK (`@aws-sdk/lib-storage`'s `Upload`, boto3's `upload_file`) for anything above ~100 MB.
+
 ## N
 
 **Nameservers.** The authoritative DNS servers for a domain. Brimble's are `ns1.brimble.io` and `ns2.brimble.io`. Domains purchased through Brimble use these by default.
 
 ## O
+
+**Object.** A single file in a Brimble Object Storage bucket, addressed by its full key (e.g. `reports/2026/q1.pdf`). Objects are private; access is gated by a storage credential or a presigned URL. See [Working with objects](/object-storage/objects).
+
+**Object storage.** Brimble's S3-compatible bucket service. Independent of any project; any S3 SDK or CLI works against it. See [Object storage](/object-storage/overview).
 
 **One-shot (sandbox).** A sandbox flag (`oneShot: true`) that destroys the sandbox the moment its main process exits. Best for batch jobs and CI-style runs.
 
@@ -140,6 +148,8 @@ Terms you'll see across Brimble docs and the dashboard, in alphabetical order.
 **Persistent disk.** A durable volume attached to a project so files survive restarts and redeploys. 10 to 150 GB in 10 GB steps, billed at $0.25/GB-month base. See [Persistent disk](/projects/persistent-disk).
 
 **Plan.** Free, Hacker, Pro, or Team. Each has a base price, an included quota of resources, and a feature set. See [Plans and pricing](/billing/plans).
+
+**Presigned URL.** A temporary, signed URL generated server-side that lets the holder upload (`PUT`) or download (`GET`) one object in a bucket without your credentials being involved. Standard S3 feature; expiry is set when the URL is generated. See [Presigned URLs](/object-storage/objects#presigned-urls).
 
 **Preview deployment.** A deployment built from a PR or merge request, served at its own hostname. Used to vet changes before merging.
 
@@ -192,6 +202,8 @@ Terms you'll see across Brimble docs and the dashboard, in alphabetical order.
 **Snapshot mode.** Either `manual` (the default, you call `snapshots.create` whenever you want) or `automatic` (set at create time with `snapshotFrequency`, a 5-field cron expression; Brimble snapshots on the schedule).
 
 **Step-up authentication.** An additional 2FA prompt before a sensitive action: deleting a project, deleting a custom domain, rotating a database password, transferring a domain out, or transferring team ownership.
+
+**Storage credential.** An access key pair (`accessKeyId` + `secretAccessKey`) scoped to one bucket with a role (`ReadOnly` or `Editor`). Hand it to any S3-compatible client to access the bucket. See [Storage credentials](/object-storage/credentials).
 
 **Stream frame.** One NDJSON line in a streaming `exec` / `runCode` response. Variants: `stdout`, `stderr`, `done` (final, carries exit code and duration), `error` (transport failure mid-stream). See [SDKs → Stream exec output](/sandboxes/sdks#stream-exec-output).
 

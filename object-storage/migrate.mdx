@@ -1,0 +1,100 @@
+---
+title: "Migrate from another provider"
+description: "Bring an existing S3-compatible bucket into Brimble Object Storage. Runs in the background, no proxying through your laptop."
+---
+
+Brimble's migration flow pulls objects from any S3-compatible source bucket into a Brimble bucket. The copy runs server-side, so you don't proxy bytes through your laptop or your local network.
+
+## When to use it
+
+- You're moving from another provider and want everything in one bucket.
+- You're consolidating multiple source buckets into a single Brimble bucket using prefixes.
+- You want a one-shot copy with progress tracking instead of running `aws s3 sync` in a `screen` session for hours.
+
+## Prerequisites
+
+- A Brimble bucket already created in the destination region. See [Buckets → Create a bucket](/object-storage/buckets#create-a-bucket).
+- The source bucket's:
+  - **Bucket name.**
+  - **Region.**
+  - **Endpoint URL** (for non-AWS S3-compatible sources). Skip for AWS.
+  - An **access key pair** with read permission on the source. Brimble only needs read; never hand over write credentials.
+- Optional: a **source prefix** (only copy objects under this path) and / or a **destination prefix** (write into this folder in the Brimble bucket).
+
+## Start a migration
+
+### From the dashboard
+
+1. Open the Brimble bucket you want to import into.
+2. Go to **Migrations → New migration**.
+3. Fill in:
+   - **Source bucket** name.
+   - **Source region**.
+   - **Source endpoint** (leave blank for AWS S3, otherwise the source provider's S3 endpoint URL).
+   - **Access key id** and **Secret access key** with read access on the source.
+   - **Source prefix** (optional), e.g. `legacy/2024/`.
+   - **Destination prefix** (optional), e.g. `imported/`.
+4. Click **Start migration**.
+
+The migration is queued; the next page shows live progress.
+
+<Warning>
+  **The migration credentials are temporary.** Brimble holds the source credentials only for the duration of the migration and discards them when the job ends (success, failure, or cancel). Even so, scope the source credentials to read-only and rotate them on the source side once the migration completes.
+</Warning>
+
+## Watch progress
+
+The migration detail page shows:
+
+- **Status:** `queued`, `running`, `completed`, `failed`, or `cancelled`.
+- **Objects copied** out of total discovered.
+- **Bytes copied** out of total bytes discovered.
+- **Started at** and (when finished) **ended at** timestamps.
+- **Last error** (if any), with the offending key.
+
+Refresh the page to update; the dashboard also surfaces a notification when the migration finishes.
+
+## Cancel a migration
+
+Open the migration detail page and click **Cancel**. The job stops at the next object boundary; any objects already copied stay in the destination bucket.
+
+Cancellation isn't a rollback. To undo a partial migration, delete the imported objects from the destination bucket manually (the **Objects** tab has bulk delete).
+
+## What gets copied
+
+- **Object data, content type, and standard metadata.** Custom user-defined metadata (`x-amz-meta-*`) is preserved.
+- **Source ACLs are dropped.** Brimble buckets don't expose per-object ACLs; everything in a Brimble bucket is private and reachable only via a storage credential or a presigned URL. See [Access model](/object-storage/objects#access-model).
+- **Versioning is not preserved.** Only the current version of each object is copied.
+
+If an object with the same key already exists in the destination, it's **overwritten**. Run a partial migration with a destination prefix to avoid clobbering existing data.
+
+## Retries and resumability
+
+Per-object copy errors are retried automatically. If the whole job hits a fatal error (bad credentials, source bucket unreachable), the migration moves to `failed`; fix the cause and start a fresh migration. Re-running with the same source/destination prefixes safely re-copies anything missing; matching objects are overwritten in place.
+
+## Limits
+
+- **One in-flight migration per bucket.** Wait for the current one to finish (or cancel it) before starting another into the same destination.
+- **No cross-account moves within Brimble through this flow.** To move data between two Brimble buckets, issue an `Editor` credential on the destination, a `ReadOnly` credential on the source, and use `aws s3 sync` with two endpoints. The hosted migration is intended for inbound copies from external providers.
+
+## Billing during migration
+
+You pay storage on the destination bucket for everything that's been copied so far, prorated by the hour. There's no separate migration fee. Once the source is decommissioned, you're only paying Brimble for the data.
+
+## Troubleshooting
+
+**Migration stuck in `queued`.** A migration into the same destination bucket is already running. Cancel it or wait, then retry.
+
+**`Failed` with "access denied on source."** The provided source credentials can't read the source bucket. Confirm the key pair, region, and (for non-AWS sources) the endpoint URL. Issue a fresh read-only credential at the source and retry.
+
+**`Failed` with "endpoint unreachable."** The source endpoint URL is wrong or the source bucket has IP restrictions that block Brimble. Allow Brimble's outbound IPs at the source (check support for the current ranges) or remove the IP restriction during the migration window.
+
+**Missing objects after `completed`.** If you used a `sourcePrefix`, only matching keys were copied. Run a second migration with no prefix (or a different one) to pick up the rest.
+
+**Want to re-run a migration into the same destination.** Start a new migration with the same parameters. Existing objects are overwritten in place; new ones are added.
+
+## Next steps
+
+- [Storage credentials](/object-storage/credentials), issue keys for your apps to use the destination bucket.
+- [Working with objects](/object-storage/objects), point your S3 clients at the new bucket.
+- [Buckets](/object-storage/buckets), configure CORS if browsers will read from the destination.
