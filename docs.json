@@ -96,6 +96,7 @@
                 "pages": [
                   "sandboxes/cookbook/untrusted-code",
                   "sandboxes/cookbook/ai-coding-agent",
+                  "sandboxes/cookbook/docker-in-sandbox",
                   "sandboxes/cookbook/persistent-dev-env"
                 ]
               }

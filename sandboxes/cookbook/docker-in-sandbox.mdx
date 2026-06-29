@@ -1,0 +1,175 @@
+---
+title: "Run Docker inside a sandbox"
+description: "Install Docker inside an isolated gVisor sandbox and run nested containers from your SDK."
+---
+
+Brimble sandboxes run under [gVisor](https://gvisor.dev/) with the capabilities nested Docker needs. Install Docker inside any Debian/Ubuntu-based template (`node-22`, `python-3.12`, etc.), start `dockerd`, then use normal `docker` commands via SDK exec.
+
+## When to use this recipe
+
+- Spinning up Postgres, Redis, or other services with `docker compose` during a test run.
+- Letting an agent build and run containers without host Docker access.
+- Prototyping a multi-service setup in a disposable environment.
+
+## Prerequisites
+
+- A Brimble account with sandbox access and `BRIMBLE_SANDBOX_KEY` set.
+- The SDK installed (see [SDKs](../sdks#install)).
+- Outbound network for pulling packages and images (`egress.mode` defaults to `open`).
+- A Debian/Ubuntu template such as `node-22` or `python-3.12`.
+- **4 GB+ RAM** and **20 GB+ disk** recommended.
+
+## Recipe
+
+Create a sandbox, install Docker, start `dockerd` using [gVisor's startup script](https://gvisor.dev/docs/tutorials/docker-in-gvisor/), then run containers.
+
+<CodeGroup>
+
+```typescript TypeScript
+import { Sandbox } from "@brimble/sandbox";
+
+const client = new Sandbox();
+
+const handle = await client.sandboxes.createReady({
+  region: "auto",
+  template: "node-22",
+  specs: { cpu: 1000, memory: 4096, disk: 20 },
+});
+
+try {
+  // 1. Install Docker
+  await handle.exec({
+    cmd: "apt-get update && DEBIAN_FRONTEND=noninteractive apt-get install -y docker.io iptables curl",
+    timeout_seconds: 600,
+  });
+
+  // 2. Start dockerd (gVisor-compatible)
+  await handle.exec({
+    cmd: [
+      "curl -fsSL https://raw.githubusercontent.com/google/gvisor/master/images/basic/docker/start-dockerd.sh",
+      "-o /usr/local/bin/start-dockerd.sh",
+      "&& chmod +x /usr/local/bin/start-dockerd.sh",
+      "&& nohup /usr/local/bin/start-dockerd.sh >/tmp/dockerd.log 2>&1 &",
+      "sleep 8 && docker info >/dev/null",
+    ].join(" "),
+    timeout_seconds: 120,
+  });
+
+  // 3. Run containers
+  const hello = await handle.exec({
+    cmd: "docker run --rm hello-world",
+    timeout_seconds: 300,
+  });
+  console.log(hello.stdout);
+
+  // Use --network=host for inbound traffic (not -p)
+  await handle.exec({
+    cmd: "docker run -d --rm --network=host --name demo nginx:alpine",
+    timeout_seconds: 300,
+  });
+} finally {
+  await handle.destroy();
+}
+```
+
+```python Python
+from brimble_sandbox import Sandbox
+
+client = Sandbox()
+
+handle = client.sandboxes.create_ready({
+    "region": "auto",
+    "template": "node-22",
+    "specs": {"cpu": 1000, "memory": 4096, "disk": 20},
+})
+
+try:
+    handle.exec({
+        "cmd": "apt-get update && DEBIAN_FRONTEND=noninteractive apt-get install -y docker.io iptables curl",
+        "timeout_seconds": 600,
+    })
+
+    handle.exec({
+        "cmd": (
+            "curl -fsSL https://raw.githubusercontent.com/google/gvisor/master/images/basic/docker/start-dockerd.sh "
+            "-o /usr/local/bin/start-dockerd.sh && chmod +x /usr/local/bin/start-dockerd.sh "
+            "&& nohup /usr/local/bin/start-dockerd.sh >/tmp/dockerd.log 2>&1 & "
+            "sleep 8 && docker info >/dev/null"
+        ),
+        "timeout_seconds": 120,
+    })
+
+    hello = handle.exec({
+        "cmd": "docker run --rm hello-world",
+        "timeout_seconds": 300,
+    })
+    print(hello["stdout"])
+finally:
+    handle.destroy()
+```
+
+```go Go
+package main
+
+import (
+	"context"
+	"fmt"
+
+	sandbox "github.com/brimblehq/brimble-sdks/sandbox-go"
+)
+
+func main() {
+	ctx := context.Background()
+	client, _ := sandbox.NewClient(sandbox.ClientConfig{})
+
+	handle, _ := client.Sandboxes.CreateReady(ctx, sandbox.CreateSandboxRequest{
+		Region:   "auto",
+		Template: "node-22",
+		Specs:    &sandbox.SandboxSpecs{CPU: 1000, Memory: 4096, Disk: 20},
+	}, nil)
+	defer handle.Destroy(ctx)
+
+	_, _ = handle.Exec(ctx, sandbox.ExecInput{
+		Cmd:            "apt-get update && DEBIAN_FRONTEND=noninteractive apt-get install -y docker.io iptables curl",
+		TimeoutSeconds: 600,
+	})
+
+	_, _ = handle.Exec(ctx, sandbox.ExecInput{
+		Cmd: "curl -fsSL https://raw.githubusercontent.com/google/gvisor/master/images/basic/docker/start-dockerd.sh " +
+			"-o /usr/local/bin/start-dockerd.sh && chmod +x /usr/local/bin/start-dockerd.sh " +
+			"&& nohup /usr/local/bin/start-dockerd.sh >/tmp/dockerd.log 2>&1 & " +
+			"sleep 8 && docker info >/dev/null",
+		TimeoutSeconds: 120,
+	})
+
+	result, _ := handle.Exec(ctx, sandbox.ExecInput{
+		Cmd:            "docker run --rm hello-world",
+		TimeoutSeconds: 300,
+	})
+	fmt.Println(result.Stdout)
+}
+```
+
+</CodeGroup>
+
+## What's happening
+
+1. **`createReady`.** Waits until the sandbox is `ready` before running install commands.
+2. **`apt-get install docker.io`.** Installs Docker inside the sandbox. Use `stream: true` on the exec call if you want live apt output.
+3. **`start-dockerd.sh`.** gVisor requires a special `dockerd` startup (tmpfs storage, `--iptables=false`). We fetch the official script rather than reimplementing it.
+4. **`docker run`.** Talks to the local daemon over `/var/run/docker.sock` inside the sandbox.
+5. **`--network=host`.** Port mapping via `-p` does not work with iptables disabled inside gVisor ([docs](https://gvisor.dev/docs/tutorials/docker-in-gvisor/)).
+
+On a [persistent sandbox](persistent-dev-env), install Docker once — skip the apt step on resume and only restart `dockerd`.
+
+## Limitations
+
+- **Port mapping:** use `--network=host`, not `-p` / `--expose`.
+- **Install time:** first boot spends a few minutes on `apt-get install`.
+- **Performance:** nested containers are slower than bare-metal Docker.
+
+## Next steps
+
+- [Run untrusted code](untrusted-code) — deny egress and run a single snippet instead.
+- [Run an AI coding agent](ai-coding-agent) — combine Docker with an agent workflow.
+- [Sandboxes overview](../overview) — lifecycle, billing, and network egress.
