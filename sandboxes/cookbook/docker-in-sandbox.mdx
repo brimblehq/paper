@@ -1,9 +1,9 @@
 ---
 title: "Run Docker inside a sandbox"
-description: "Install Docker inside an isolated gVisor sandbox and run nested containers from your SDK."
+description: "Install Docker inside an isolated sandbox and run nested containers from your SDK."
 ---
 
-Brimble sandboxes run under [gVisor](https://gvisor.dev/) with the capabilities nested Docker needs. Install Docker inside any Debian/Ubuntu-based template (`node-22`, `python-3.12`, etc.), start `dockerd`, then use normal `docker` commands via SDK exec.
+Install Docker inside any Debian/Ubuntu-based template (`node-22`, `python-3.12`, etc.), start the daemon, then use normal `docker` commands via SDK exec.
 
 ## When to use this recipe
 
@@ -21,12 +21,26 @@ Brimble sandboxes run under [gVisor](https://gvisor.dev/) with the capabilities 
 
 ## Recipe
 
-Create a sandbox, install Docker, start `dockerd` using [gVisor's startup script](https://gvisor.dev/docs/tutorials/docker-in-gvisor/), then run containers.
+Create a sandbox, install Docker, start `dockerd`, then run containers.
 
 <CodeGroup>
 
 ```typescript TypeScript
 import { Sandbox } from "@brimble/sandbox";
+
+const START_DOCKERD = `#!/bin/bash
+set -euo pipefail
+mkdir -p /var/lib/docker
+if [ "$(stat -f -c %T /var/lib/docker 2>/dev/null || echo none)" != "tmpfs" ]; then
+  mount -t tmpfs -o size=\${DOCKER_TMPFS_SIZE:-2G} tmpfs /var/lib/docker
+fi
+dev=$(ip route show default | awk '/default/ {print $5; exit}')
+addr=$(ip -4 addr show dev "$dev" | awk '/inet / {print $2; exit}' | cut -d/ -f1)
+echo 1 > /proc/sys/net/ipv4/ip_forward
+iptables-legacy -t nat -A POSTROUTING -o "$dev" -j SNAT --to-source "$addr" -p tcp 2>/dev/null || true
+iptables-legacy -t nat -A POSTROUTING -o "$dev" -j SNAT --to-source "$addr" -p udp 2>/dev/null || true
+exec dockerd --iptables=false --ip6tables=false
+`;
 
 const client = new Sandbox();
 
@@ -37,32 +51,24 @@ const handle = await client.sandboxes.createReady({
 });
 
 try {
-  // 1. Install Docker
   await handle.exec({
-    cmd: "apt-get update && DEBIAN_FRONTEND=noninteractive apt-get install -y docker.io iptables curl",
+    cmd: "apt-get update && DEBIAN_FRONTEND=noninteractive apt-get install -y docker.io iptables",
     timeout_seconds: 600,
   });
 
-  // 2. Start dockerd (gVisor-compatible)
+  await handle.putFile("/usr/local/bin/start-dockerd.sh", START_DOCKERD);
+  await handle.exec({ cmd: "chmod +x /usr/local/bin/start-dockerd.sh" });
   await handle.exec({
-    cmd: [
-      "curl -fsSL https://raw.githubusercontent.com/google/gvisor/master/images/basic/docker/start-dockerd.sh",
-      "-o /usr/local/bin/start-dockerd.sh",
-      "&& chmod +x /usr/local/bin/start-dockerd.sh",
-      "&& nohup /usr/local/bin/start-dockerd.sh >/tmp/dockerd.log 2>&1 &",
-      "sleep 8 && docker info >/dev/null",
-    ].join(" "),
+    cmd: "nohup /usr/local/bin/start-dockerd.sh >/tmp/dockerd.log 2>&1 & sleep 8 && docker info >/dev/null",
     timeout_seconds: 120,
   });
 
-  // 3. Run containers
   const hello = await handle.exec({
     cmd: "docker run --rm hello-world",
     timeout_seconds: 300,
   });
   console.log(hello.stdout);
 
-  // Use --network=host for inbound traffic (not -p)
   await handle.exec({
     cmd: "docker run -d --rm --network=host --name demo nginx:alpine",
     timeout_seconds: 300,
@@ -75,6 +81,20 @@ try {
 ```python Python
 from brimble_sandbox import Sandbox
 
+START_DOCKERD = """#!/bin/bash
+set -euo pipefail
+mkdir -p /var/lib/docker
+if [ "$(stat -f -c %T /var/lib/docker 2>/dev/null || echo none)" != "tmpfs" ]; then
+  mount -t tmpfs -o size=${DOCKER_TMPFS_SIZE:-2G} tmpfs /var/lib/docker
+fi
+dev=$(ip route show default | awk '/default/ {print $5; exit}')
+addr=$(ip -4 addr show dev "$dev" | awk '/inet / {print $2; exit}' | cut -d/ -f1)
+echo 1 > /proc/sys/net/ipv4/ip_forward
+iptables-legacy -t nat -A POSTROUTING -o "$dev" -j SNAT --to-source "$addr" -p tcp 2>/dev/null || true
+iptables-legacy -t nat -A POSTROUTING -o "$dev" -j SNAT --to-source "$addr" -p udp 2>/dev/null || true
+exec dockerd --iptables=false --ip6tables=false
+"""
+
 client = Sandbox()
 
 handle = client.sandboxes.create_ready({
@@ -85,17 +105,13 @@ handle = client.sandboxes.create_ready({
 
 try:
     handle.exec({
-        "cmd": "apt-get update && DEBIAN_FRONTEND=noninteractive apt-get install -y docker.io iptables curl",
+        "cmd": "apt-get update && DEBIAN_FRONTEND=noninteractive apt-get install -y docker.io iptables",
         "timeout_seconds": 600,
     })
-
+    handle.put_file("/usr/local/bin/start-dockerd.sh", START_DOCKERD.encode())
+    handle.exec({"cmd": "chmod +x /usr/local/bin/start-dockerd.sh"})
     handle.exec({
-        "cmd": (
-            "curl -fsSL https://raw.githubusercontent.com/google/gvisor/master/images/basic/docker/start-dockerd.sh "
-            "-o /usr/local/bin/start-dockerd.sh && chmod +x /usr/local/bin/start-dockerd.sh "
-            "&& nohup /usr/local/bin/start-dockerd.sh >/tmp/dockerd.log 2>&1 & "
-            "sleep 8 && docker info >/dev/null"
-        ),
+        "cmd": "nohup /usr/local/bin/start-dockerd.sh >/tmp/dockerd.log 2>&1 & sleep 8 && docker info >/dev/null",
         "timeout_seconds": 120,
     })
 
@@ -114,9 +130,24 @@ package main
 import (
 	"context"
 	"fmt"
+	"strings"
 
 	sandbox "github.com/brimblehq/brimble-sdks/sandbox-go"
 )
+
+const startDockerd = `#!/bin/bash
+set -euo pipefail
+mkdir -p /var/lib/docker
+if [ "$(stat -f -c %T /var/lib/docker 2>/dev/null || echo none)" != "tmpfs" ]; then
+  mount -t tmpfs -o size=${DOCKER_TMPFS_SIZE:-2G} tmpfs /var/lib/docker
+fi
+dev=$(ip route show default | awk '/default/ {print $5; exit}')
+addr=$(ip -4 addr show dev "$dev" | awk '/inet / {print $2; exit}' | cut -d/ -f1)
+echo 1 > /proc/sys/net/ipv4/ip_forward
+iptables-legacy -t nat -A POSTROUTING -o "$dev" -j SNAT --to-source "$addr" -p tcp 2>/dev/null || true
+iptables-legacy -t nat -A POSTROUTING -o "$dev" -j SNAT --to-source "$addr" -p udp 2>/dev/null || true
+exec dockerd --iptables=false --ip6tables=false
+`
 
 func main() {
 	ctx := context.Background()
@@ -130,15 +161,13 @@ func main() {
 	defer handle.Destroy(ctx)
 
 	_, _ = handle.Exec(ctx, sandbox.ExecInput{
-		Cmd:            "apt-get update && DEBIAN_FRONTEND=noninteractive apt-get install -y docker.io iptables curl",
+		Cmd:            "apt-get update && DEBIAN_FRONTEND=noninteractive apt-get install -y docker.io iptables",
 		TimeoutSeconds: 600,
 	})
-
+	_ = handle.PutFile(ctx, "/usr/local/bin/start-dockerd.sh", strings.NewReader(startDockerd), int64(len(startDockerd)))
+	_, _ = handle.Exec(ctx, sandbox.ExecInput{Cmd: "chmod +x /usr/local/bin/start-dockerd.sh"})
 	_, _ = handle.Exec(ctx, sandbox.ExecInput{
-		Cmd: "curl -fsSL https://raw.githubusercontent.com/google/gvisor/master/images/basic/docker/start-dockerd.sh " +
-			"-o /usr/local/bin/start-dockerd.sh && chmod +x /usr/local/bin/start-dockerd.sh " +
-			"&& nohup /usr/local/bin/start-dockerd.sh >/tmp/dockerd.log 2>&1 & " +
-			"sleep 8 && docker info >/dev/null",
+		Cmd:            "nohup /usr/local/bin/start-dockerd.sh >/tmp/dockerd.log 2>&1 & sleep 8 && docker info >/dev/null",
 		TimeoutSeconds: 120,
 	})
 
@@ -156,9 +185,9 @@ func main() {
 
 1. **`createReady`.** Waits until the sandbox is `ready` before running install commands.
 2. **`apt-get install docker.io`.** Installs Docker inside the sandbox. Use `stream: true` on the exec call if you want live apt output.
-3. **`start-dockerd.sh`.** gVisor requires a special `dockerd` startup (tmpfs storage, `--iptables=false`). We fetch the official script rather than reimplementing it.
+3. **`start-dockerd.sh`.** Nested Docker needs a dedicated startup script (storage mount and daemon flags). Upload it with `putFile`, then run it in the background.
 4. **`docker run`.** Talks to the local daemon over `/var/run/docker.sock` inside the sandbox.
-5. **`--network=host`.** Port mapping via `-p` does not work with iptables disabled inside gVisor ([docs](https://gvisor.dev/docs/tutorials/docker-in-gvisor/)).
+5. **`--network=host`.** Port mapping via `-p` is not supported inside sandboxes — bind on the host network instead.
 
 On a [persistent sandbox](persistent-dev-env), install Docker once — skip the apt step on resume and only restart `dockerd`.
 
@@ -166,7 +195,7 @@ On a [persistent sandbox](persistent-dev-env), install Docker once — skip the 
 
 - **Port mapping:** use `--network=host`, not `-p` / `--expose`.
 - **Install time:** first boot spends a few minutes on `apt-get install`.
-- **Performance:** nested containers are slower than bare-metal Docker.
+- **Performance:** nested containers are slower than running Docker on a bare VM.
 
 ## Next steps
 
