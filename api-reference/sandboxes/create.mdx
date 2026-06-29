@@ -2,3 +2,39 @@
 title: "Create a sandbox"
 openapi: "POST /sandboxes"
 ---
+
+Provisions a sandbox asynchronously. The response returns immediately with `status: "starting"`; poll `GET /sandboxes/{id}` until the sandbox is `ready`.
+
+## Network egress (request body)
+
+Control outbound network access when creating a sandbox:
+
+| Field | Type | Description |
+|---|---|---|
+| `egress.mode` | `"open"` \| `"restricted"` \| `"deny_all"` | Outbound policy. Defaults to `open` when omitted. |
+| `egress.allow` | `string[]` | Allowlist for `restricted` mode: IPv4, CIDR, or hostname. Up to 50 entries. |
+| `blockOutbound` | `boolean` | Legacy shorthand for `deny_all`. Cannot be combined with `egress`. |
+
+### Examples
+
+```json
+{
+  "template": "node-22",
+  "region": "auto",
+  "egress": {
+    "mode": "restricted",
+    "allow": ["1.1.1.1", "api.example.com"]
+  }
+}
+```
+
+```json
+{
+  "template": "python-3.12",
+  "egress": { "mode": "deny_all" }
+}
+```
+
+The create response does not include `egress`; fetch the sandbox with `GET /sandboxes/{id}` to read the applied policy.
+
+Change egress on a running sandbox with [Update sandbox egress](/api-reference/sandboxes/egress-update).

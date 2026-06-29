@@ -2,3 +2,40 @@
 title: "Update sandbox egress"
 openapi: "PUT /sandboxes/{id}/egress"
 ---
+
+Changes outbound network policy for a `ready` sandbox.
+
+## Request body
+
+| Field | Type | Required | Description |
+|---|---|---|---|
+| `mode` | `"open"` \| `"restricted"` \| `"deny_all"` | yes | Target egress mode. |
+| `allow` | `string[]` | when `mode` is `restricted` | IPv4 addresses, CIDR ranges, or hostnames. Min 1, max 50 entries. Must be omitted for `open` and `deny_all`. |
+
+### Examples
+
+```json
+{ "mode": "open" }
+```
+
+```json
+{ "mode": "deny_all" }
+```
+
+```json
+{
+  "mode": "restricted",
+  "allow": ["1.1.1.1", "api.openai.com"]
+}
+```
+
+## Response
+
+Returns the updated sandbox record in `data`, including:
+
+| Field | Type | Description |
+|---|---|---|
+| `egress.mode` | string | Applied egress mode. |
+| `egress.allow` | `string[]` | Applied allowlist (restricted mode only). |
+| `block_outbound` | `boolean` | Legacy mirror; `true` when mode is `deny_all`. |
+| `network_updated` | `boolean` | `true` when the sandbox was switched to a different network profile. Allow a few seconds before probing connectivity from inside the sandbox. |

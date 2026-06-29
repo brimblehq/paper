@@ -68,6 +68,20 @@ paths:
         `status: "starting"`; the sandbox transitions to `ready` (or `failed`) a few
         moments later. Poll `GET /sandboxes/{id}` until `status` flips, or watch the
         dashboard.
+
+        ## Network egress
+
+        Control outbound network access at create time with the `egress` object, or
+        the legacy `blockOutbound: true` shorthand (maps to `deny_all`). You cannot
+        set both on the same request.
+
+        | `egress.mode` | Behavior |
+        |---|---|
+        | `open` | Full outbound internet (default when omitted) |
+        | `deny_all` | All outbound connections blocked |
+        | `restricted` | Default deny + allowlist in `egress.allow` |
+
+        Change policy later with `PUT /sandboxes/{id}/egress`.
       operationId: createSandbox
       requestBody:
         required: true
@@ -75,6 +89,34 @@ paths:
           application/json:
             schema:
               $ref: '#/components/schemas/CreateSandboxInput'
+            examples:
+              openDefault:
+                summary: Default (open egress)
+                value:
+                  template: node-22
+                  region: auto
+              denyAll:
+                summary: Block all outbound traffic
+                value:
+                  template: python-3.12
+                  region: auto
+                  egress:
+                    mode: deny_all
+              restricted:
+                summary: Allowlist specific hosts
+                value:
+                  template: node-22
+                  region: auto
+                  egress:
+                    mode: restricted
+                    allow:
+                      - 1.1.1.1
+                      - api.example.com
+              legacyBlockOutbound:
+                summary: Legacy shorthand (prefer egress)
+                value:
+                  template: python-3.12
+                  blockOutbound: true
       responses:
         '200':
           description: Sandbox provisioning queued
@@ -462,6 +504,22 @@ paths:
           application/json:
             schema:
               $ref: '#/components/schemas/UpdateSandboxEgressInput'
+            examples:
+              open:
+                summary: Restore full outbound access
+                value:
+                  mode: open
+              denyAll:
+                summary: Block all outbound traffic
+                value:
+                  mode: deny_all
+              restricted:
+                summary: Allowlist specific hosts
+                value:
+                  mode: restricted
+                  allow:
+                    - 1.1.1.1
+                    - api.openai.com
       responses:
         '200':
           description: Egress updated
@@ -469,6 +527,19 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/SandboxEgressUpdateEnvelope'
+              examples:
+                networkSwitched:
+                  summary: Network profile changed
+                  value:
+                    message: Sandbox egress updated
+                    data:
+                      id: 507f1f77bcf86cd799439011
+                      egress:
+                        mode: restricted
+                        allow:
+                          - 1.1.1.1
+                      block_outbound: false
+                      network_updated: true
         '400':
           $ref: '#/components/responses/BadRequest'
         '404':
@@ -788,7 +859,6 @@ components:
             integrations. Cannot be combined with `egress` on the same request.
         egress:
           $ref: '#/components/schemas/SandboxEgressConfig'
-          description: Outbound network policy. Defaults to `open` when omitted.
         persistent:
           type: boolean
           description: Provision a fresh per-sandbox persistent volume for the sandbox's workspace directory.
@@ -902,13 +972,23 @@ components:
             When true, the response is SSE (`text/event-stream`) as the snippet
             runs, same behaviour as `/exec` with `stream: true`.
 
+    SandboxEgressMode:
+      type: string
+      enum: [open, restricted, deny_all]
+      description: |
+        Outbound network policy for a sandbox.
+
+        - `open` — full outbound internet access (default).
+        - `deny_all` — all outbound connections blocked; inbound Brimble API calls still work.
+        - `restricted` — default deny with an allowlist (`allow` required on update).
+
     SandboxEgressConfig:
       type: object
       required: [mode]
+      description: Outbound network policy applied to the sandbox container.
       properties:
         mode:
-          type: string
-          enum: [open, restricted, deny_all]
+          $ref: '#/components/schemas/SandboxEgressMode'
         allow:
           type: array
           maxItems: 50
@@ -917,17 +997,25 @@ components:
             minLength: 1
             maxLength: 253
           description: |
-            Allowlist entries for `restricted` mode: IPv4 addresses, CIDR ranges,
-            or hostnames. Required (min 1 entry) when updating to `restricted`;
-            optional at create time.
+            Allowlist for `restricted` mode. Each entry is an IPv4 address, CIDR range
+            (e.g. `10.0.0.0/8`), or hostname (e.g. `api.example.com`). Required with at
+            least one entry when updating to `restricted`; optional at create time.
+          example:
+            - 1.1.1.1
+            - api.example.com
+      example:
+        mode: restricted
+        allow:
+          - 1.1.1.1
+          - api.example.com
 
     UpdateSandboxEgressInput:
       type: object
       required: [mode]
+      description: Request body for `PUT /sandboxes/{id}/egress`.
       properties:
         mode:
-          type: string
-          enum: [open, restricted, deny_all]
+          $ref: '#/components/schemas/SandboxEgressMode'
         allow:
           type: array
           minItems: 1
@@ -936,7 +1024,7 @@ components:
             type: string
             minLength: 1
             maxLength: 253
-          description: Required when `mode` is `restricted`; forbidden otherwise.
+          description: Required when `mode` is `restricted`; must be omitted otherwise.
 
     ExecStreamFrame:
       type: object
@@ -1040,7 +1128,21 @@ components:
 
     Sandbox:
       type: object
-      required: [id, name, template, status, region, specs, created_at, last_activity_at, expires_at]
+      required:
+        - id
+        - name
+        - template
+        - status
+        - region
+        - specs
+        - auto_destroy
+        - one_shot
+        - block_outbound
+        - egress
+        - persistent
+        - created_at
+        - last_activity_at
+        - expires_at
       properties:
         id:
           type: string
@@ -1070,14 +1172,16 @@ components:
           type: boolean
         block_outbound:
           type: boolean
-          description: Legacy mirror of egress policy; true when mode is `deny_all`.
+          description: |
+            Legacy mirror of egress policy. `true` when `egress.mode` is `deny_all`.
+            Prefer reading `egress.mode` directly.
         egress:
           $ref: '#/components/schemas/SandboxEgressConfig'
         network_updated:
           type: boolean
           description: |
-            Present on egress update responses. True when the sandbox's network
-            profile was switched as part of the update.
+            Only present on `PUT /sandboxes/{id}/egress` responses. `true` when the
+            sandbox was reattached to a different network profile as part of the update.
         persistent:
           type: boolean
         persistent_disk_gb:

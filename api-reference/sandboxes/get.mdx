@@ -2,3 +2,15 @@
 title: "Get a sandbox"
 openapi: "GET /sandboxes/{id}"
 ---
+
+Returns the full sandbox record, including its current network egress policy.
+
+## Network egress (response fields)
+
+| Field | Type | Description |
+|---|---|---|
+| `egress.mode` | `"open"` \| `"restricted"` \| `"deny_all"` | Current outbound network policy. |
+| `egress.allow` | `string[]` | Allowlist entries when mode is `restricted`. Omitted or empty otherwise. |
+| `block_outbound` | `boolean` | Legacy mirror of policy. `true` when `egress.mode` is `deny_all`. |
+
+Update policy at runtime with [Update sandbox egress](/api-reference/sandboxes/egress-update).
