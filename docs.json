@@ -234,7 +234,8 @@
               "api-reference/sandboxes/get",
               "api-reference/sandboxes/destroy",
               "api-reference/sandboxes/pause",
-              "api-reference/sandboxes/resume"
+              "api-reference/sandboxes/resume",
+              "api-reference/sandboxes/egress-update"
             ]
           },
           {

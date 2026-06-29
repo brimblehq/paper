@@ -4,8 +4,8 @@ info:
   description: |
     REST API for managing Brimble sandboxes, ephemeral compute environments with
     optional persistent storage. Covers lifecycle (create / pause / resume / destroy),
-    runtime operations (exec, runCode, file upload/download), observability
-    (logs, stats), and snapshots.
+    egress policy, runtime operations (exec, runCode, file upload/download),
+    observability (logs, stats), and snapshots.
 
     ## Conventions
 
@@ -237,9 +237,9 @@ paths:
         installed CLI tools all work. Sandbox must be in status `ready`.
 
         Pass `stream: true` to receive `stdout` / `stderr` as they arrive. The
-        response then uses `Content-Type: application/x-ndjson` with one JSON
-        frame per line; the final frame is `{ "type": "done", ... }`. See
-        `ExecStreamFrame` for the frame shape.
+        response then uses `Content-Type: text/event-stream` with one JSON
+        object per `data:` line; the final event is `{ "type": "done", ... }`.
+        See `ExecStreamFrame` for the event shape.
       operationId: execCommand
       parameters:
         - $ref: '#/components/parameters/SandboxIdParam'
@@ -255,20 +255,24 @@ paths:
             Command completed.
 
             When the request body has `stream: true`, the response is
-            `application/x-ndjson`, one `ExecStreamFrame` per line, the last
-            being a `done` frame.
+            `text/event-stream`, one `ExecStreamFrame` per `data:` event, the
+            last being a `done` event.
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/ExecResultEnvelope'
-            application/x-ndjson:
+            text/event-stream:
               schema:
                 type: string
-                description: Newline-delimited stream of `ExecStreamFrame` objects.
+                description: SSE stream of `ExecStreamFrame` JSON objects.
               example: |
-                {"type":"stdout","data":"hello\n"}
-                {"type":"stderr","data":"warn\n"}
-                {"type":"done","exit_code":0,"duration_ms":142}
+                : open
+
+                data: {"type":"stdout","data":"hello\n"}
+
+                data: {"type":"stderr","data":"warn\n"}
+
+                data: {"type":"done","exit_code":0,"duration_ms":142}
         '400':
           $ref: '#/components/responses/BadRequest'
         '404':
@@ -284,7 +288,7 @@ paths:
         deal with shell escaping. Response shape matches `/exec`.
 
         Supports the same `stream: true` opt-in as `/exec`; see that endpoint's
-        description for the NDJSON frame shape.
+        description for the SSE event shape.
       operationId: runCode
       parameters:
         - $ref: '#/components/parameters/SandboxIdParam'
@@ -300,15 +304,15 @@ paths:
             Code completed.
 
             When the request body has `stream: true`, the response is
-            `application/x-ndjson`, one `ExecStreamFrame` per line.
+            `text/event-stream`, one `ExecStreamFrame` per `data:` event.
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/ExecResultEnvelope'
-            application/x-ndjson:
+            text/event-stream:
               schema:
                 type: string
-                description: Newline-delimited stream of `ExecStreamFrame` objects.
+                description: SSE stream of `ExecStreamFrame` JSON objects.
         '400':
           $ref: '#/components/responses/BadRequest'
         '404':
@@ -427,6 +431,44 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/AckMessage'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /sandboxes/{id}/egress:
+    put:
+      tags: [Sandboxes]
+      summary: Update sandbox egress policy
+      description: |
+        Changes outbound network policy for a sandbox. Supported modes:
+
+        - `open` — full outbound internet access.
+        - `deny_all` — all outbound connections blocked.
+        - `restricted` — default deny with an allowlist (`allow` required).
+
+        Switching between modes may reattach the sandbox to a different network
+        profile. The response includes `network_updated: true` when that happens.
+        Allow a few seconds for the new policy to take effect before probing from
+        inside the sandbox.
+
+        Sandbox must be in status `ready`.
+      operationId: updateSandboxEgress
+      parameters:
+        - $ref: '#/components/parameters/SandboxIdParam'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateSandboxEgressInput'
+      responses:
+        '200':
+          description: Egress updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SandboxEgressUpdateEnvelope'
         '400':
           $ref: '#/components/responses/BadRequest'
         '404':
@@ -741,7 +783,12 @@ components:
           description: If true, sandbox auto-destroys when its main process exits.
         blockOutbound:
           type: boolean
-          description: If true, outbound network traffic from the sandbox is denied.
+          description: |
+            Legacy shorthand for `egress.mode = deny_all`. Prefer `egress` for new
+            integrations. Cannot be combined with `egress` on the same request.
+        egress:
+          $ref: '#/components/schemas/SandboxEgressConfig'
+          description: Outbound network policy. Defaults to `open` when omitted.
         persistent:
           type: boolean
           description: Provision a fresh per-sandbox persistent volume for the sandbox's workspace directory.
@@ -819,8 +866,9 @@ components:
           type: boolean
           description: |
             When true, the server keeps the connection open and streams
-            stdout/stderr chunks as NDJSON (`application/x-ndjson`) instead of
-            buffering. The last frame is always `{ "type": "done", ... }`.
+            stdout/stderr as Server-Sent Events (`text/event-stream`). Each event
+            is a JSON object on a `data:` line; the last event is always
+            `{ "type": "done", ... }` or `{ "type": "error", ... }`.
 
     CodeInput:
       type: object
@@ -851,16 +899,52 @@ components:
         stream:
           type: boolean
           description: |
-            When true, the response is NDJSON streamed as the snippet runs,
-            same behaviour as `/exec` with `stream: true`.
+            When true, the response is SSE (`text/event-stream`) as the snippet
+            runs, same behaviour as `/exec` with `stream: true`.
+
+    SandboxEgressConfig:
+      type: object
+      required: [mode]
+      properties:
+        mode:
+          type: string
+          enum: [open, restricted, deny_all]
+        allow:
+          type: array
+          maxItems: 50
+          items:
+            type: string
+            minLength: 1
+            maxLength: 253
+          description: |
+            Allowlist entries for `restricted` mode: IPv4 addresses, CIDR ranges,
+            or hostnames. Required (min 1 entry) when updating to `restricted`;
+            optional at create time.
+
+    UpdateSandboxEgressInput:
+      type: object
+      required: [mode]
+      properties:
+        mode:
+          type: string
+          enum: [open, restricted, deny_all]
+        allow:
+          type: array
+          minItems: 1
+          maxItems: 50
+          items:
+            type: string
+            minLength: 1
+            maxLength: 253
+          description: Required when `mode` is `restricted`; forbidden otherwise.
 
     ExecStreamFrame:
       type: object
       description: |
-        One frame in the NDJSON stream returned when `stream: true`. Exactly
-        one frame type per line. The last frame is always `done` (on success
-        or non-zero exit) or `error` (on upstream failure after headers were
-        sent).
+        One SSE event payload returned when `stream: true`. Delivered as
+        `data: <json>\n\n` inside a `text/event-stream` response. Exactly one
+        frame type per event. The last event is always `done` (on success or
+        non-zero exit) or `error` (on upstream failure after headers were sent).
       oneOf:
         - type: object
           required: [type, data]
@@ -986,6 +1070,14 @@ components:
           type: boolean
         block_outbound:
           type: boolean
+          description: Legacy mirror of egress policy; true when mode is `deny_all`.
+        egress:
+          $ref: '#/components/schemas/SandboxEgressConfig'
+        network_updated:
+          type: boolean
+          description: |
+            Present on egress update responses. True when the sandbox's network
+            profile was switched as part of the update.
         persistent:
           type: boolean
         persistent_disk_gb:
@@ -1200,6 +1292,18 @@ components:
           example: 'Sandbox fetched'
         data:
           $ref: '#/components/schemas/Sandbox'
+
+    SandboxEgressUpdateEnvelope:
+      type: object
+      required: [message, data]
+      properties:
+        message:
+          type: string
+          example: 'Sandbox egress updated'
+        data:
+          allOf:
+            - $ref: '#/components/schemas/Sandbox'
+          description: Includes `network_updated` when the network profile changed.
 
     CreateSandboxEnvelope:
       type: object

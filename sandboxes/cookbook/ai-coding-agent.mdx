@@ -49,7 +49,7 @@ async function runAgent({
     persistentDiskGB: 20,         // room for the checkout + node_modules / venvs
     autoDestroy: true,
     destroyTimeout: "3h",         // generous; agent runs can take a while
-    blockOutbound: false,         // agent needs the internet
+    // egress defaults to open — agent needs model API access
   });
 
   try {
@@ -233,7 +233,7 @@ func main() {
 1. **Pick the agent template.** `claude-code` ships with the Claude Code CLI preinstalled and configured for unattended runs. Swap to `codex`, `droid`, or `opencode` and adjust the binary name in the exec command (`codex --print ...`, `droid run ...`, etc.).
 2. **Persistent disk on, 20 GB.** The agent's checkout, `node_modules`, model caches, and intermediate files all live on the workspace volume. A snapshot at the end captures that state for replay or audit.
 3. **`autoDestroy` with a 3-hour ceiling.** Agent runs can be long; a 30-minute hard timeout would kill the work mid-flight. Three hours is a reasonable backstop. Set `oneShot: true` instead if you want the sandbox to terminate the moment `claude --print` exits.
-4. **Outbound network is on.** The agent needs to reach the model API (`api.anthropic.com`, `api.openai.com`, etc.). If you want stricter isolation, pre-bake any tool the agent needs into the snapshot and turn `blockOutbound: true` on for the actual run.
+4. **Outbound network is on by default.** The agent needs to reach the model API (`api.anthropic.com`, `api.openai.com`, etc.). For tighter control, use `egress: { mode: "restricted", allow: ["api.anthropic.com"] }` instead of full `open`, or pre-bake tools into a snapshot and run with `deny_all`.
 5. **API key as a shell env var, not a build-time secret.** Sandboxes don't bake env vars into the template; you set them per-exec.
 6. **Diff capture after the run.** `git add -A && git diff --staged` shows everything the agent touched, including new files. Pipe it to your own review tool or PR-creation flow.
 7. **Snapshot before destroy.** Cheap insurance: if the diff looks wrong or the agent did something unexpected, you can restore the snapshot into a fresh sandbox and inspect.
@@ -244,7 +244,7 @@ func main() {
 - **Reuse a checkout across runs.** Create a `sandbox`-type [volume](../../volumes/overview), attach it on first run, and pass the same `volumeId` on subsequent runs. The repo is already cloned, dependencies are already installed.
 - **Fan out across many tasks.** Loop `runAgent` over a task list. Each call provisions an isolated sandbox; the platform's concurrency cap is your only ceiling.
 - **Different agents, same task.** Swap the template (`claude-code` → `codex` → `droid`) on the same input and compare the resulting diffs.
-- **Background mode with logs.** Replace the inline exec with two calls: one to start the agent in the background (`nohup claude ... &`), one to tail `/work/agent.log` while it runs. You'll need `getFile` to stream the log.
+- **Background mode with logs.** Replace the inline exec with two calls: one to start the agent in the background (`nohup claude ... &`), one to stream output with `exec({ cmd: "tail -f /work/agent.log", stream: true })` or read the log with `getFile`.
 
 ## Next steps
 

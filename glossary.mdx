@@ -27,7 +27,7 @@ Terms you'll see across Brimble docs and the dashboard, in alphabetical order.
 
 **Batch file upload.** A sandbox-handle call (`putFiles` / `put_files` / `PutFiles`) that uploads up to 100 files in a single request, with a per-file success/failure summary. See [SDKs → Batch file uploads](/sandboxes/sdks#batch-file-uploads).
 
-**Block outbound.** A sandbox flag (`blockOutbound: true`) that denies all outbound network traffic from the container. The sandbox can still receive API calls from Brimble (exec, files, snapshots) but can't initiate connections to the public internet. Use for untrusted or AI-generated code.
+**Block outbound.** Legacy sandbox create flag (`blockOutbound: true`) that maps to `egress.mode = deny_all`. Prefer the `egress` object for new integrations. See [Network egress](/sandboxes/overview#network-egress).
 
 **Bucket.** A named container for objects in Brimble Object Storage. The unit of access control, CORS configuration, and billing visibility. See [Object storage](/object-storage/overview).
 
@@ -77,13 +77,17 @@ Terms you'll see across Brimble docs and the dashboard, in alphabetical order.
 
 **Environment variable.** A key/value pair injected into both the builder and the running container. See [Manage environment variables](/environments/environment-variables).
 
+**Egress (sandbox).** Outbound network policy for a sandbox. Modes: `open` (default), `deny_all`, or `restricted` (allowlist). Set at create with `egress` or change at runtime with `PUT /sandboxes/{id}/egress`. See [Network egress](/sandboxes/overview#network-egress).
+
 **`env` (sandbox call).** Per-call environment variables passed on `exec` or `runCode`. Layered on top of the sandbox's existing environment for one invocation only; the next call starts from the sandbox defaults again. See [SDKs → Per-call environment variables](/sandboxes/sdks#per-call-environment-variables).
 
 **Ephemeral sandbox.** A sandbox created without `persistent: true` or `volumeId`. Everything written to the filesystem is lost on destroy. The default if you don't opt into persistence.
 
 **EPP code.** Also called the auth code or transfer code. The token from a domain's current registrar that authorizes a transfer to a new registrar. See [Transfer a domain](/domains/transfer-a-domain).
 
-**Exec (sandbox).** The runtime call (`handle.exec({ cmd })`) that runs a shell command inside a sandbox and returns stdout, stderr, exit code, and duration. Pass `stream: true` to switch from buffered to NDJSON streaming. See [SDKs → Exec](/sandboxes/sdks#exec).
+**Exec (sandbox).** The runtime call (`handle.exec({ cmd })`) that runs a shell command inside a sandbox and returns stdout, stderr, exit code, and duration. Pass `stream: true` or use the stream helpers for live output. See [SDKs → Exec](/sandboxes/sdks#exec) and [Stream exec output](/sandboxes/sdks#stream-exec-output).
+
+**ExecStream.** The SDK wrapper around a streaming `exec` / `runCode` response. Iterate live stdout/stderr chunks, then call `.result()` for the aggregated final output. See [SDKs → Stream exec output](/sandboxes/sdks#stream-exec-output).
 
 ## G
 
@@ -205,7 +209,7 @@ Terms you'll see across Brimble docs and the dashboard, in alphabetical order.
 
 **Storage credential.** An access key pair (`accessKeyId` + `secretAccessKey`) scoped to one bucket with a role (`ReadOnly` or `Editor`). Hand it to any S3-compatible client to access the bucket. See [Storage credentials](/object-storage/credentials).
 
-**Stream frame.** One NDJSON line in a streaming `exec` / `runCode` response. Variants: `stdout`, `stderr`, `done` (final, carries exit code and duration), `error` (transport failure mid-stream). See [SDKs → Stream exec output](/sandboxes/sdks#stream-exec-output).
+**Stream frame.** One SSE event payload in a streaming `exec` / `runCode` response (`data: {...}` inside `text/event-stream`). Variants: `stdout`, `stderr`, `done` (final, carries exit code and duration), `error` (transport failure mid-stream). See [SDKs → Stream exec output](/sandboxes/sdks#stream-exec-output).
 
 **System variable.** An environment variable Brimble manages for you, like `PORT` (assigned at runtime) and the database connection variables (`CONNECTION_STRING`, `SERVICE_HOST`, `SERVICE_PORT`, `PRIVATE_SERVICE_HOST`) on database projects.
 

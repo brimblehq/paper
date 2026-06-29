@@ -100,7 +100,13 @@ Each sandbox container runs under **gVisor** in production, a user-space kernel 
 - A hard process-count cap prevents fork bombs.
 - The container can't reach the underlying host's identity or credentials surface.
 
-The container's network mode depends on the sandbox config: by default, normal outbound network; if `blockOutbound: true` was passed, outbound traffic is denied by a CNI policy.
+The container's network mode depends on the sandbox's egress config:
+
+- **`open`** (default), normal outbound network via bridge mode.
+- **`deny_all`**, outbound traffic blocked by a dedicated no-egress network profile.
+- **`restricted`**, default deny with an allowlist enforced at the host firewall for the container's address.
+
+You can set egress at create time or update it later; changing between profiles may switch the Nomad network mode and takes a few seconds to apply. The legacy `blockOutbound: true` flag maps to `deny_all`.
 
 ### 4. Storage attaches (if requested)
 
@@ -115,7 +121,7 @@ Once the container is up, the sandbox flips to `ready` and the API starts accept
 
 ### 6. Operations run
 
-- **`exec` / `code`** run a command or snippet inside the container and stream stdout/stderr back. Each call is bounded by a timeout (default 30s, capped at 300s).
+- **`exec` / `code`** run a command or snippet inside the container and return stdout/stderr. Pass `stream: true` to receive output as Server-Sent Events (`text/event-stream`) as it is produced instead of waiting for the command to finish.
 - **File operations** stream bytes in and out. A per-file size cap keeps a bad call from filling the host.
 - **`pause`** stops the container, releasing CPU and memory. The persistent volume (if any) stays attached.
 - **`resume`** starts a fresh container and reattaches the same volume.

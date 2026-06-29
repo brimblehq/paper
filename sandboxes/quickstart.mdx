@@ -126,6 +126,57 @@ fmt.Println("exit:", run.ExitCode)
 
 You get back stdout, stderr, exit code, and duration. If the sandbox isn't ready yet (you skipped `createReady` and used `create` instead), pass `waitUntilReady: true` and the SDK will wait for you.
 
+### Stream output live (optional)
+
+For commands that take a while, stream stdout/stderr as it arrives instead of waiting for the full buffer:
+
+<CodeGroup>
+
+```typescript TypeScript
+const output = await sandbox.exec({
+  cmd: "for i in 1 2 3; do echo line-$i; sleep 0.2; done",
+  stream: true,
+});
+
+for await (const log of output) {
+  process.stdout.write(`[${log.stream}] ${log.data}`);
+}
+
+const streamed = await output.result();
+console.log("done, exit:", streamed.exit_code);
+```
+
+```python Python
+output = sandbox.exec_stream({
+    "cmd": "for i in 1 2 3; do echo line-$i; sleep 0.2; done",
+})
+
+for log in output:
+    print(f"[{log['stream']}] {log['data']}", end="")
+
+streamed = output.result()
+print("done, exit:", streamed["exit_code"])
+```
+
+```go Go
+output, _ := handle.ExecStream(ctx, sandbox.ExecInput{
+    Cmd: "for i in 1 2 3; do echo line-$i; sleep 0.2; done",
+})
+defer output.Close()
+
+_ = output.IterateLogs(ctx, func(log sandbox.ExecLog) error {
+    fmt.Printf("[%s] %s", log.Stream, log.Data)
+    return nil
+})
+
+streamed, _ := output.Result(ctx)
+fmt.Println("done, exit:", streamed.ExitCode)
+```
+
+</CodeGroup>
+
+See [SDKs → Stream exec output](sdks#stream-exec-output) for callback-based streaming and `runCode` streaming.
+
 ## Step 3: Run code in a language runtime
 
 `runCode` is the language-aware sibling of `exec`. Hand it a snippet and an interpreter.
@@ -243,9 +294,10 @@ Persistent volumes (if you created the sandbox with `persistent: true`) are **de
 ## What to try next
 
 - Set `oneShot: true` on creation to auto-destroy the moment your main process exits, perfect for batch jobs.
-- Set `blockOutbound: true` if you're running untrusted code and want it to have no outbound network access.
+- Set `egress: { mode: "deny_all" }` (or legacy `blockOutbound: true`) if you're running untrusted code and want no outbound network access. Use `restricted` with an allowlist when the workload needs a few specific endpoints (model APIs, package registries).
 - Set `autoDestroy: true` with a `destroyTimeout` (`30m`, `1h`, `3h`, `6h`, `12h`, `18h`) so abandoned sandboxes clean themselves up.
 - Restore a sandbox from a snapshot by passing `fromSnapshot: "<snapshot-id>"` on create.
+- Stream exec output live with `stream: true` (TypeScript), `exec_stream()` (Python), or `ExecStream()` (Go). See [SDKs → Stream exec output](sdks#stream-exec-output).
 - Use `client.sandboxes.quickstartNode()` or `quickstartPython()` for one-line "give me a persistent dev box" presets. See [SDKs](sdks#quickstart-presets).
 
 ## From the dashboard

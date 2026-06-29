@@ -20,12 +20,12 @@ You have code you didn't write, from an LLM, from a user-submitted form, from a 
 
 ## Recipe
 
-The key options here are **`blockOutbound: true`** (no outbound network), **`oneShot: true`** (auto-destroy when the main process exits), and a tight **`timeout_seconds`** on the exec call. Together they give you a single-use, networkless, time-bounded executor.
+The key options here are **`egress: { mode: "deny_all" }`** (no outbound network), **`oneShot: true`** (auto-destroy when the main process exits), and a tight **`timeout_seconds`** on the exec call. Together they give you a single-use, networkless, time-bounded executor.
 
 <CodeGroup>
 
 ```typescript TypeScript
-import { Sandbox } from "@brimble/sandbox";
+import { Sandbox, SandboxEgressMode } from "@brimble/sandbox";
 
 const client = new Sandbox();
 
@@ -33,7 +33,7 @@ async function runUntrusted(code: string) {
   const handle = await client.sandboxes.createReady({
     region: "auto",
     template: "python-3.12",
-    blockOutbound: true,        // no outbound network
+    egress: { mode: SandboxEgressMode.DenyAll },
     oneShot: true,              // auto-destroy on process exit
     destroyTimeout: "30m",      // hard ceiling, even if oneShot misfires
     specs: { cpu: 500, memory: 512, disk: 2 },
@@ -67,6 +67,7 @@ console.log(out);
 
 ```python Python
 from brimble_sandbox import Sandbox
+from brimble_sandbox.enums import SandboxEgressMode
 
 client = Sandbox()
 
@@ -74,7 +75,7 @@ def run_untrusted(code: str) -> dict:
     sandbox = client.sandboxes.create_ready({
         "region": "auto",
         "template": "python-3.12",
-        "blockOutbound": True,
+        "egress": {"mode": SandboxEgressMode.DENY_ALL},
         "oneShot": True,
         "destroyTimeout": "30m",
         "specs": {"cpu": 500, "memory": 512, "disk": 2},
@@ -116,9 +117,11 @@ import (
 
 func runUntrusted(ctx context.Context, client *sandbox.Client, code string) (*sandbox.ExecResult, error) {
     handle, err := client.Sandboxes.CreateReady(ctx, sandbox.CreateSandboxRequest{
-        Region:         "auto",
-        Template:       "python-3.12",
-        BlockOutbound:  true,
+        Region:   "auto",
+        Template: "python-3.12",
+        Egress: &sandbox.SandboxEgressConfig{
+            Mode: sandbox.SandboxEgressModeDenyAll,
+        },
         OneShot:        true,
         DestroyTimeout: "30m",
         Specs:          &sandbox.SandboxSpecs{CPU: 500, Memory: 512, Disk: 2},
@@ -151,7 +154,7 @@ print(math.factorial(20))
 ## What's happening
 
 1. **`createReady` over `create`.** We block until the sandbox is `ready`, so the next call doesn't need to coordinate the wait.
-2. **`blockOutbound: true`.** Outbound network is denied. The sandbox can't `curl` external services, exfiltrate data, or pivot. Inbound calls from the Brimble API (your exec, your file ops) still work.
+2. **`egress: { mode: "deny_all" }`.** Outbound network is denied. The sandbox can't `curl` external services, exfiltrate data, or pivot. Inbound calls from the Brimble API (your exec, your file ops) still work. (`blockOutbound: true` is the legacy equivalent.)
 3. **`oneShot: true`.** When the main process exits, the sandbox auto-destroys. You don't have to remember to clean up.
 4. **`destroyTimeout: "30m"`.** A backstop: even if `oneShot` misfires (the process never returns, hangs in a loop), the sandbox is gone after 30 minutes.
 5. **Small `specs`.** 0.5 vCPU equivalent, 512 MB memory, 2 GB ephemeral disk. Pick a size that matches the work; the sandbox is hard-capped at these limits.

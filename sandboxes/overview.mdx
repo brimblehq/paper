@@ -90,6 +90,7 @@ Once a sandbox is `ready`, the SDK exposes one method per operation. All three S
 | Batch upload | `handle.putFiles([...])` | Uploads up to 100 files in one round trip. |
 | Pause | `handle.pause()` | Scales the container to zero. Persistent volumes stay attached. |
 | Resume | `handle.resume()` | Starts a fresh container and reattaches the volume. |
+| Update egress | `handle.updateEgress({ mode, allow? })` | Changes outbound network policy at runtime. See [Network egress](#network-egress). |
 | Snapshot | `handle.snapshots.create({ name })` | Captures the sandbox's filesystem as a restorable image. See [Snapshots](snapshots). |
 | Destroy | `handle.destroy()` | Terminal cleanup. |
 
@@ -132,7 +133,130 @@ Each sandbox's `expires_at` field shows when it'll auto-destroy if nothing inter
 
 ## Network egress
 
-Sandboxes get a normal outbound network by default: they can `curl`, install dependencies, hit third-party APIs. For workloads you don't fully trust (AI-generated code, public dev environments), set `blockOutbound: true` at create time to deny all outbound traffic. The sandbox still accepts inbound calls from Brimble's API (exec, files, snapshots) but can't initiate connections to the public internet.
+Sandboxes get a normal outbound network by default: they can `curl`, install dependencies, and hit third-party APIs. For workloads you don't fully trust (AI-generated code, public dev environments), Brimble lets you control outbound traffic with three **egress modes**:
+
+| Mode | Behavior |
+|---|---|
+| `open` | Full outbound internet access (default). |
+| `deny_all` | All outbound connections blocked. Inbound calls from the Brimble API (exec, files, snapshots) still work. |
+| `restricted` | Default deny, with an allowlist of IPv4 addresses, CIDR ranges, or hostnames. |
+
+Set egress at **create time** with the `egress` object, or change it later with **`PUT /sandboxes/{id}/egress`** (SDK: `handle.updateEgress(...)`). Switching between `open`, `deny_all`, and `restricted` may reattach the sandbox to a different network profile; the update response includes `network_updated: true` when that happens. Allow a few seconds for the new policy to take effect before probing from inside the sandbox.
+
+<CodeGroup>
+
+```typescript TypeScript
+import { Sandbox, SandboxEgressMode } from "@brimble/sandbox";
+
+const client = new Sandbox();
+
+// Create with restricted egress
+const sandbox = await client.sandboxes.createReady({
+  template: "node-22",
+  egress: {
+    mode: SandboxEgressMode.Restricted,
+    allow: ["1.1.1.1", "api.example.com"],
+  },
+});
+
+// Tighten to deny-all at runtime
+await sandbox.updateEgress({ mode: SandboxEgressMode.DenyAll });
+```
+
+```python Python
+from brimble_sandbox import Sandbox
+from brimble_sandbox.enums import SandboxEgressMode
+
+client = Sandbox()
+
+sandbox = client.sandboxes.create_ready({
+    "template": "node-22",
+    "egress": {
+        "mode": SandboxEgressMode.RESTRICTED,
+        "allow": ["1.1.1.1", "api.example.com"],
+    },
+})
+
+sandbox.update_egress({"mode": SandboxEgressMode.DENY_ALL})
+```
+
+```go Go
+import sandbox "github.com/brimblehq/brimble-sdks/sandbox-go"
+
+client, _ := sandbox.NewClient(sandbox.ClientConfig{})
+
+handle, _ := client.Sandboxes.CreateReady(ctx, sandbox.CreateSandboxRequest{
+    Template: "node-22",
+    Egress: &sandbox.SandboxEgressConfig{
+        Mode:  sandbox.SandboxEgressModeRestricted,
+        Allow: []string{"1.1.1.1", "api.example.com"},
+    },
+}, nil)
+
+handle.UpdateEgress(ctx, sandbox.UpdateSandboxEgressInput{
+    Mode: sandbox.SandboxEgressModeDenyAll,
+})
+```
+
+</CodeGroup>
+
+**Legacy shorthand:** `blockOutbound: true` at create time maps to `deny_all`. Prefer the `egress` object for new code; you cannot combine `egress` and `blockOutbound` on the same request.
+
+See [SDKs → Network egress](sdks#network-egress) for the full SDK surface and [Update sandbox egress](/api-reference/sandboxes/egress-update) for the REST contract.
+
+## Streaming exec output
+
+By default, `exec` and `runCode` buffer output and return the full result when the command finishes. For long-running commands (installs, agent loops, build steps), pass **`stream: true`** to receive stdout and stderr as Server-Sent Events (`text/event-stream`) while the command runs.
+
+Each SDK wraps the SSE stream in an **`ExecStream`** object you can iterate live, then call `.result()` for the final aggregated `stdout`, `stderr`, `exit_code`, and `duration_ms`. Alternatively, pass **`onStdout` / `onStderr` callbacks** on a normal `exec` call and the SDK streams under the hood but still returns a buffered `ExecResult`.
+
+<CodeGroup>
+
+```typescript TypeScript
+const output = await sandbox.exec({
+  cmd: "for i in 1 2 3; do echo $i; done",
+  stream: true,
+});
+
+for await (const log of output) {
+  if (log.stream === "stdout") process.stdout.write(log.data);
+}
+
+const result = await output.result();
+console.log(result.exit_code);
+```
+
+```python Python
+output = sandbox.exec_stream({"cmd": "for i in 1 2 3; do echo $i; done"})
+
+for log in output:
+    if log["stream"] == "stdout":
+        print(log["data"], end="")
+
+result = output.result()
+print(result["exit_code"])
+```
+
+```go Go
+output, _ := handle.ExecStream(ctx, sandbox.ExecInput{
+    Cmd: "for i in 1 2 3; do echo $i; done",
+})
+defer output.Close()
+
+_ = output.IterateLogs(ctx, func(log sandbox.ExecLog) error {
+    if log.Stream == sandbox.LogStreamStdout {
+        fmt.Print(log.Data)
+    }
+    return nil
+})
+
+result, _ := output.Result(ctx)
+fmt.Println(result.ExitCode)
+```
+
+</CodeGroup>
+
+See [SDKs → Stream exec output](sdks#stream-exec-output) for callbacks, `runCode` streaming, and raw SSE frame access.
 
 ## Billing and plan caveats
 
