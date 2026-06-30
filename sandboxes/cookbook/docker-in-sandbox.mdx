@@ -1,9 +1,9 @@
 ---
 title: "Run Docker inside a sandbox"
-description: "Enable Docker during sandbox creation and run nested containers from your SDK."
+description: "Install Docker manually in a sandbox and run nested containers with a gVisor-compatible dockerd setup."
 ---
 
-Pass `docker: true` when creating a sandbox. Brimble installs Docker, starts the daemon, and marks the sandbox `ready` only after `docker info` succeeds — no manual bootstrap scripts.
+Sandboxes run inside **gVisor** (`runsc`). Docker is not installed automatically — you install it yourself after the sandbox is `ready`, then start `dockerd` with a small bootstrap script so nested containers work.
 
 ## When to use this recipe
 
@@ -16,56 +16,141 @@ Pass `docker: true` when creating a sandbox. Brimble installs Docker, starts the
 - A Brimble account with sandbox access and `BRIMBLE_SANDBOX_KEY` set.
 - The SDK installed (see [SDKs](../sdks#install)).
 - Outbound network for pulling packages and images (`egress.mode` defaults to `open`).
-- A Debian/Ubuntu template such as `node-22` or `python-3.12`.
-- **1 GB+ RAM** recommended (`docker: true` defaults memory to 1024 MB if you omit `specs.memory`).
+- A **Debian/Ubuntu template** such as `ubuntu-24`, `node-22`, or `python-3.12` (images must have `apt`).
+- **1 GB+ RAM** recommended (`specs.memory: 1024` or higher).
+
+## Why a custom `dockerd` startup?
+
+A plain `apt install docker.io` plus default `dockerd` often fails inside gVisor with overlay mount errors. Use a startup script that:
+
+1. **Mounts tmpfs on `/var/lib/docker`** — avoids `overlay: invalid argument` when pulling and running images.
+2. **Runs `dockerd` with `--iptables=false` and `--ip6tables=false`** — Docker does not manage iptables inside the sandbox; you set SNAT manually instead.
+3. **Passes `--feature containerd-snapshotter=false` on Docker ≥ 29** — the default containerd snapshotter does not work in gVisor; the legacy storage path does.
+
+Save this as `start-dockerd.sh` inside the sandbox (for example under `/usr/local/bin/`):
+
+```bash start-dockerd.sh
+#!/bin/bash
+set -xe -o pipefail
+
+USE_OVERLAY_DRIVER=true
+while [[ $# -gt 0 ]]; do
+  case $1 in
+    --no-overlay)
+      USE_OVERLAY_DRIVER=false
+      shift
+      ;;
+    *)
+      shift
+      ;;
+  esac
+done
+
+if [[ "${USE_OVERLAY_DRIVER}" == "true" ]]; then
+  current_fs=$(stat -f -c %T /var/lib/docker 2>/dev/null || echo "none")
+  if [[ "${current_fs}" != "tmpfs" ]]; then
+    mkdir -p /var/lib/docker
+    mount -t tmpfs -o size="${DOCKER_TMPFS_SIZE:-512M}" tmpfs /var/lib/docker
+  fi
+fi
+
+EXTRA_DOCKERD_FLAGS=()
+docker_version=$(dockerd --version)
+if [[ ${docker_version} =~ version\ ([0-9]+) ]] && [[ ${BASH_REMATCH[1]} -ge 29 ]]; then
+  EXTRA_DOCKERD_FLAGS+=(--feature containerd-snapshotter=false)
+fi
+
+dev=$(ip route show default | sed 's/.* dev \([^ ]*\) .*/\1/')
+addr=$(ip addr show dev "$dev" | grep -w inet | sed 's/^\s*inet \([^/]*\)\/.*$/\1/')
+
+echo 1 > /proc/sys/net/ipv4/ip_forward
+iptables-legacy -t nat -A POSTROUTING -o "$dev" -j SNAT --to-source "$addr" -p tcp
+iptables-legacy -t nat -A POSTROUTING -o "$dev" -j SNAT --to-source "$addr" -p udp
+
+exec dockerd --iptables=false --ip6tables=false "${EXTRA_DOCKERD_FLAGS[@]}"
+```
 
 ## Recipe
 
-Create a sandbox with `docker: true`, then run containers.
+Create a sandbox, install Docker, upload the script, start the daemon, then run a container.
 
 <CodeGroup>
 
 ```typescript TypeScript
 import { Sandbox } from "@brimble/sandbox";
+import { readFileSync } from "node:fs";
 
 const client = new Sandbox();
 
 const handle = await client.sandboxes.createReady({
   region: "auto",
-  template: "node-22",
-  docker: true,
-  specs: { cpu: 1000, memory: 1024 },
+  template: "ubuntu-24",
+  specs: { cpu: 500, memory: 1024 },
+  egress: { mode: "open" },
 });
 
 try {
+  const install = await handle.exec({
+    cmd: "export DEBIAN_FRONTEND=noninteractive && apt-get update -qq && apt-get install -y docker.io iptables",
+    timeout_seconds: 300,
+  });
+  if (install.exit_code !== 0) throw new Error(install.stderr || install.stdout);
+
+  await handle.putFile(
+    "/usr/local/bin/start-dockerd.sh",
+    readFileSync("./start-dockerd.sh"),
+  );
+
+  const start = await handle.exec({
+    cmd: "chmod +x /usr/local/bin/start-dockerd.sh && DOCKER_TMPFS_SIZE=512M nohup /usr/local/bin/start-dockerd.sh >/tmp/dockerd.log 2>&1 & sleep 12 && docker info >/dev/null",
+    timeout_seconds: 120,
+  });
+  if (start.exit_code !== 0) throw new Error(start.stderr || start.stdout);
+
   const hello = await handle.exec({
     cmd: "docker run --rm hello-world",
     timeout_seconds: 300,
   });
   console.log(hello.stdout);
-
-  await handle.exec({
-    cmd: "docker run -d --rm --network=host --name demo nginx:alpine",
-    timeout_seconds: 300,
-  });
 } finally {
   await handle.destroy();
 }
 ```
 
 ```python Python
+from pathlib import Path
+
 from brimble_sandbox import Sandbox
 
 client = Sandbox()
 
 handle = client.sandboxes.create_ready({
     "region": "auto",
-    "template": "node-22",
-    "docker": True,
-    "specs": {"cpu": 1000, "memory": 1024},
+    "template": "ubuntu-24",
+    "specs": {"cpu": 500, "memory": 1024},
+    "egress": {"mode": "open"},
 })
 
 try:
+    install = handle.exec({
+        "cmd": "export DEBIAN_FRONTEND=noninteractive && apt-get update -qq && apt-get install -y docker.io iptables",
+        "timeout_seconds": 300,
+    })
+    if install["exit_code"] != 0:
+        raise RuntimeError(install.get("stderr") or install.get("stdout"))
+
+    handle.put_file(
+        "/usr/local/bin/start-dockerd.sh",
+        Path("start-dockerd.sh").read_bytes(),
+    )
+
+    start = handle.exec({
+        "cmd": "chmod +x /usr/local/bin/start-dockerd.sh && DOCKER_TMPFS_SIZE=512M nohup /usr/local/bin/start-dockerd.sh >/tmp/dockerd.log 2>&1 & sleep 12 && docker info >/dev/null",
+        "timeout_seconds": 120,
+    })
+    if start["exit_code"] != 0:
+        raise RuntimeError(start.get("stderr") or start.get("stdout"))
+
     hello = handle.exec({
         "cmd": "docker run --rm hello-world",
         "timeout_seconds": 300,
@@ -81,6 +166,7 @@ package main
 import (
 	"context"
 	"fmt"
+	"os"
 
 	sandbox "github.com/brimblehq/brimble-sdks/sandbox-go"
 )
@@ -89,13 +175,36 @@ func main() {
 	ctx := context.Background()
 	client, _ := sandbox.NewClient(sandbox.ClientConfig{})
 
+	memory := 1024
 	handle, _ := client.Sandboxes.CreateReady(ctx, sandbox.CreateSandboxRequest{
 		Region:   "auto",
-		Template: "node-22",
-		Docker:   true,
-		Specs:    &sandbox.SandboxSpecs{CPU: 1000, Memory: 1024},
+		Template: "ubuntu-24",
+		Specs:    &sandbox.SandboxSpecs{CPU: 500, Memory: &memory},
+		Egress:   &sandbox.SandboxEgressConfig{Mode: sandbox.SandboxEgressModeOpen},
 	}, nil)
 	defer handle.Destroy(ctx)
+
+	install, _ := handle.Exec(ctx, sandbox.ExecInput{
+		Cmd:            "export DEBIAN_FRONTEND=noninteractive && apt-get update -qq && apt-get install -y docker.io iptables",
+		TimeoutSeconds: 300,
+	})
+	if install.ExitCode != 0 {
+		panic(install.Stderr)
+	}
+
+	body, _ := os.ReadFile("start-dockerd.sh")
+	_, _ = handle.PutFiles(ctx, []sandbox.BatchFileUploadItem{{
+		Path:    "/usr/local/bin/start-dockerd.sh",
+		Content: body,
+	}})
+
+	start, _ := handle.Exec(ctx, sandbox.ExecInput{
+		Cmd:            "chmod +x /usr/local/bin/start-dockerd.sh && DOCKER_TMPFS_SIZE=512M nohup /usr/local/bin/start-dockerd.sh >/tmp/dockerd.log 2>&1 & sleep 12 && docker info >/dev/null",
+		TimeoutSeconds: 120,
+	})
+	if start.ExitCode != 0 {
+		panic(start.Stderr)
+	}
 
 	result, _ := handle.Exec(ctx, sandbox.ExecInput{
 		Cmd:            "docker run --rm hello-world",
@@ -107,23 +216,44 @@ func main() {
 
 </CodeGroup>
 
+<Note>
+  `exec` requests accept `timeout_seconds` between **1 and 300**. Split long `apt-get` runs or re-run install if needed.
+</Note>
+
+### Without uploading a file
+
+You can inline the same steps with shell `exec` if you prefer not to upload `start-dockerd.sh`:
+
+```bash
+export DEBIAN_FRONTEND=noninteractive
+apt-get update -qq && apt-get install -y docker.io iptables
+# paste start-dockerd.sh to /usr/local/bin/start-dockerd.sh, then:
+chmod +x /usr/local/bin/start-dockerd.sh
+DOCKER_TMPFS_SIZE=512M nohup /usr/local/bin/start-dockerd.sh >/tmp/dockerd.log 2>&1 &
+sleep 12 && docker info && docker run --rm hello-world
+```
+
 ## What's happening
 
-1. **`docker: true`.** During provisioning, Brimble runs `apt-get install docker.io`, uploads a startup script, and starts `dockerd` before the sandbox becomes `ready`.
-2. **`createReady`.** Waits until Docker is installed and the daemon responds to `docker info`.
-3. **`docker run`.** Talks to the local daemon over `/var/run/docker.sock` inside the sandbox.
-4. **`--network=host`.** Port mapping via `-p` is not supported inside sandboxes — bind on the host network instead.
+1. **`createReady`.** Waits until the sandbox VM is `ready` (gVisor container running, no Docker yet).
+2. **`apt-get install docker.io`.** Installs the Docker engine and CLI on Debian/Ubuntu.
+3. **`start-dockerd.sh`.** Mounts **tmpfs** on `/var/lib/docker`, configures SNAT for outbound traffic, and starts **`dockerd --iptables=false --ip6tables=false`** with **`--feature containerd-snapshotter=false`** when Docker is version 29 or newer.
+4. **`docker run`.** Talks to the local daemon over `/var/run/docker.sock` inside the sandbox.
+5. **`--network=host`.** Port mapping via `-p` is not supported inside sandboxes — bind on the host network instead when exposing services.
 
-On a [persistent sandbox](persistent-dev-env) with `docker: true`, Docker is reinstalled automatically when you resume from pause.
+If you [pause and resume](/api-reference/sandboxes/resume) a sandbox, reinstall Docker and restart `dockerd` — the daemon does not persist across resume.
 
 ## Limitations
 
+- **Template OS:** agent-only images (for example `codex`, `bun-1`) may not have `apt`; use `ubuntu-24`, `node-22`, or `python-3.12`.
 - **Port mapping:** use `--network=host`, not `-p` / `--expose`.
-- **Install time:** first boot spends a few minutes installing packages; the sandbox stays in `starting` until Docker is ready.
+- **Install time:** first `apt-get install` can take several minutes; use the maximum `timeout_seconds` (300) per exec call.
 - **Performance:** nested containers are slower than running Docker on a bare VM.
+- **Resume:** after pause/resume, run the install and `start-dockerd.sh` steps again.
 
 ## Next steps
 
 - [Run untrusted code](untrusted-code) — deny egress and run a single snippet instead.
 - [Run an AI coding agent](ai-coding-agent) — combine Docker with an agent workflow.
+- [Network egress](/api-reference/sandboxes/egress-update) — restrict outbound access when pulling images from private registries.
 - [Sandboxes overview](../overview) — lifecycle, billing, and network egress.
