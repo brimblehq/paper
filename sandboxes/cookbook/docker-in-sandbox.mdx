@@ -1,9 +1,9 @@
 ---
 title: "Run Docker inside a sandbox"
-description: "Install Docker inside an isolated sandbox and run nested containers from your SDK."
+description: "Enable Docker during sandbox creation and run nested containers from your SDK."
 ---
 
-Install Docker inside any Debian/Ubuntu-based template (`node-22`, `python-3.12`, etc.), start the daemon, then use normal `docker` commands via SDK exec.
+Pass `docker: true` when creating a sandbox. Brimble installs Docker, starts the daemon, and marks the sandbox `ready` only after `docker info` succeeds — no manual bootstrap scripts.
 
 ## When to use this recipe
 
@@ -17,52 +17,27 @@ Install Docker inside any Debian/Ubuntu-based template (`node-22`, `python-3.12`
 - The SDK installed (see [SDKs](../sdks#install)).
 - Outbound network for pulling packages and images (`egress.mode` defaults to `open`).
 - A Debian/Ubuntu template such as `node-22` or `python-3.12`.
-- **4 GB+ RAM** and **20 GB+ disk** recommended.
+- **1 GB+ RAM** recommended (`docker: true` defaults memory to 1024 MB if you omit `specs.memory`).
 
 ## Recipe
 
-Create a sandbox, install Docker, start `dockerd`, then run containers.
+Create a sandbox with `docker: true`, then run containers.
 
 <CodeGroup>
 
 ```typescript TypeScript
 import { Sandbox } from "@brimble/sandbox";
 
-const START_DOCKERD = `#!/bin/bash
-set -euo pipefail
-mkdir -p /var/lib/docker
-if [ "$(stat -f -c %T /var/lib/docker 2>/dev/null || echo none)" != "tmpfs" ]; then
-  mount -t tmpfs -o size=\${DOCKER_TMPFS_SIZE:-2G} tmpfs /var/lib/docker
-fi
-dev=$(ip route show default | awk '/default/ {print $5; exit}')
-addr=$(ip -4 addr show dev "$dev" | awk '/inet / {print $2; exit}' | cut -d/ -f1)
-echo 1 > /proc/sys/net/ipv4/ip_forward
-iptables-legacy -t nat -A POSTROUTING -o "$dev" -j SNAT --to-source "$addr" -p tcp 2>/dev/null || true
-iptables-legacy -t nat -A POSTROUTING -o "$dev" -j SNAT --to-source "$addr" -p udp 2>/dev/null || true
-exec dockerd --iptables=false --ip6tables=false
-`;
-
 const client = new Sandbox();
 
 const handle = await client.sandboxes.createReady({
   region: "auto",
   template: "node-22",
-  specs: { cpu: 1000, memory: 4096, disk: 20 },
+  docker: true,
+  specs: { cpu: 1000, memory: 1024 },
 });
 
 try {
-  await handle.exec({
-    cmd: "apt-get update && DEBIAN_FRONTEND=noninteractive apt-get install -y docker.io iptables",
-    timeout_seconds: 600,
-  });
-
-  await handle.putFile("/usr/local/bin/start-dockerd.sh", START_DOCKERD);
-  await handle.exec({ cmd: "chmod +x /usr/local/bin/start-dockerd.sh" });
-  await handle.exec({
-    cmd: "nohup /usr/local/bin/start-dockerd.sh >/tmp/dockerd.log 2>&1 & sleep 8 && docker info >/dev/null",
-    timeout_seconds: 120,
-  });
-
   const hello = await handle.exec({
     cmd: "docker run --rm hello-world",
     timeout_seconds: 300,
@@ -81,40 +56,16 @@ try {
 ```python Python
 from brimble_sandbox import Sandbox
 
-START_DOCKERD = """#!/bin/bash
-set -euo pipefail
-mkdir -p /var/lib/docker
-if [ "$(stat -f -c %T /var/lib/docker 2>/dev/null || echo none)" != "tmpfs" ]; then
-  mount -t tmpfs -o size=${DOCKER_TMPFS_SIZE:-2G} tmpfs /var/lib/docker
-fi
-dev=$(ip route show default | awk '/default/ {print $5; exit}')
-addr=$(ip -4 addr show dev "$dev" | awk '/inet / {print $2; exit}' | cut -d/ -f1)
-echo 1 > /proc/sys/net/ipv4/ip_forward
-iptables-legacy -t nat -A POSTROUTING -o "$dev" -j SNAT --to-source "$addr" -p tcp 2>/dev/null || true
-iptables-legacy -t nat -A POSTROUTING -o "$dev" -j SNAT --to-source "$addr" -p udp 2>/dev/null || true
-exec dockerd --iptables=false --ip6tables=false
-"""
-
 client = Sandbox()
 
 handle = client.sandboxes.create_ready({
     "region": "auto",
     "template": "node-22",
-    "specs": {"cpu": 1000, "memory": 4096, "disk": 20},
+    "docker": True,
+    "specs": {"cpu": 1000, "memory": 1024},
 })
 
 try:
-    handle.exec({
-        "cmd": "apt-get update && DEBIAN_FRONTEND=noninteractive apt-get install -y docker.io iptables",
-        "timeout_seconds": 600,
-    })
-    handle.put_file("/usr/local/bin/start-dockerd.sh", START_DOCKERD.encode())
-    handle.exec({"cmd": "chmod +x /usr/local/bin/start-dockerd.sh"})
-    handle.exec({
-        "cmd": "nohup /usr/local/bin/start-dockerd.sh >/tmp/dockerd.log 2>&1 & sleep 8 && docker info >/dev/null",
-        "timeout_seconds": 120,
-    })
-
     hello = handle.exec({
         "cmd": "docker run --rm hello-world",
         "timeout_seconds": 300,
@@ -130,24 +81,9 @@ package main
 import (
 	"context"
 	"fmt"
-	"strings"
 
 	sandbox "github.com/brimblehq/brimble-sdks/sandbox-go"
 )
-
-const startDockerd = `#!/bin/bash
-set -euo pipefail
-mkdir -p /var/lib/docker
-if [ "$(stat -f -c %T /var/lib/docker 2>/dev/null || echo none)" != "tmpfs" ]; then
-  mount -t tmpfs -o size=${DOCKER_TMPFS_SIZE:-2G} tmpfs /var/lib/docker
-fi
-dev=$(ip route show default | awk '/default/ {print $5; exit}')
-addr=$(ip -4 addr show dev "$dev" | awk '/inet / {print $2; exit}' | cut -d/ -f1)
-echo 1 > /proc/sys/net/ipv4/ip_forward
-iptables-legacy -t nat -A POSTROUTING -o "$dev" -j SNAT --to-source "$addr" -p tcp 2>/dev/null || true
-iptables-legacy -t nat -A POSTROUTING -o "$dev" -j SNAT --to-source "$addr" -p udp 2>/dev/null || true
-exec dockerd --iptables=false --ip6tables=false
-`
 
 func main() {
 	ctx := context.Background()
@@ -156,20 +92,10 @@ func main() {
 	handle, _ := client.Sandboxes.CreateReady(ctx, sandbox.CreateSandboxRequest{
 		Region:   "auto",
 		Template: "node-22",
-		Specs:    &sandbox.SandboxSpecs{CPU: 1000, Memory: 4096, Disk: 20},
+		Docker:   true,
+		Specs:    &sandbox.SandboxSpecs{CPU: 1000, Memory: 1024},
 	}, nil)
 	defer handle.Destroy(ctx)
-
-	_, _ = handle.Exec(ctx, sandbox.ExecInput{
-		Cmd:            "apt-get update && DEBIAN_FRONTEND=noninteractive apt-get install -y docker.io iptables",
-		TimeoutSeconds: 600,
-	})
-	_ = handle.PutFile(ctx, "/usr/local/bin/start-dockerd.sh", strings.NewReader(startDockerd), int64(len(startDockerd)))
-	_, _ = handle.Exec(ctx, sandbox.ExecInput{Cmd: "chmod +x /usr/local/bin/start-dockerd.sh"})
-	_, _ = handle.Exec(ctx, sandbox.ExecInput{
-		Cmd:            "nohup /usr/local/bin/start-dockerd.sh >/tmp/dockerd.log 2>&1 & sleep 8 && docker info >/dev/null",
-		TimeoutSeconds: 120,
-	})
 
 	result, _ := handle.Exec(ctx, sandbox.ExecInput{
 		Cmd:            "docker run --rm hello-world",
@@ -183,18 +109,17 @@ func main() {
 
 ## What's happening
 
-1. **`createReady`.** Waits until the sandbox is `ready` before running install commands.
-2. **`apt-get install docker.io`.** Installs Docker inside the sandbox. Use `stream: true` on the exec call if you want live apt output.
-3. **`start-dockerd.sh`.** Nested Docker needs a dedicated startup script (storage mount and daemon flags). Upload it with `putFile`, then run it in the background.
-4. **`docker run`.** Talks to the local daemon over `/var/run/docker.sock` inside the sandbox.
-5. **`--network=host`.** Port mapping via `-p` is not supported inside sandboxes — bind on the host network instead.
+1. **`docker: true`.** During provisioning, Brimble runs `apt-get install docker.io`, uploads a startup script, and starts `dockerd` before the sandbox becomes `ready`.
+2. **`createReady`.** Waits until Docker is installed and the daemon responds to `docker info`.
+3. **`docker run`.** Talks to the local daemon over `/var/run/docker.sock` inside the sandbox.
+4. **`--network=host`.** Port mapping via `-p` is not supported inside sandboxes — bind on the host network instead.
 
-On a [persistent sandbox](persistent-dev-env), install Docker once — skip the apt step on resume and only restart `dockerd`.
+On a [persistent sandbox](persistent-dev-env) with `docker: true`, Docker is reinstalled automatically when you resume from pause.
 
 ## Limitations
 
 - **Port mapping:** use `--network=host`, not `-p` / `--expose`.
-- **Install time:** first boot spends a few minutes on `apt-get install`.
+- **Install time:** first boot spends a few minutes installing packages; the sandbox stays in `starting` until Docker is ready.
 - **Performance:** nested containers are slower than running Docker on a bare VM.
 
 ## Next steps
