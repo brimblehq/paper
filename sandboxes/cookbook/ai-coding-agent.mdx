@@ -42,7 +42,7 @@ async function runAgent({
   task,
   anthropicKey,
 }: { repoUrl: string; task: string; anthropicKey: string }) {
-  const handle = await client.sandboxes.createReady({
+  const handle = await client.sandboxes.create({
     region: "auto",
     template: "claude-code",
     persistent: true,
@@ -104,7 +104,7 @@ from brimble_sandbox import Sandbox
 client = Sandbox()
 
 def run_agent(*, repo_url: str, task: str, anthropic_key: str) -> dict:
-    sandbox = client.sandboxes.create_ready({
+    sandbox = client.sandboxes.create({
         "region": "auto",
         "template": "claude-code",
         "persistent": True,
@@ -162,14 +162,14 @@ import (
 )
 
 func runAgent(ctx context.Context, client *sandbox.Client, repoURL, task, anthropicKey string) (string, string, error) {
-    handle, err := client.Sandboxes.CreateReady(ctx, sandbox.CreateSandboxRequest{
+    handle, err := client.Sandboxes.Create(ctx, sandbox.CreateSandboxRequest{
         Region:           "auto",
         Template:         "claude-code",
         Persistent:       true,
         PersistentDiskGB: 20,
         AutoDestroy:      true,
         DestroyTimeout:   "3h",
-    }, nil)
+    })
     if err != nil {
         return "", "", err
     }
@@ -240,7 +240,7 @@ func main() {
 
 ## Variations
 
-- **Resume an interrupted run.** Pass `fromSnapshot` on `createReady` to start a new sandbox from the agent's last state. Useful when an agent hits the timeout mid-task and you want to continue.
+- **Resume an interrupted run.** Pass `fromSnapshot` on `create` to start a new sandbox from the agent's last state. Useful when an agent hits the timeout mid-task and you want to continue.
 - **Reuse a checkout across runs.** Create a `sandbox`-type [volume](../../volumes/overview), attach it on first run, and pass the same `volumeId` on subsequent runs. The repo is already cloned, dependencies are already installed.
 - **Fan out across many tasks.** Loop `runAgent` over a task list. Each call provisions an isolated sandbox; the platform's concurrency cap is your only ceiling.
 - **Different agents, same task.** Swap the template (`claude-code` → `codex` → `droid`) on the same input and compare the resulting diffs.

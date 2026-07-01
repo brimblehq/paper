@@ -13,9 +13,9 @@ info:
       The schemas below describe the **`data`** payload only.
     - **Errors:** every non-2xx response uses `{ "message": string }`. The message is
       user-facing.
-    - **Async transitions:** create / pause / resume / destroy return immediately;
-      the actual state change happens shortly after. Poll the detail endpoint or
-      watch the dashboard for the new status.
+    - **Async transitions:** pause / resume / destroy return immediately;
+      the status change is visible on the next `GET` or in the dashboard.
+      **Create is synchronous** — `POST /sandboxes` blocks until `status` is `ready`.
     - **IDs:** every `id` is a 24-char hex string.
   version: 1.0.0
   contact:
@@ -64,10 +64,12 @@ paths:
       tags: [Sandboxes]
       summary: Create a sandbox
       description: |
-        Provisions a sandbox asynchronously. The response returns immediately with
-        `status: "starting"`; the sandbox transitions to `ready` (or `failed`) a few
-        moments later. Poll `GET /sandboxes/{id}` until `status` flips, or watch the
-        dashboard.
+        Provisions a sandbox synchronously. The request blocks until the sandbox is
+        `ready` (~2–3s typical). Returns **201** with `status: "ready"`. Use a client
+        timeout of at least 90 seconds. On provisioning failure the API returns **503**.
+
+        `GET /sandboxes/{id}/wait` remains for reconnect edge cases (e.g. after resume);
+        it is not required after create.
 
         ## Network egress
 
@@ -118,8 +120,8 @@ paths:
                   template: python-3.12
                   blockOutbound: true
       responses:
-        '200':
-          description: Sandbox provisioning queued
+        '201':
+          description: Sandbox provisioned and ready
           content:
             application/json:
               schema:
@@ -130,6 +132,12 @@ paths:
           $ref: '#/components/responses/Forbidden'
         '404':
           $ref: '#/components/responses/NotFound'
+        '503':
+          description: Provisioning failed (cluster full, placement failure, etc.)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
 
     get:
       tags: [Sandboxes]
@@ -1415,7 +1423,7 @@ components:
       properties:
         message:
           type: string
-          example: 'Sandbox creation started'
+          example: 'Sandbox created'
         data:
           $ref: '#/components/schemas/CreateSandboxResult'
 

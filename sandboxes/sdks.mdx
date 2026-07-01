@@ -3,7 +3,7 @@ title: "SDKs"
 description: "Official Brimble sandbox SDKs for TypeScript, Python, and Go. Same surface, three runtimes."
 ---
 
-Brimble ships **first-party SDKs** for the sandbox API in three runtimes. They wrap the REST endpoints in idiomatic clients with built-in retries, ready-state polling, error hierarchies, and convenience helpers, so you don't have to hand-roll any of it.
+Brimble ships **first-party SDKs** for the sandbox API in three runtimes. They wrap the REST endpoints in idiomatic clients with built-in retries, resume/reconnect polling (`getReady`, `waitUntilReady`), error hierarchies, and convenience helpers, so you don't have to hand-roll any of it.
 
 The three SDKs are deliberately near-identical in surface: every method on one has a same-named counterpart on the others, every input shape matches, every default lines up. Pick the runtime that fits your stack and the rest of the page applies.
 
@@ -157,18 +157,18 @@ func main() {
 
 </CodeGroup>
 
-The presets bake in a sensible default for getting started: persistent storage so your files survive a restart, and a 20 GB disk so you have headroom. For finer control, drop down to `createReady` (next section).
+The presets bake in a sensible default for getting started: persistent storage so your files survive a restart, and a 20 GB disk so you have headroom. For finer control, use `create` directly (next section).
 
-## Create-and-wait helpers
+## Create
 
-`createReady` is the workhorse: provision a sandbox and block until it's `ready` in one call. You don't have to think about the `starting` → `ready` transition.
+`create` provisions a sandbox and **blocks until it is `ready`** (~2–3s typical). The HTTP request does not return until the container is up — set a client timeout of at least **90 seconds**.
 
-`region` is optional, omit it (or pass `"auto"`) to let the server pick. Pass a specific region ID from `listRegions()` to pin one.
+`region` is optional — omit it (or pass `"auto"`) to let the server pick. Pass a specific region ID from `listRegions()` to pin one.
 
 <CodeGroup>
 
 ```typescript TypeScript
-const handle = await client.sandboxes.createReady({
+const handle = await client.sandboxes.create({
   region: "auto",
   template: "python-3.12",
   persistent: true,
@@ -178,7 +178,7 @@ const handle = await client.sandboxes.createReady({
 ```
 
 ```python Python
-sandbox = client.sandboxes.create_ready({
+sandbox = client.sandboxes.create({
     "region": "auto",
     "template": "python-3.12",
     "persistent": True,
@@ -187,55 +187,40 @@ sandbox = client.sandboxes.create_ready({
 ```
 
 ```go Go
-handle, err := client.Sandboxes.CreateReady(ctx, sandbox.CreateSandboxRequest{
+handle, err := client.Sandboxes.Create(ctx, sandbox.CreateSandboxRequest{
     Region:           "auto",
     Template:         "python-3.12",
     Persistent:       true,
     PersistentDiskGB: 20,
-}, nil) // nil = default wait timeout (60s) and poll interval (2s)
+})
 ```
 
 </CodeGroup>
 
-The matching `getReady(id)` does the same for an existing sandbox: fetch + wait, so you can pick a sandbox back up after a process restart without coordinating the state check yourself.
+The matching `getReady(id)` fetches an existing sandbox and waits until it is `ready` — use after **resume** or when reconnecting to a sandbox whose state you do not know.
 
-If you want manual control over the wait (longer timeout, custom poll interval), call `create()` then `handle.waitUntilReady()` separately:
+`waitUntilReady()` on a handle is for edge cases (resume, long-poll fallback). You do **not** need it after a fresh `create()`:
 
 <CodeGroup>
 
 ```typescript TypeScript
-const handle = await client.sandboxes.create({
-  region: "auto",
-  template: "node-22",
-});
-
-await handle.waitUntilReady({
-  timeoutMs: 120_000,
-  pollIntervalMs: 1_000,
-  signal: abortController.signal,  // optional
+// Reconnect after resume — getReady waits for ready
+const handle = await client.sandboxes.getReady(sandboxId, {
+  wait: { timeoutMs: 120_000 },
 });
 ```
 
 ```python Python
-sandbox = client.sandboxes.create({
-    "region": "auto",
-    "template": "node-22",
-})
-
-sandbox.wait_until_ready(
-    timeout_ms=120_000,
-    poll_interval_ms=1_000,
+sandbox = client.sandboxes.get_ready(
+    sandbox_id,
+    wait_timeout_ms=120_000,
 )
-# raises TimeoutError on timeout
 ```
 
 ```go Go
-handle, _ := client.Sandboxes.Create(ctx, sandbox.CreateSandboxRequest{
-    Region:   "auto",
-    Template: "node-22",
+handle, _ := client.Sandboxes.GetReady(ctx, sandboxID, &sandbox.WaitOptions{
+    Timeout: 120 * time.Second,
 })
-
-_, err := handle.WaitUntilReadyWithOptions(ctx, 120*time.Second, 1*time.Second)
 ```
 
 </CodeGroup>
@@ -287,7 +272,7 @@ The volume's `region` and the sandbox's `region` must resolve to the same region
 
 ## The sandbox handle
 
-`create()`, `createReady()`, `get()`, `getReady()`, and `withVolume()` all return a **handle**, an object that bundles the sandbox ID with runtime helpers. Most of what you do with a sandbox happens through the handle, not the client.
+`create()`, `get()`, `getReady()`, and `withVolume()` all return a **handle**, an object that bundles the sandbox ID with runtime helpers. Most of what you do with a sandbox happens through the handle, not the client.
 
 You can also grab a handle for any sandbox by ID:
 
@@ -336,55 +321,39 @@ The handle exposes the sandbox's identity, last-known state, and the full set of
 
 ## Auto-wait on runtime ops
 
-Every runtime method (`exec`, `runCode`, `putFile`, `getFile`, `stats`, `createSnapshot`, `listSnapshots`) accepts an optional **`waitUntilReady`** flag. When set, the SDK polls the sandbox until it's `ready` before sending the actual call, so you don't have to coordinate the wait yourself.
+Every runtime method (`exec`, `runCode`, `putFile`, `getFile`, `stats`, `createSnapshot`, `listSnapshots`) accepts an optional **`waitUntilReady`** flag. When set, the SDK waits until the sandbox is `ready` before sending the actual call — useful after **resume** or when you fetched a handle with `get()` and aren't sure of its state.
 
 <CodeGroup>
 
 ```typescript TypeScript
-const handle = await client.sandboxes.create({ region: "auto", template: "node-22" });
+const handle = await client.sandboxes.get(sandboxId);
 
-// auto-waits until ready, then runs the command
+// waits if still resuming, then runs the command
 const result = await handle.exec(
   { cmd: "echo hello" },
   { waitUntilReady: true },
 );
-
-// or with custom wait config
-const result2 = await handle.exec(
-  { cmd: "echo hello" },
-  { waitUntilReady: { timeoutMs: 120_000, pollIntervalMs: 1_000 } },
-);
 ```
 
 ```python Python
-sandbox = client.sandboxes.create({"region": "auto", "template": "python-3.12"})
+sandbox = client.sandboxes.get(sandbox_id)
 
-# auto-waits until ready
 result = sandbox.exec(
     {"cmd": "echo hello"},
     wait_until_ready=True,
 )
-
-# or with custom wait config
-result = sandbox.exec(
-    {"cmd": "echo hello"},
-    wait_until_ready={"timeout_ms": 120_000, "poll_interval_ms": 1_000},
-)
 ```
 
 ```go Go
-handle, _ := client.Sandboxes.Create(ctx, sandbox.CreateSandboxRequest{
-    Region: "auto", Template: "node-22",
-})
+handle, _ := client.Sandboxes.Get(ctx, sandboxID)
 
-// auto-waits until ready
 result, _ := handle.Exec(ctx, sandbox.ExecInput{Cmd: "echo hello"},
     sandbox.RuntimeOptions{WaitUntilReady: true})
 ```
 
 </CodeGroup>
 
-Without the flag, runtime methods return an error if the sandbox isn't `ready`. The fast path for one-off scripts is therefore `create()` followed by `exec(..., { waitUntilReady: true })`. The fast path for a long-lived workflow is `createReady()` so the handle is hot the moment you reach for it.
+Without the flag, runtime methods return an error if the sandbox isn't `ready`. After `create()`, the handle is already ready — call `exec` directly. Use `waitUntilReady` when operating on a handle you fetched with `get()` and the sandbox may still be resuming.
 
 ## Sandboxes resource (full surface)
 
@@ -1002,23 +971,23 @@ Pass `fromSnapshot` at sandbox create time to seed the new sandbox with the snap
 <CodeGroup>
 
 ```typescript TypeScript
-const handle = await client.sandboxes.createReady({
+const handle = await client.sandboxes.create({
   region: "auto",
   fromSnapshot: "<snapshot-id>",
 });
 ```
 
 ```python Python
-sandbox = client.sandboxes.create_ready({
+sandbox = client.sandboxes.create({
     "region": "auto",
     "fromSnapshot": "<snapshot-id>",
 })
 ```
 
 ```go Go
-handle, _ := client.Sandboxes.CreateReady(ctx, sandbox.CreateSandboxRequest{
+handle, _ := client.Sandboxes.Create(ctx, sandbox.CreateSandboxRequest{
     Region: "auto", FromSnapshot: "<snapshot-id>",
-}, nil)
+})
 ```
 
 </CodeGroup>
@@ -1085,7 +1054,7 @@ Control outbound network access when creating or updating a sandbox. Three modes
 ```typescript TypeScript
 import { SandboxEgressMode } from "@brimble/sandbox";
 
-const handle = await client.sandboxes.createReady({
+const handle = await client.sandboxes.create({
   template: "node-22",
   egress: {
     mode: SandboxEgressMode.Restricted,
@@ -1099,7 +1068,7 @@ const updated = await handle.updateEgress({ mode: SandboxEgressMode.DenyAll });
 ```python Python
 from brimble_sandbox.enums import SandboxEgressMode
 
-sandbox = client.sandboxes.create_ready({
+sandbox = client.sandboxes.create({
     "template": "node-22",
     "egress": {
         "mode": SandboxEgressMode.RESTRICTED,
@@ -1111,13 +1080,13 @@ updated = sandbox.update_egress({"mode": SandboxEgressMode.DENY_ALL})
 ```
 
 ```go Go
-handle, _ := client.Sandboxes.CreateReady(ctx, sandbox.CreateSandboxRequest{
+handle, _ := client.Sandboxes.Create(ctx, sandbox.CreateSandboxRequest{
     Template: "node-22",
     Egress: &sandbox.SandboxEgressConfig{
         Mode:  sandbox.SandboxEgressModeRestricted,
         Allow: []string{"1.1.1.1", "api.openai.com"},
     },
-}, nil)
+})
 
 updated, _ := handle.UpdateEgress(ctx, sandbox.UpdateSandboxEgressInput{
     Mode: sandbox.SandboxEgressModeDenyAll,
@@ -1306,7 +1275,7 @@ _, _ = client.Sandboxes.Create(ctx, input, sandbox.RequestOptions{
 
 </CodeGroup>
 
-**Idempotency keys** make lifecycle calls safe to retry. The server deduplicates retries that carry the same `idempotencyKey` within a short window: `create`, `createReady`, `destroy`, `pause`, `resume`, `createSnapshot`, `deleteSnapshot`, and volume `create` / `delete` all accept the option. Pass a stable, unique-per-operation value (a UUID, a job ID, the SHA of the request body) and you can retry network failures without spinning up a duplicate sandbox.
+**Idempotency keys** make lifecycle calls safe to retry. The server deduplicates retries that carry the same `idempotencyKey` within a short window: `create`, `destroy`, `pause`, `resume`, `createSnapshot`, `deleteSnapshot`, and volume `create` / `delete` all accept the option. Pass a stable, unique-per-operation value (a UUID, a job ID, the SHA of the request body) and you can retry network failures without spinning up a duplicate sandbox.
 
 ## Timeouts and cancellation
 
@@ -1327,7 +1296,7 @@ Best practice in Go: pass a `context.Context` with a deadline matched to the ope
 <CodeGroup>
 
 ```typescript TypeScript
-const handle = await client.sandboxes.createReady({ region: "auto", template: "node-22" });
+const handle = await client.sandboxes.create({ region: "auto", template: "node-22" });
 try {
   // ... do work
 } finally {
@@ -1336,7 +1305,7 @@ try {
 ```
 
 ```python Python
-sandbox = client.sandboxes.create_ready({"region": "auto", "template": "python-3.12"})
+sandbox = client.sandboxes.create({"region": "auto", "template": "python-3.12"})
 try:
     pass  # ... do work
 finally:
@@ -1347,9 +1316,9 @@ finally:
 ```
 
 ```go Go
-handle, _ := client.Sandboxes.CreateReady(ctx, sandbox.CreateSandboxRequest{
+handle, _ := client.Sandboxes.Create(ctx, sandbox.CreateSandboxRequest{
     Region: "auto", Template: "node-22",
-}, nil)
+})
 defer func() {
     _ = handle.Destroy(context.Background())
 }()

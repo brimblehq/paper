@@ -186,7 +186,7 @@ const volumes = await client.volumes.list();
 const vol = volumes.data.find((v) => v.name === "alice-workspace");
 if (!vol) throw new Error("volume gone");
 
-const handle = await client.sandboxes.createReady({
+const handle = await client.sandboxes.create({
   region: "auto",
   template: "node-22",
   volumeId: vol.id,
@@ -200,7 +200,7 @@ vol = next((v for v in volumes["data"] if v["name"] == "alice-workspace"), None)
 if not vol:
     raise RuntimeError("volume gone")
 
-sandbox = client.sandboxes.create_ready({
+sandbox = client.sandboxes.create({
     "region": "auto",
     "template": "node-22",
     "volumeId": vol["id"],
@@ -220,9 +220,9 @@ if vol == nil {
     panic("volume gone")
 }
 
-handle, _ := client.Sandboxes.CreateReady(ctx, sandbox.CreateSandboxRequest{
+handle, _ := client.Sandboxes.Create(ctx, sandbox.CreateSandboxRequest{
     Region: "auto", Template: "node-22", VolumeID: vol.ID,
-}, nil)
+})
 ```
 
 </CodeGroup>

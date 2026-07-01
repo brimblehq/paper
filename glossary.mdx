@@ -187,7 +187,7 @@ Terms you'll see across Brimble docs and the dashboard, in alphabetical order.
 
 **Sandbox.** A short-lived, isolated compute environment for running code, scripts, or one-off jobs. Spun up from a template, optionally persistent, destroyed on demand or by `autoDestroy` / `oneShot`. See [Sandboxes](/sandboxes/overview).
 
-**Sandbox handle.** The SDK object returned by `create` / `createReady` / `get` / `getReady`. Exposes `exec`, `runCode`, file ops, `pause`, `resume`, `destroy`, and `snapshots` for one sandbox.
+**Sandbox handle.** The SDK object returned by `create`, `get`, `getReady`, or `withVolume`. Exposes `exec`, `runCode`, file ops, `pause`, `resume`, `destroy`, and `snapshots` for one sandbox. `create()` already returns a ready handle (~2–3s blocking POST).
 
 **Sandbox status.** Where a sandbox is in its lifecycle: `starting`, `ready`, `pausing`, `paused`, `resuming`, `failed`, `destroyed`. Runtime ops require `ready`.
 
@@ -231,7 +231,7 @@ Terms you'll see across Brimble docs and the dashboard, in alphabetical order.
 
 ## W
 
-**`waitUntilReady`.** An SDK option on runtime methods (`exec`, `runCode`, `putFile`, etc.) and a standalone helper on the sandbox handle that polls the sandbox until it transitions to `ready` before running the requested operation. `createReady` and `getReady` call it for you.
+**`waitUntilReady`.** An SDK option on runtime methods (`exec`, `runCode`, `putFile`, etc.) and a standalone helper on the sandbox handle that waits until the sandbox is `ready` before running the operation. Useful after **resume** or when reconnecting to an existing sandbox via `getReady`. Not required immediately after `create()` — create already blocks until `ready`.
 
 **Watch paths.** A project setting that limits which file changes trigger a build. For monorepos, set this to the directory of the project so unrelated pushes don't redeploy.
 

@@ -30,7 +30,7 @@ import { Sandbox, SandboxEgressMode } from "@brimble/sandbox";
 const client = new Sandbox();
 
 async function runUntrusted(code: string) {
-  const handle = await client.sandboxes.createReady({
+  const handle = await client.sandboxes.create({
     region: "auto",
     template: "python-3.12",
     egress: { mode: SandboxEgressMode.DenyAll },
@@ -72,7 +72,7 @@ from brimble_sandbox.enums import SandboxEgressMode
 client = Sandbox()
 
 def run_untrusted(code: str) -> dict:
-    sandbox = client.sandboxes.create_ready({
+    sandbox = client.sandboxes.create({
         "region": "auto",
         "template": "python-3.12",
         "egress": {"mode": SandboxEgressMode.DENY_ALL},
@@ -116,7 +116,7 @@ import (
 )
 
 func runUntrusted(ctx context.Context, client *sandbox.Client, code string) (*sandbox.ExecResult, error) {
-    handle, err := client.Sandboxes.CreateReady(ctx, sandbox.CreateSandboxRequest{
+    handle, err := client.Sandboxes.Create(ctx, sandbox.CreateSandboxRequest{
         Region:   "auto",
         Template: "python-3.12",
         Egress: &sandbox.SandboxEgressConfig{
@@ -125,7 +125,7 @@ func runUntrusted(ctx context.Context, client *sandbox.Client, code string) (*sa
         OneShot:        true,
         DestroyTimeout: "30m",
         Specs:          &sandbox.SandboxSpecs{CPU: 500, Memory: 512, Disk: 2},
-    }, nil)
+    })
     if err != nil {
         return nil, err
     }
@@ -153,7 +153,7 @@ print(math.factorial(20))
 
 ## What's happening
 
-1. **`createReady` over `create`.** We block until the sandbox is `ready`, so the next call doesn't need to coordinate the wait.
+1. **`create`.** Blocks until the sandbox is `ready`, so the next call can run immediately.
 2. **`egress: { mode: "deny_all" }`.** Outbound network is denied. The sandbox can't `curl` external services, exfiltrate data, or pivot. Inbound calls from the Brimble API (your exec, your file ops) still work. (`blockOutbound: true` is the legacy equivalent.)
 3. **`oneShot: true`.** When the main process exits, the sandbox auto-destroys. You don't have to remember to clean up.
 4. **`destroyTimeout: "30m"`.** A backstop: even if `oneShot` misfires (the process never returns, hangs in a loop), the sandbox is gone after 30 minutes.

@@ -5,7 +5,7 @@ description: "Create a sandbox with the SDK, run code in it, write a file, take 
 
 Create a sandbox, run a command, write a file, take a snapshot, and tear it down. The whole loop, end-to-end, in about five minutes.
 
-Everything below uses the **SDK**, which handles polling, retries, idempotency, and serialization for you. The dashboard path is at the bottom if you'd rather click through; raw HTTP is documented in the [Sandbox API](/sandboxes) tab if you need it.
+Everything below uses the **SDK**, which handles retries, idempotency, and serialization for you. The dashboard path is at the bottom if you'd rather click through; raw HTTP is documented in the [Sandbox API](/sandboxes) tab if you need it.
 
 ## Prerequisites
 
@@ -32,9 +32,9 @@ export BRIMBLE_SANDBOX_KEY="sk_..."
 
 </CodeGroup>
 
-## Step 1: Create a sandbox and wait until it's ready
+## Step 1: Create a sandbox
 
-`createReady` creates the sandbox and waits for it to leave `starting`, so the next line of code can start using it immediately.
+`create` provisions a sandbox and blocks until it is `ready` (~2–3s). The handle you get back can run `exec` immediately. Set a client timeout of at least **90 seconds** for the create call.
 
 <CodeGroup>
 
@@ -43,7 +43,7 @@ import { Sandbox } from "@brimble/sandbox";
 
 const client = new Sandbox();
 
-const sandbox = await client.sandboxes.createReady({
+const sandbox = await client.sandboxes.create({
   region: "auto",
   template: "node-22",
   name: "my-first-sandbox",
@@ -57,7 +57,7 @@ from brimble_sandbox import Sandbox
 
 client = Sandbox()
 
-sandbox = client.sandboxes.create_ready({
+sandbox = client.sandboxes.create({
     "region": "auto",
     "template": "python-3.12",
     "name": "my-first-sandbox",
@@ -79,11 +79,11 @@ func main() {
     ctx := context.Background()
     client, _ := sandbox.NewClient(sandbox.ClientConfig{})
 
-    handle, err := client.Sandboxes.CreateReady(ctx, sandbox.CreateSandboxRequest{
+    handle, err := client.Sandboxes.Create(ctx, sandbox.CreateSandboxRequest{
         Region:   "auto",
         Template: "node-22",
         Name:     "my-first-sandbox",
-    }, nil)
+    })
     if err != nil {
         panic(err)
     }
@@ -124,7 +124,7 @@ fmt.Println("exit:", run.ExitCode)
 
 </CodeGroup>
 
-You get back stdout, stderr, exit code, and duration. If the sandbox isn't ready yet (you skipped `createReady` and used `create` instead), pass `waitUntilReady: true` and the SDK will wait for you.
+You get back stdout, stderr, exit code, and duration. After `create()`, the sandbox is already `ready`. Use `waitUntilReady: true` on runtime calls only when reconnecting to a sandbox that may still be resuming (e.g. after `get()` on a sandbox you know was paused).
 
 ### Stream output live (optional)
 
@@ -309,7 +309,7 @@ If you'd rather click through it first:
 3. Pick a **template** (e.g. `node-22`, `python-3.12`).
 4. Pick a **region**. Free-plan accounts only see free-tier regions.
 5. Optionally set CPU, memory, and ephemeral disk under **Specs**.
-6. Click **Create**. The dashboard takes you to the sandbox detail page; status starts as **starting** and flips to **ready** in a few seconds. From there, **Terminal**, **Files**, and **Snapshots** tabs cover the rest of this flow.
+6. Click **Create**. The form blocks for a few seconds while the sandbox provisions, then opens the detail page with status **ready**. From there, **Terminal**, **Files**, and **Snapshots** tabs cover the rest of this flow.
 
 <Frame caption="The New sandbox form with template, region, and the specs sliders.">
   <img src="/images/sandboxes/new-sandbox-form.jpg" alt="New sandbox form with template picker, region selector, and CPU, memory, and disk specs sliders" />

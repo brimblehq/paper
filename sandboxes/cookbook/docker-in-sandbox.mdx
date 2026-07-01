@@ -82,7 +82,7 @@ import { readFileSync } from "node:fs";
 
 const client = new Sandbox();
 
-const handle = await client.sandboxes.createReady({
+const handle = await client.sandboxes.create({
   region: "auto",
   template: "ubuntu-24",
   specs: { cpu: 500, memory: 1024 },
@@ -124,7 +124,7 @@ from brimble_sandbox import Sandbox
 
 client = Sandbox()
 
-handle = client.sandboxes.create_ready({
+handle = client.sandboxes.create({
     "region": "auto",
     "template": "ubuntu-24",
     "specs": {"cpu": 500, "memory": 1024},
@@ -176,12 +176,12 @@ func main() {
 	client, _ := sandbox.NewClient(sandbox.ClientConfig{})
 
 	memory := 1024
-	handle, _ := client.Sandboxes.CreateReady(ctx, sandbox.CreateSandboxRequest{
+	handle, _ := client.Sandboxes.Create(ctx, sandbox.CreateSandboxRequest{
 		Region:   "auto",
 		Template: "ubuntu-24",
 		Specs:    &sandbox.SandboxSpecs{CPU: 500, Memory: &memory},
 		Egress:   &sandbox.SandboxEgressConfig{Mode: sandbox.SandboxEgressModeOpen},
-	}, nil)
+	})
 	defer handle.Destroy(ctx)
 
 	install, _ := handle.Exec(ctx, sandbox.ExecInput{
@@ -235,7 +235,7 @@ sleep 12 && docker info && docker run --rm hello-world
 
 ## What's happening
 
-1. **`createReady`.** Waits until the sandbox VM is `ready` (gVisor container running, no Docker yet).
+1. **`create`.** Blocks until the sandbox VM is `ready` (gVisor container running, no Docker yet).
 2. **`apt-get install docker.io`.** Installs the Docker engine and CLI on Debian/Ubuntu.
 3. **`start-dockerd.sh`.** Mounts **tmpfs** on `/var/lib/docker`, configures SNAT for outbound traffic, and starts **`dockerd --iptables=false --ip6tables=false`** with **`--feature containerd-snapshotter=false`** when Docker is version 29 or newer.
 4. **`docker run`.** Talks to the local daemon over `/var/run/docker.sock` inside the sandbox.

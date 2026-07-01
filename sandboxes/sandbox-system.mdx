@@ -64,7 +64,7 @@ Two things worth calling out:
 
 **Sandboxes have their own host pool.** They share Nomad and Consul with the rest of Brimble, but the hosts that actually run sandbox containers are pinned to the sandbox pool. That separation matters for two reasons: a heavy sandbox can't crowd out a customer's web service, and a sandbox compromise's blast radius stops at the pool boundary.
 
-**Provisioning is asynchronous from the create request.** Creating a sandbox returns immediately with `status: "starting"`; the sandbox isn't usable until the container is up. The SDK's `createReady` / `getReady` helpers wait for the flip for you; in the dashboard, the status chip updates on its own.
+**Create blocks until the sandbox is ready.** `POST /sandboxes` waits for Nomad to schedule the container (~2–3s typical) and returns `status: "ready"`. The SDK's `create()` mirrors that — no separate wait step. Use `getReady()` when picking up an existing sandbox after a process restart or resume.
 
 ## Life of a sandbox
 
@@ -80,11 +80,11 @@ The create request (SDK call, dashboard form, or raw API hit) arrives with a tem
 - The caller isn't past their per-plan sandbox concurrency cap.
 - If `fromSnapshot` is set, the snapshot belongs to the caller and is `ready`.
 
-Any check failing returns a clear error. Otherwise the response comes back in under a second with `status: "starting"` and the sandbox ID.
+Any check failing returns a clear error. Otherwise Brimble provisions the container synchronously and the response returns with `status: "ready"` and the sandbox ID (~2–3s typical).
 
 ### 2. Provisioning
 
-The provisioner takes over and:
+The provisioner runs inline on the create request:
 
 - Resolves the template (or the snapshot's image, if restoring) to a concrete container image.
 - Schedules a Nomad job in the sandbox host pool with the requested specs, network mode, and optional persistent volume.

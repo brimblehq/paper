@@ -3,7 +3,7 @@ title: "Create a sandbox"
 openapi: "POST /sandboxes"
 ---
 
-Provisions a sandbox asynchronously. The response returns immediately with `status: "starting"`; poll `GET /sandboxes/{id}` until the sandbox is `ready`.
+Provisions a sandbox synchronously. The request blocks until the sandbox is `ready` (~2–3s on a typical cold start). Use a client timeout of at least **90 seconds**. On failure the API returns **503** with an actionable message.
 
 ## Network egress (request body)
 

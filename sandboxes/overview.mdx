@@ -74,7 +74,7 @@ starting → ready ⇄ paused
 - **`destroyed`**, terminal. The sandbox is gone; persistent volumes (if any) are detached, not deleted.
 - **`failed`**, provisioning hit an error and the sandbox can't be used. Destroy it and create a new one.
 
-Provisioning is **asynchronous**: the create endpoint returns immediately with `status: "starting"`. The sandbox transitions to `ready` (or `failed`) a few moments later. Poll the detail endpoint, or watch the dashboard, which receives live state-change events.
+Provisioning is **synchronous on create**: `POST /sandboxes` blocks until the sandbox is `ready` (~2–3s typical) and returns `status: "ready"`. You can call `exec` and other runtime operations immediately. Pause, resume, and destroy still transition asynchronously — poll the detail endpoint or watch the dashboard for those.
 
 ## Operations you can run
 
@@ -151,7 +151,7 @@ import { Sandbox, SandboxEgressMode } from "@brimble/sandbox";
 const client = new Sandbox();
 
 // Create with restricted egress
-const sandbox = await client.sandboxes.createReady({
+const sandbox = await client.sandboxes.create({
   template: "node-22",
   egress: {
     mode: SandboxEgressMode.Restricted,
@@ -169,7 +169,7 @@ from brimble_sandbox.enums import SandboxEgressMode
 
 client = Sandbox()
 
-sandbox = client.sandboxes.create_ready({
+sandbox = client.sandboxes.create({
     "template": "node-22",
     "egress": {
         "mode": SandboxEgressMode.RESTRICTED,
@@ -185,13 +185,13 @@ import sandbox "github.com/brimblehq/brimble-sdks/sandbox-go"
 
 client, _ := sandbox.NewClient(sandbox.ClientConfig{})
 
-handle, _ := client.Sandboxes.CreateReady(ctx, sandbox.CreateSandboxRequest{
+handle, _ := client.Sandboxes.Create(ctx, sandbox.CreateSandboxRequest{
     Template: "node-22",
     Egress: &sandbox.SandboxEgressConfig{
         Mode:  sandbox.SandboxEgressModeRestricted,
         Allow: []string{"1.1.1.1", "api.example.com"},
     },
-}, nil)
+})
 
 handle.UpdateEgress(ctx, sandbox.UpdateSandboxEgressInput{
     Mode: sandbox.SandboxEgressModeDenyAll,

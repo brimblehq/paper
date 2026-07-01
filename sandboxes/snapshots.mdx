@@ -55,7 +55,7 @@ To snapshot on a schedule, set `snapshotMode: "automatic"` and `snapshotFrequenc
 <CodeGroup>
 
 ```typescript TypeScript
-const handle = await client.sandboxes.createReady({
+const handle = await client.sandboxes.create({
   template: "node-22",
   persistent: true,
   persistentDiskGB: 20,
@@ -65,7 +65,7 @@ const handle = await client.sandboxes.createReady({
 ```
 
 ```python Python
-sandbox = client.sandboxes.create_ready({
+sandbox = client.sandboxes.create({
     "template": "node-22",
     "persistent": True,
     "persistentDiskGB": 20,
@@ -75,13 +75,13 @@ sandbox = client.sandboxes.create_ready({
 ```
 
 ```go Go
-handle, _ := client.Sandboxes.CreateReady(ctx, sandbox.CreateSandboxRequest{
+handle, _ := client.Sandboxes.Create(ctx, sandbox.CreateSandboxRequest{
     Template:          "node-22",
     Persistent:        true,
     PersistentDiskGB:  20,
     SnapshotMode:      "automatic",
     SnapshotFrequency: "0 */2 * * *",
-}, nil)
+})
 ```
 
 </CodeGroup>
@@ -97,21 +97,21 @@ Restoring doesn't modify the snapshot; it creates a **new** sandbox whose initia
 <CodeGroup>
 
 ```typescript TypeScript
-const handle = await client.sandboxes.createReady({
+const handle = await client.sandboxes.create({
   fromSnapshot: snapshotId,
 });
 ```
 
 ```python Python
-sandbox = client.sandboxes.create_ready({
+sandbox = client.sandboxes.create({
     "fromSnapshot": snapshot_id,
 })
 ```
 
 ```go Go
-handle, _ := client.Sandboxes.CreateReady(ctx, sandbox.CreateSandboxRequest{
+handle, _ := client.Sandboxes.Create(ctx, sandbox.CreateSandboxRequest{
     FromSnapshot: snapshotID,
-}, nil)
+})
 ```
 
 </CodeGroup>
@@ -124,7 +124,7 @@ A few things to know:
 - You can restore the same snapshot any number of times. Each restore is a separate sandbox.
 
 <Note>
-  **Restores boot a few seconds slower than a fresh template sandbox.** Snapshots aren't pre-warmed, the image has to be pulled and unpacked before the container can start. Expect a small extra delay on the `starting` → `ready` transition compared to a regular create. `createReady` / `getReady` waits for you; if you're driving the create manually, give `waitUntilReady` a slightly longer timeout.
+  **Restores boot a few seconds slower than a fresh template sandbox.** Snapshots aren't pre-warmed — the image has to be pulled and unpacked before the container can start. `create()` with `fromSnapshot` still blocks until `ready`; allow a slightly longer client timeout than a template-only create.
 </Note>
 
 <Frame caption="The Snapshots tab listing snapshots with name, source sandbox, status, and a Restore button per row.">
