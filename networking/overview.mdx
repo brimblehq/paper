@@ -71,20 +71,15 @@ A few headers used by frameworks for internal-only signaling are stripped at the
 
 Your code can set these on responses; they just won't be honored if a client sends them.
 
-## WebSockets
+## HTTP, WebSockets, and gRPC
 
 WebSockets work without configuration. Any path with an `Upgrade: websocket` request header is upgraded transparently. Brimble keeps the connection open as long as both ends do.
 
 Common patterns it recognizes: `/ws/*`, `/socket.io/*`, anything that sends a proper upgrade.
 
-## HTTP/2 and gRPC
+Normal web services receive HTTP/1.1 from the gateway. HTTP/2 and gRPC are available for projects that have HTTP/2 enabled and serve HTTP plus gRPC on the same `PORT`.
 
-The edge speaks HTTP/2 to clients by default. Inside, it forwards using whatever transport the service expects:
-
-- **HTTP/1.1** for normal services.
-- **HTTP/2 cleartext (h2c)** for gRPC services. Detected automatically when the request's `Content-Type` starts with `application/grpc`.
-
-gRPC and gRPC-Web both work. Bidirectional streaming, server streaming, and client streaming are all supported.
+See [HTTP, WebSockets, and gRPC](/networking/http) for the full behavior and service requirements.
 
 ## Rate limits
 
@@ -127,5 +122,6 @@ Outbound traffic from a Brimble service appears to come from a region-specific I
 ## Next steps
 
 - [Custom domains](../domains/custom-domains), pointing your own domain at a project.
+- [HTTP, WebSockets, and gRPC](/networking/http), how public protocols reach your service.
 - [502 errors](../troubleshooting/502-errors), what to check when the edge can't reach your service.
 - [Rate limits](/networking/rate-limits), full set of edge limits.

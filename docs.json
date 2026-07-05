@@ -144,6 +144,7 @@
             "icon": "network-wired",
             "pages": [
               "networking/overview",
+              "networking/http",
               "networking/request-lifecycle",
               "networking/internal-services",
               "networking/rate-limits"

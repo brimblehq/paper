@@ -141,7 +141,7 @@ For uploads (`Content-Type: multipart/form-data` or large bodies), the gateway s
 
 For WebSockets (paths like `/ws/*`, `/socket.io/*`, or any request with `Upgrade: websocket`), the gateway upgrades the connection and proxies bidirectionally.
 
-For gRPC (`Content-Type: application/grpc*`), the gateway forwards using HTTP/2 cleartext (h2c).
+For HTTP/2-enabled projects, the gateway can forward gRPC over HTTP/2 cleartext (h2c). Your service must serve HTTP and gRPC on the same `PORT`; Brimble does not expose a separate public gRPC port.
 
 ## 9. Your service handles the request
 
@@ -161,6 +161,7 @@ Every response Brimble produces includes an `x-brimble-id` header with a unique 
 ## Next steps
 
 - [Networking and the edge](/networking/overview), limits and edge behavior.
+- [HTTP, WebSockets, and gRPC](/networking/http), public protocol support and service requirements.
 - [Internal services](/networking/internal-services), how your services reach each other privately.
 - [502 errors](../troubleshooting/502-errors), what to check when the gateway can't reach your service.
 - [DNS troubleshooting](../troubleshooting/dns), when the request doesn't even reach Brimble.
