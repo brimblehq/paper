@@ -5,6 +5,8 @@ description: "Attach durable storage to a project so files survive restarts and 
 
 Attach durable storage to a project so files survive restarts and redeployments. Without a persistent disk, anything your service writes to the filesystem is lost on every redeploy. The new container starts from a fresh image.
 
+Under the hood this uses a [volume](../volumes/overview) of type `web`. Same storage model, managed from the project **Configuration** tab.
+
 <Warning>
   **Files written outside the mount path don't persist.** Only writes under the configured mount (e.g. `/data`) survive. Anything your service writes elsewhere, the working directory, `/tmp`, the home directory, is gone the moment the container restarts.
 </Warning>
@@ -14,7 +16,9 @@ Use a persistent disk for:
 * SQLite databases (small apps, single-instance).
 * File uploads stored to disk before being moved to object storage.
 * Cache or state that's expensive to rebuild on cold start.
-* Self-hosted tools that need a data directory (Plausible, Umami, n8n, and similar).
+* Self-hosted tools that need a **data directory** (Plausible, Umami, n8n, WordPress content, and similar).
+
+Do **not** use the disk as a place to store the whole application install unless you have a strong reason. Your image already provides the app; the disk should hold what users create.
 
 ## Prerequisites
 
@@ -37,14 +41,33 @@ Use a persistent disk for:
 
 The next deployment provisions the volume and mounts it at the path you set.
 
+## Choose the mount path carefully
+
+The mount path decides **what** lives on durable storage and **what** stays on the fast local disk of the container.
+
+| Goal | Mount path pattern |
+| --- | --- |
+| Generic API or worker | `/data` (or any empty data dir your app writes to) |
+| WordPress Docker image | `/var/www/html/wp-content` (uploads, plugins, themes) |
+| n8n / similar tools | the path the image documents for its data dir |
+| SQLite | the directory that holds the database file |
+
+**Why this matters:** persistent disks are durable and host-portable, but they are not as fast as local disk for huge numbers of small reads and writes. If you mount the volume over the full app root (for example `/var/www/html` for WordPress, or `/app` for a Node service), every request may pull framework files through storage. That can show up as slow first loads, install wizards timing out, or the proxy reporting that the app is unavailable while PHP or your runtime is still working.
+
+**Rule of thumb:** image = code; volume = user data and state.
+
+<Tip>
+  Deploying a Docker image with a volume? Prefer the image's documented data directory, not the image's install root. See [Volumes](../volumes/overview#what-belongs-on-a-volume) for more examples.
+</Tip>
+
 ## How persistent disks are stored
 
-Brimble persistent disks (for projects and for [sandboxes](../sandboxes/overview)) are backed by **Brimble's globally distributed S3-compatible object storage**, not local SSDs on the host that's running your container. Two practical consequences:
+Brimble persistent disks (for projects and for [sandboxes](../sandboxes/overview)) use **Brimble's distributed object storage**, not a local SSD on the host running your container. Practical consequences:
 
-- **Your data survives host failure.** If the host running your project goes down, Nomad reschedules onto another host in the region and the volume reattaches. The disk follows the workload.
-- **I/O semantics are closer to networked storage than local disk.** Random write throughput on a persistent disk is lower than what you'd get from a local SSD. For most workloads (SQLite, file uploads, caches) this is fine; for write-heavy databases, use a [managed database](deploy-a-database) instead.
+- **Your data survives host failure.** If the host running your project goes down, the platform reschedules onto another host in the region and the volume reattaches. The disk follows the workload.
+- **I/O is networked.** Expect durable cloud-storage latency, not bare-metal disk speeds. SQLite, uploads, and modest caches are fine. Write-heavy databases belong on a [managed database](deploy-a-database). Apps that load thousands of tiny files per request should keep those files on the image and only put mutable data on the disk.
 
-The same model backs sandbox volumes; volumes are interchangeable between projects (`type: web`) and sandboxes (`type: sandbox`) at the surface level, but pick the right `type` when creating a volume so it shows up in the right attach picker.
+The same model backs sandbox volumes. Volumes are typed: pick `web` for projects and `sandbox` for sandboxes so the volume shows up in the right attach picker.
 
 ## Disk sizes and pricing
 
@@ -119,11 +142,15 @@ For most production apps, the right answer is "managed database for state, objec
 
 **Files disappear on deploy anyway.** Files written to a path *outside* the mount don't persist. Confirm your code writes under the configured mount path (for example `/data`, not `/var/data`).
 
+**App is very slow or times out only with a disk attached.** The mount path may cover the whole application tree (for example `/var/www/html` or `/app`) so every request pays storage latency for core files. Remount only the data directory (for WordPress, `/var/www/html/wp-content`), redeploy, and keep the app itself on the image.
+
 **"Permission denied" writing to the mount.** Some images run as a non-root user that doesn't own the mount. In your Dockerfile, ensure the user has access, for example `RUN mkdir -p /data && chown myuser:myuser /data`.
 
 **Resize didn't take effect.** Resizes apply on the next deployment, not in place. Click **Redeploy**.
 
 ## Next steps
 
+* [Volumes](/volumes/overview), lifecycle, types, and what belongs on a volume.
 * [Deploy a database](/projects/deploy-a-database), for state that needs scale-out, backups, and queryability.
+* [Deploy from a Docker image](/projects/deploy-from-docker-image), when the image has its own data directory conventions.
 * [Builds](/projects/builds), for how the runtime container is built and started.

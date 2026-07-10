@@ -5,7 +5,10 @@ description: "Persistent disks pre-provisioned independently of any project or s
 
 A **volume** is a persistent disk on Brimble, pre-provisioned once, attached to a sandbox or a web-service project when you need it. Volumes have their own lifecycle: they outlive the workload they're attached to, you can detach and reattach them, and you delete them explicitly.
 
-Volumes are backed by **Brimble's globally distributed S3-compatible object storage**. Your data isn't pinned to the local SSD of any single host; if your workload moves between hosts on a redeploy or a resume, the volume reattaches with the same files.
+Volumes are backed by **Brimble's distributed object storage**, not a local SSD on the machine running your container. That design is intentional:
+
+- **Data survives host moves.** On redeploy, restart, or reschedule, the volume reattaches with the same files. You are not tied to one machine's disk.
+- **I/O is networked.** Latency and throughput feel like durable cloud storage, not a bare-metal NVMe. Fine for uploads, SQLite, and app data directories. A poor fit for putting an entire application install (thousands of small files) on the volume.
 
 Two attach surfaces use volumes:
 
@@ -19,11 +22,45 @@ Reach for a volume when:
 - You want files to survive a redeploy, a sandbox destroy, or a pause/resume cycle.
 - You want to swap workloads in front of the same data (destroy one sandbox, attach the same volume to a fresh one).
 - You don't want the workload's lifecycle to also be the data's lifecycle.
+- You need a **data directory**, not a place to store the whole app binary or framework tree.
 
 Skip volumes when:
 
 - The work is throwaway and ephemeral disk is enough.
 - You need a managed database with backups, point-in-time recovery, and engine-level tooling. Use [managed databases](../projects/deploy-a-database) instead.
+- You need high random IOPS on a large tree of tiny files (for example, mounting an entire PHP/CMS install as the volume root). Keep the app on the container image and only put user data on the volume.
+
+## What belongs on a volume
+
+Think of the volume as **durable data**, and the container image as **the app**.
+
+| Put on the volume | Keep on the container (image / local disk) |
+| --- | --- |
+| Uploads, media, exports | Application code and framework files |
+| SQLite / local DB files | Language runtime and packages |
+| Plugin/theme **user** data (e.g. WordPress `wp-content`) | Core app packages (e.g. WordPress core under `wp-admin`, `wp-includes`) |
+| Tool state dirs (`/data`, `/var/lib/myapp`) | Build output that you redeploy from git or an image |
+
+### Mount path matters
+
+When you attach a volume to a project, you choose a **mount path** inside the container. Only files under that path persist.
+
+**Prefer a narrow data path** such as `/data`, `/var/lib/app`, or `/var/www/html/wp-content`.
+
+**Avoid mounting the volume over the whole application root** (for example `/var/www/html` or `/app`) unless you deliberately want every file there to live on the volume. That can make first boot and every request much slower for apps that open many small files, and it can replace files that should come from your image.
+
+Examples:
+
+| Workload | Sensible mount | Risky mount |
+| --- | --- | --- |
+| Generic Node / Go / Python API | `/data` | `/app` or `/` |
+| WordPress (Docker image) | `/var/www/html/wp-content` | `/var/www/html` |
+| n8n, Plausible, similar tools | the tool's documented data dir | the entire install root |
+| SQLite | directory that holds the `.db` file only | parent path that also holds all source |
+
+<Tip>
+  If a deploy feels slow or times out only after you attach a disk, check the mount path first. Moving user data onto the volume and leaving the app on the image usually fixes it.
+</Tip>
 
 ## Volume types
 
@@ -139,7 +176,7 @@ A volume can cycle through attach / detach as many times as you need over its li
 - **Region-pinned.** A volume created in `fra1` only attaches to workloads in `fra1`. To work in another region, copy the data to a new volume in that region.
 - **Type is fixed.** A `web` volume can't be attached to a sandbox, and vice versa.
 - **Size is fixed once created.** Resize isn't supported today; create a larger volume and copy the data.
-- **Networked-storage shape.** Reads and writes go over the storage backplane, not a local SSD. Throughput and latency are higher than ephemeral disk; fine for most workloads, slower for write-heavy databases. Use [managed databases](../projects/deploy-a-database) for those.
+- **Networked-storage shape.** Reads and writes go over Brimble's storage fabric, not a host-local SSD. Sequential uploads and modest SQLite usage are fine. Workloads that open thousands of tiny files per request (or rewrite large app trees on every boot) will feel it. Use a tight mount path, and use [managed databases](../projects/deploy-a-database) for write-heavy engines.
 
 ## Pricing and plan caps
 
