@@ -72,6 +72,7 @@
               "projects/deployments",
               "projects/git-integrations",
               "projects/deploy-a-worker",
+              "projects/deploy-rust",
               "projects/deploy-a-database",
               "projects/deploy-an-mcp-server",
               "projects/deploy-from-docker-image",

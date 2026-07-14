@@ -1,0 +1,86 @@
+---
+title: "Deploy a Rust app"
+description: "How Brimble builds and runs Rust services, and how to set install, build, and start commands correctly."
+---
+
+How Brimble builds and runs Rust services, and how to set install, build, and start commands so your app actually starts.
+
+Detected via `Cargo.toml` at the project root (or root directory you set). Service type: **Web service** (or **Worker** if you choose that).
+
+## Recommended setup
+
+**Leave Install and Build empty.** Brimble's builder (Railpack) detects Rust and runs the right steps for you.
+
+| Setting | Value |
+|---|---|
+| **Install** | Leave empty |
+| **Build** | Leave empty |
+| **Start** | Leave empty, or set `./bin/<app-name>` |
+
+What the builder does when those fields are empty:
+
+1. Installs the Rust toolchain.
+2. Compiles with `cargo build --release` (for workspaces: `cargo build --release --package <pkg>`).
+3. Copies the binary from Cargo's output into `bin/`.
+4. Starts with `./bin/<app-name>`.
+
+`<app-name>` is the package name from `Cargo.toml` (e.g. `ringroad` → `./bin/ringroad`).
+
+That is the path that works without extra config.
+
+## Why not `target/release`?
+
+`cargo build --release` writes the binary to `target/release/<app-name>`. That is Cargo's normal output directory.
+
+The **running image does not keep `target/`**. Build caches use it; the final container does not ship it. So a start command like:
+
+```bash
+./target/release/ringroad
+```
+
+will fail with `No such file or directory` even when the build succeeded.
+
+The binary that *is* in the image lives at:
+
+```bash
+./bin/<app-name>
+```
+
+## Custom build command
+
+If you need a custom **Build** (flags, features, workspace package), you must also put the binary where start expects it.
+
+Example for a single crate:
+
+```bash
+cargo build --release && mkdir -p bin && cp target/release/<app-name> bin/
+```
+
+Example for a workspace package:
+
+```bash
+cargo build --release -p <package> && mkdir -p bin && cp target/release/<app-name> bin/
+```
+
+Then set **Start** to:
+
+```bash
+./bin/<app-name>
+```
+
+A bare `cargo build --release` without the `cp` step does **not** create `./bin/<app-name>`. The build can succeed and the container still cannot start.
+
+## Install command
+
+Optional. You can set `cargo fetch` if you want; it is not required when Build is empty.
+
+## Listen on all interfaces
+
+Your process must listen on `0.0.0.0` and the `PORT` env var Brimble injects (or the port you configure). Binding only to `127.0.0.1` will fail health checks. See [Application failed to respond](/troubleshooting/application-failed-to-respond).
+
+## Checklist
+
+- [ ] Prefer empty **Build** unless you have a reason to override.
+- [ ] **Start** is `./bin/<app-name>`, not `./target/release/...`.
+- [ ] If **Build** is custom, it ends with a copy into `bin/`.
+- [ ] App binds to `0.0.0.0` and `$PORT`.

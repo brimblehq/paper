@@ -99,8 +99,10 @@ JVM version from `pom.xml`'s `<java.version>` or Gradle's `targetCompatibility`.
 Detected via `Cargo.toml`.
 
 - Service type: Web service.
-- Build: `cargo build --release`
-- Start: `./target/release/<bin-name>`
+- **Recommended:** leave install and build empty; start `./bin/<app-name>` (or leave start empty).
+- The builder compiles with Cargo, copies the binary into `bin/`, and starts from there. Do not start from `target/release/` — that path is not in the running image.
+
+Full guide: [Deploy a Rust app](/projects/deploy-rust).
 
 Rust toolchain from `rust-toolchain.toml` or stable.
 
