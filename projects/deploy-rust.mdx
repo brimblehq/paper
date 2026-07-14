@@ -16,17 +16,25 @@ Detected via `Cargo.toml` at the project root (or root directory you set). Servi
 | **Install** | Leave empty |
 | **Build** | Leave empty |
 | **Start** | Leave empty, or set `./bin/<app-name>` |
+| **Output directory** | Leave empty for defaults, or set where the binary should live (see below) |
 
-What the builder does when those fields are empty:
+What the builder does when install/build are empty:
 
 1. Installs the Rust toolchain.
 2. Compiles with `cargo build --release` (for workspaces: `cargo build --release --package <pkg>`).
-3. Copies the binary from Cargo's output into `bin/`.
-4. Starts with `./bin/<app-name>`.
+3. Copies the binary from Cargo's output into `bin/` (or your **Output directory** if set).
+4. Starts with `./bin/<app-name>` (or `./<output-directory>/<app-name>` if you set one).
 
 `<app-name>` is the package name from `Cargo.toml` (e.g. `ringroad` → `./bin/ringroad`).
 
-That is the path that works without extra config.
+## Output directory
+
+| Output directory | Result |
+|---|---|
+| **Empty** | Railpack defaults: binary at `./bin/<app-name>`, start `./bin/<app-name>` |
+| **Set** (e.g. `bin`, `app`) | Binary is copied to `./<dir>/<app-name>` and start is set to that path |
+
+Cargo still builds into `target/release/` first. Output directory is where Brimble **places the runnable binary in the final image** — not a replacement for Cargo's build cache path.
 
 ## Why not `target/release`?
 
@@ -48,27 +56,24 @@ The binary that *is* in the image lives at:
 
 ## Custom build command
 
-If you need a custom **Build** (flags, features, workspace package), you must also put the binary where start expects it.
+If you need a custom **Build** (flags, features, workspace package), either:
 
-Example for a single crate:
+1. **Set Output directory** (e.g. `bin`) and a **Start** like `./bin/<app-name>` — Brimble copies `target/release/<app-name>` into that directory for you, or  
+2. Copy yourself in the build command:
 
 ```bash
 cargo build --release && mkdir -p bin && cp target/release/<app-name> bin/
 ```
 
-Example for a workspace package:
+Workspace package example:
 
 ```bash
 cargo build --release -p <package> && mkdir -p bin && cp target/release/<app-name> bin/
 ```
 
-Then set **Start** to:
+Then set **Start** to `./bin/<app-name>` (or match your output directory).
 
-```bash
-./bin/<app-name>
-```
-
-A bare `cargo build --release` without the `cp` step does **not** create `./bin/<app-name>`. The build can succeed and the container still cannot start.
+A bare `cargo build --release` with no output directory and no `cp` leaves no runnable path in the image. The build can succeed and the container still cannot start.
 
 ## Install command
 
