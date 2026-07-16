@@ -198,6 +198,11 @@
             "pages": ["webhooks/overview", "webhooks/events"]
           },
           {
+            "group": "Log Drains",
+            "icon": "file-export",
+            "pages": ["drains/overview"]
+          },
+          {
             "group": "Troubleshooting",
             "icon": "wrench",
             "pages": [
