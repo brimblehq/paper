@@ -1,0 +1,340 @@
+---
+title: "Deploy WordPress"
+description: "Provision MySQL or MariaDB, deploy the official WordPress Docker image with secrets and port 80, attach a volume at /var/www/html/wp-content, then finish setup in the browser."
+---
+
+This guide walks you through running WordPress on Brimble.
+
+You do **not** need deep server experience. Follow the steps in order.
+
+When you finish, you will have:
+
+- A **WordPress site** at a public HTTPS URL (`https://your-name.brimble.app`)
+- A **managed MySQL or MariaDB database** for posts, pages, and users
+- A **volume** for media and `wp-content` (uploads, themes, plugins)
+- Optional **WordPress protection** on the network edge
+- Optional **Files** for small config (for example custom PHP settings)
+
+## What you need
+
+| You need | Why |
+| --- | --- |
+| A [Brimble account](https://app.brimble.io) | Dashboard access |
+| A plan that allows **web services**, **databases**, and **volumes / persistent disk** | WordPress needs all three for a normal site |
+| About 15–20 minutes the first time | Later updates are faster |
+
+## How it works on Brimble
+
+WordPress is deployed as a **Docker image** (the official `wordpress` image).
+
+Before that, you provision a **database project** (MySQL or MariaDB). When you create the WordPress project, you add the database settings in the **Secrets** block, set **PORT** to **80**, and attach storage at **`/var/www/html/wp-content`**.
+
+## Steps at a glance
+
+1. Provision **MySQL** or **MariaDB**
+2. Deploy **WordPress** as a Docker image (port **80**, secrets, volume)
+3. Finish the WordPress install in your browser
+4. (Recommended) Turn on **WordPress protection**
+5. (Optional) Custom domain
+6. (Optional) Config **Files** such as `php.ini`
+
+---
+
+## Step 1 — Provision the database first
+
+Do this **before** creating the WordPress project.
+
+1. Open the [dashboard](https://app.brimble.io).
+2. Click **New project**.
+3. Choose **Database**.
+4. Select **MySQL** or **MariaDB** (either works with WordPress).
+5. Pick a version (the default is fine for most sites).
+6. Choose a **region** — use the **same region** for WordPress.
+7. Pick a size. Start small; you can resize later.
+8. Name it clearly, for example `my-blog-db`.
+9. Click **Create**.
+
+Wait until the status is **Active** (usually one to two minutes).
+
+<Frame caption="Create a MySQL or MariaDB database before WordPress.">
+  <img src="/images/projects/wordpress-mysql-deploy.jpg" alt="New project → Database with MySQL selected, region and compute" />
+</Frame>
+
+### Connection details you will need
+
+On the database project, open the secrets / connection section. You will use these when configuring WordPress:
+
+| Need | Typical key on the DB project |
+| --- | --- |
+| Host (internal, recommended) | `PRIVATE_SERVICE_HOST` |
+| Host (public) | `SERVICE_HOST` |
+| Port | `SERVICE_PORT` (often `3306`) |
+| User | `MYSQL_USER` |
+| Password | `MYSQL_PASSWORD` |
+| Database name | `MYSQL_DATABASE` |
+
+You may also see `CONNECTION_STRING` / `PRIVATE_CONNECTION_STRING`. Prefer the private host when WordPress and the database are in the **same workspace and region**.
+
+| Option | When to use |
+| --- | --- |
+| **Internal (recommended)** | Same workspace and region. Use `PRIVATE_SERVICE_HOST` + port. Faster, private network. |
+| **Public** | Fine if you prefer it. Use `SERVICE_HOST` (or the public connection string). Treat credentials carefully. |
+
+<Frame caption="Database secrets: private host, public host, port, user, password, database name.">
+  <img src="/images/projects/wordpress-database-credentials-section.jpg" alt="Database project secrets including PRIVATE_SERVICE_HOST, SERVICE_HOST, MYSQL_USER, and related keys" />
+</Frame>
+
+Full database guide: [Deploy a database](/projects/deploy-a-database).  
+Private networking: [Internal services](/networking/internal-services).
+
+---
+
+## Step 2 — Deploy WordPress as a Docker image
+
+1. Click **New project** again.
+2. Choose **Docker image** (not Git, unless you maintain your own WordPress image).
+3. Image reference, for example:
+
+```text
+wordpress:latest
+```
+
+Other common tags: `wordpress:php8.2-apache`, `wordpress:6-php8.2-apache`.
+
+4. Leave private registry credentials empty if you use the public official image.
+5. Set **region** to the **same region as the database**.
+6. Set compute as needed (start small).
+
+### Secrets (env block)
+
+In the **Secrets** section of the create flow, add:
+
+| Variable | Meaning | Notes |
+| --- | --- | --- |
+| `PORT` | Container listen port | Must be **`80`** for the official WordPress image |
+| `WORDPRESS_DB_HOST` | Database host and port | e.g. `host:3306` |
+| `WORDPRESS_DB_USER` | Database user | From the DB project |
+| `WORDPRESS_DB_PASSWORD` | Database password | From the DB project |
+| `WORDPRESS_DB_NAME` | Database name | From the DB project |
+
+#### Recommended: internal host via references
+
+If the database project slug is `my-blog-db`, use values like this (adjust key names to match your DB project):
+
+```bash
+PORT=80
+WORDPRESS_DB_HOST={{@my-blog-db.PRIVATE_SERVICE_HOST}}:{{@my-blog-db.SERVICE_PORT}}
+WORDPRESS_DB_USER={{@my-blog-db.MYSQL_USER}}
+WORDPRESS_DB_PASSWORD={{@my-blog-db.MYSQL_PASSWORD}}
+WORDPRESS_DB_NAME={{@my-blog-db.MYSQL_DATABASE}}
+```
+
+#### Or public host
+
+```bash
+WORDPRESS_DB_HOST={{@my-blog-db.SERVICE_HOST}}:{{@my-blog-db.SERVICE_PORT}}
+```
+
+…or paste values from the database secrets list.
+
+See [Environment variable references](/environments/env-references).
+
+<Frame caption="Secrets on create: PORT plus WordPress database variables (set PORT to 80).">
+  <img src="/images/projects/wordpress-env-config.jpg" alt="New project secrets with PORT and WORDPRESS_DB_* keys, compute, and persistent storage toggle" />
+</Frame>
+
+You can also manage the same secrets later on the project **Secrets** tab after deploy:
+
+<Frame caption="WordPress project Secrets tab with PORT and WORDPRESS_DB_* keys.">
+  <img src="/images/projects/wordpress-project-details-env-reference-existing.jpg" alt="Project Secrets tab listing PORT, WORDPRESS_DB_HOST, WORDPRESS_DB_NAME, WORDPRESS_DB_PASSWORD, WORDPRESS_DB_USER" />
+</Frame>
+
+### Volume / persistent storage
+
+WordPress must keep media and plugins/themes under **`wp-content`**. Enable **Persistent Storage** and set:
+
+| Field | Value |
+| --- | --- |
+| **Mount path** | `/var/www/html/wp-content` |
+
+You can create a **new** volume or attach an **existing** one in the same region.
+
+Do **not** mount at `/var/www/html` (the whole install). Use **`/var/www/html/wp-content`**.
+
+#### Volume pricing (typical)
+
+Storage is billed monthly by size. In the **Volume size** / **Disk size** dropdown you will see options like:
+
+| Size | Monthly cost |
+| --- | --- |
+| 10 GB | $2.50 / month |
+| 20 GB | $5.00 / month |
+| 30 GB | $7.50 / month |
+| 40 GB | $10.00 / month |
+| 50 GB | $12.50 / month |
+| 60 GB | $15.00 / month |
+
+That is **$0.25 per GB per month**. Always trust the price shown in the dashboard.
+
+Start with **10 GB** unless you expect many large media files.
+
+<Frame caption="Volume size dropdown with monthly pricing.">
+  <img src="/images/projects/wordpress-volume-pricing.jpg" alt="Volume size options from 10 GB ($2.5/month) upward" />
+</Frame>
+
+You can also enable or adjust storage later under **Configuration → Resources → Persistent Storage**:
+
+<Frame caption="Persistent storage mount path /var/www/html/wp-content.">
+  <img src="/images/projects/wordpress-pv-volume-attachment.jpg" alt="Configuration Resources with Persistent Storage on, 10 GB, mount path /var/www/html/wp-content" />
+</Frame>
+
+More on volumes: [Persistent disk](/projects/persistent-disk), [Volumes](/volumes/overview).
+
+### Deploy
+
+Click **Deploy project**. Brimble pulls the WordPress image, starts the container on **port 80**, injects your secrets, and mounts the volume at `/var/www/html/wp-content`.
+
+---
+
+## Step 3 — Finish install in the browser
+
+1. Open `https://<your-project-name>.brimble.app`
+2. Complete the WordPress language / site title / admin user screens
+3. Use a strong admin password
+4. Log in to **wp-admin** when prompted
+
+If you see **Error establishing a database connection**:
+
+- Database is **Active**
+- All `WORDPRESS_DB_*` secrets are set (and **PORT** is **80**)
+- Host includes the **port**
+- Same **region** when using the private host
+- You redeployed after changing secrets
+
+<Frame caption="WordPress admin after a successful install.">
+  <img src="/images/projects/wordpress-home.jpg" alt="WordPress dashboard welcome screen after install" />
+</Frame>
+
+---
+
+## Step 4 — WordPress protection (recommended)
+
+1. Open the WordPress project.
+2. Open the **Networking** tab.
+3. Under **Network** → **Edge cache, headers & firewall**, click **Configure**.
+4. Open the **Firewall** tab.
+5. Turn **WordPress protection** **on**.
+6. Keep **Path blocking** on.
+7. Click **Save changes**.
+
+This enables edge rules for login/admin challenges, blocking `xmlrpc.php`, blocking PHP in uploads, login rate limits, and cache bypass for dynamic WordPress paths.
+
+<Frame caption="Networking tab — domains, private networking, and Network Configure.">
+  <img src="/images/projects/wordpress-networking-custom-domains.jpg" alt="Networking tab with default domain, private address, and Configure for edge firewall" />
+</Frame>
+
+<Frame caption="Firewall tab with WordPress protection enabled.">
+  <img src="/images/projects/wordpress-protection.jpeg" alt="Network edge settings drawer, Firewall tab, WordPress protection and path blocking on" />
+</Frame>
+
+<Note>
+  If a plugin or mobile app needs **XML-RPC**, turn WordPress protection off temporarily or ask support for a custom rule. Most sites do not need XML-RPC open.
+</Note>
+
+---
+
+## Step 5 — Custom domain (optional)
+
+On the same **Networking** tab:
+
+1. Click **+ Add domain**
+2. Follow the DNS steps Brimble shows
+3. Wait for HTTPS (status **Active**)
+
+Then in WordPress **Settings → General**, set both **WordPress Address** and **Site Address** to your live `https://` URL.
+
+Guide: [Custom domains](/domains/custom-domains).
+
+---
+
+## Step 6 — Files (php.ini and small config)
+
+Use the project **Files** feature for small text config files mounted into the container (not for media libraries).
+
+Limits: text only, max **1 MB** per file, absolute mount path (starts with `/`). **Redeploy** after create or update so the file is mounted.
+
+### Example: larger uploads in PHP
+
+1. Open the project → **Files** (or the Files section in configuration)
+2. **Add file** with fields like:
+
+| Field | Example |
+| --- | --- |
+| Name | `Custom Wordpress configuration` |
+| Mount path | `/usr/local/etc/php/conf.d/zz-custom.ini` |
+| File content | PHP overrides (for example `upload_max_filesize`) |
+
+```ini
+upload_max_filesize = 64M
+post_max_size = 64M
+memory_limit = 256M
+max_execution_time = 120
+```
+
+3. **Create** → **Redeploy**
+4. Try a larger upload in the media library
+
+The official WordPress image loads extra PHP config from `/usr/local/etc/php/conf.d/`. A `zz-` filename loads late so your values override defaults.
+
+<Frame caption="Add file modal for a custom PHP conf.d snippet.">
+  <img src="/images/projects/wordpress-file-configuration.jpg" alt="Add file modal with mount path /usr/local/etc/php/conf.d/zz-custom.ini" />
+</Frame>
+
+---
+
+## Troubleshooting
+
+**Error establishing a database connection**  
+Check Active DB, `WORDPRESS_DB_*` secrets, port on the host, same region for private host, **PORT=80**, redeploy after secret changes.
+
+**Site blank or very slow after attaching storage**  
+Mount must be `/var/www/html/wp-content`, not `/var/www/html`.
+
+**Uploads fail / file too large**  
+Raise PHP limits with Files (Step 6); check free space on the volume.
+
+**Login challenge page**  
+WordPress protection may show a short browser check on login/admin — complete it, or temporarily disable protection.
+
+**XML-RPC / some apps broken**  
+WordPress protection blocks `xmlrpc.php`. Disable protection if you truly need it.
+
+**502 after deploy**  
+Wait for first boot; check deployment logs; confirm image is `wordpress:...` and **PORT is 80**.
+
+---
+
+## Security checklist
+
+- [ ] Strong WordPress admin password
+- [ ] Database provisioned before WordPress
+- [ ] Prefer **internal** DB host when possible
+- [ ] **PORT** is **80**
+- [ ] Volume at `/var/www/html/wp-content`
+- [ ] **WordPress protection** on
+- [ ] **Path blocking** on
+- [ ] HTTPS URLs in WordPress Settings
+- [ ] Only trusted plugins/themes; keep everything updated
+
+---
+
+## Related docs
+
+- [Deploy a database](/projects/deploy-a-database)
+- [Deploy from a Docker image](/projects/deploy-from-docker-image)
+- [Persistent disk](/projects/persistent-disk)
+- [Volumes](/volumes/overview)
+- [Environment variables](/environments/environment-variables)
+- [Environment variable references](/environments/env-references)
+- [Custom domains](/domains/custom-domains)
+- [Networking overview](/networking/overview)
