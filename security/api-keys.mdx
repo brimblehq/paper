@@ -3,7 +3,7 @@ title: "API keys"
 description: "Create, manage, and rotate the API key that authenticates you against Brimble's HTTP API and SDKs."
 ---
 
-An **API key** is a long-lived secret you use to authenticate against Brimble's HTTP API and SDKs. The dashboard uses session cookies, everything else (the Sandbox SDKs, raw curl, custom integrations, and Brimble-gated [MCP servers](/projects/deploy-an-mcp-server)) uses an API key.
+An **API key** is a long-lived secret you use to authenticate against Brimble's HTTP API and SDKs. The dashboard uses session cookies. Everything else, the Sandbox SDKs, raw curl, custom integrations, [**Brimble MCP**](/mcp/overview) (agents controlling Brimble), and Brimble-gated [MCP projects you deploy](/projects/deploy-an-mcp-server), uses an API key.
 
 You authenticate every request by sending the key in the `x-brimble-key` header:
 
@@ -62,6 +62,22 @@ curl -X POST https://sandbox.brimble.io/sandboxes \
 ```
 
 The header name is **`x-brimble-key`**, not `Authorization: Bearer ...`. Bearer-style auth is rejected.
+
+### With Brimble MCP
+
+Point agents at **`https://mcp.brimble.io`**. Send your API key as either:
+
+```http
+x-brimble-key: br_...
+```
+
+or:
+
+```http
+Authorization: Bearer br_...
+```
+
+Brimble MCP forwards the key to Core as `x-brimble-key`. Tool access follows the **permissions on that key**. See [Brimble MCP](/mcp/overview) and [Connect an agent](/mcp/connect).
 
 ### To gate an MCP server you deploy on Brimble
 
@@ -144,6 +160,8 @@ Higher plans get higher quotas. If your workload regularly hits the ceiling and 
 
 ## Next steps
 
+- [Brimble MCP](/mcp/overview), connect agents to manage Brimble with this key.
+- [Connect an agent](/mcp/connect), Claude Code, Cursor, and remote clients.
 - [SDKs](/sandboxes/sdks), authenticate, configure retries, handle `RateLimitError`.
 - [Sandbox API](/sandboxes), the raw REST contract that the key authenticates.
 - [Deploy an MCP server](/projects/deploy-an-mcp-server), gate your MCP project behind the same key.

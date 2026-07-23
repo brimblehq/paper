@@ -1,0 +1,71 @@
+---
+title: "Brimble MCP"
+description: "The official Model Context Protocol server for Brimble. Connect Claude, Cursor, and other agents so they can manage projects, sandboxes, domains, and more on your account."
+---
+
+**Brimble MCP** is Brimble's official [Model Context Protocol](https://modelcontextprotocol.io) server at **`https://mcp.brimble.io`**. It exposes Brimble platform tools (projects, sandboxes, logs, domains, and more) so AI clients can act on your account with your permission, using an API key you control.
+
+## What you can do with it
+
+Depending on the permissions on your API key, agents can:
+
+- List and inspect **projects** and deployments
+- Work with **sandboxes**, volumes, and related tooling
+- Read **logs**, metrics-style account views, and activity
+- Manage **domains**, networking, and other platform surfaces exposed as tools
+
+Tool availability follows the **scopes on the API key**. A read-only key cannot deploy; a sandbox-only key cannot manage domains. Create a scoped key in the dashboard when you want least privilege.
+
+## How it works
+
+1. You create a Brimble **API key** in the dashboard (see [API keys](/security/api-keys)).
+2. You configure your agent to call **`https://mcp.brimble.io`** with that key.
+3. The agent can use tools within that key's permissions on your account.
+
+Optional: a **connect** flow in the dashboard can verify that a pasted key belongs to the signed-in user and show its permissions before you paste the key into an agent.
+
+## Authentication
+
+Brimble MCP accepts either:
+
+```http
+x-brimble-key: br_...
+```
+
+or:
+
+```http
+Authorization: Bearer br_...
+```
+
+Both mean the same thing: your **platform API key**.
+
+Optional team context:
+
+```http
+x-brimble-team: <team-id>
+```
+
+<Warning>
+  Treat the API key like a password. Anyone who has it can use every tool your key allows, including write and spend-related actions if those scopes are granted. Prefer scoped keys and non-production keys when testing agents.
+</Warning>
+
+## Endpoints
+
+| URL | Role |
+| --- | --- |
+| `https://mcp.brimble.io` | MCP endpoint (agent traffic) |
+| `https://mcp.brimble.io/health` | Liveness check |
+
+`GET /` without an MCP session returns an error by design. Use `/health` to check the service, not the root path in a browser.
+
+## Security notes
+
+- **Env vars and secrets:** Prefer setting secrets in the dashboard; use the agent for redeploys and non-secret configuration.
+- **2FA-gated actions:** Some account actions require two-factor authentication in the dashboard. MCP will not complete 2FA for you; finish those steps in the UI.
+- **Revocation:** Reset or revoke the API key in the dashboard to cut off all agents using that key immediately.
+
+## Next steps
+
+- [Connect Claude Code, Cursor, or a remote client →](/mcp/connect)
+- [Create and manage API keys →](/security/api-keys)

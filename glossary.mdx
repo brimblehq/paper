@@ -9,7 +9,7 @@ Terms you'll see across Brimble docs and the dashboard, in alphabetical order.
 
 **A record.** A DNS record type that maps a hostname to an IPv4 address. Used at the apex of a domain pointing at Brimble's edge when CNAME at apex isn't supported by your provider.
 
-**API key.** A long-lived secret used to authenticate against Brimble's HTTP API, the sandbox SDKs, and any MCP server with **MCP authentication** enabled. Sent in the `x-brimble-key` header. One key per subscription (personal or team). See [API keys](/security/api-keys).
+**API key.** A long-lived secret used to authenticate against Brimble's HTTP API, the sandbox SDKs, [Brimble MCP](/mcp/overview), and any MCP project with **MCP authentication** enabled. Sent as `x-brimble-key` (or as `Authorization: Bearer` to Brimble MCP). See [API keys](/security/api-keys).
 
 **Application logs.** The stdout and stderr stream from your running container. Visible under **Logs** on a project. See [Logs](/observability/logs).
 
@@ -22,6 +22,8 @@ Terms you'll see across Brimble docs and the dashboard, in alphabetical order.
 **Autoscaling group.** A configuration that lets a project run more than one container, scaling the count based on CPU, memory, or fixed bounds. See [Configure scaling](/scaling/overview).
 
 ## B
+
+**Brimble MCP.** Brimble's official hosted Model Context Protocol server at `https://mcp.brimble.io`. Agents authenticate with your API key and call platform tools on your behalf. See [Brimble MCP](/mcp/overview) and [Connect an agent](/mcp/connect).
 
 **Bandwidth.** Outbound traffic from your project's edge over a billing cycle. Each plan includes a free amount; overage bills at $0.25/GB.
 
@@ -127,7 +129,7 @@ Terms you'll see across Brimble docs and the dashboard, in alphabetical order.
 
 **Maintenance mode.** A project flag that returns a maintenance page (HTTP 200) instead of routing traffic. Toggled per-project.
 
-**MCP server.** A Model Context Protocol server, deployed as a Brimble service type tuned for AI clients. Brimble can require an `x-brimble-key` header on every request when the **MCP authentication** toggle is on.
+**MCP server.** A Model Context Protocol server. **[Brimble MCP](/mcp/overview)** is Brimble's official server at `https://mcp.brimble.io` for controlling your account. You can also [deploy your own MCP servers](/projects/deploy-an-mcp-server) as projects.
 
 **Metered.** Pricing where you pay for what you use, like compute above plan default or bandwidth above the included amount.
 
@@ -243,6 +245,6 @@ Terms you'll see across Brimble docs and the dashboard, in alphabetical order.
 
 **`x-brimble-id`.** A unique-per-request UUID Brimble's gateway adds to every response. Log it on your side and Brimble's side correlates the same request, useful for support tickets.
 
-**`x-brimble-key`.** The header MCP server projects with auth enabled require on every request. The value is your **account-level API key** (one per account, not per project), available in the profile drawer; reroll from the same panel. Paid plans only.
+**`x-brimble-key`.** The header used for Brimble API authentication. Required by Core for API-key traffic, by [Brimble MCP](/mcp/overview) (also accepted as `Authorization: Bearer`), and by MCP projects with edge **MCP authentication** enabled. Value is your platform API key from the dashboard.
 
 **`x-brimble-session`.** The httpOnly session cookie Brimble sets after a successful login on a password-protected project.

@@ -82,6 +82,7 @@ api-reference/             OpenAPI YAML specs (rendered as their own tab in the 
 
 getting-started/           First-deploy flow
 projects/                  Project lifecycle, builds, deployments, service types, scaling
+mcp/                       Official Brimble MCP (overview, connect agents)
 sandboxes/                 Brimble Sandboxes (overview, quickstart, snapshots, internals)
 domains/                   Custom domains, buying, transfer, DNS
 environments/              Environments, env vars, references
@@ -315,7 +316,7 @@ A running list. Add to it.
 * **Plan free CPU/memory baseline.** Free is 0.25 vCPU / 0.25 GB. The compute slider's smallest stop is 0.5 — meaning Free-plan projects pick up metered overage as soon as they create a project. Document this honestly.
 * **Persistent disk default.** 10 GB minimum, not 1. Sizes go 10–150 GB in 10 GB steps (`disk-size-options.ts`).
 * **Password protection** uses a session cookie + form login (`x-brimble-session`), **not** HTTP Basic Auth. `curl -u user:pass` is wrong. There's no self-serve toggle in the dashboard yet.
-* **MCP auth header** is `x-brimble-key`, not `Authorization: Bearer`.
+* **MCP auth header** for projects with edge MCP auth is `x-brimble-key`. **Brimble MCP** (`https://mcp.brimble.io`) also accepts `Authorization: Bearer <api-key>` and maps it to `x-brimble-key` toward Core.
 * **`subscription_id` in webhook envelope** is in the internal RabbitMQ payload, but `brimble-email/src/factory/webhook.factory.ts` strips it before sending to the user. The user-visible envelope is `{event, data}`.
 * **Webhook signing.** Real events (factory → Hookdeck → user) are unsigned. The `X-Brimble-Webhook` HMAC and `X-Brimble-Test` header only apply to the one-off test endpoint, not production deliveries. Don't claim users should verify HMAC.
 * **Env var values are not in webhook payloads.** Only the variable name (`envData.name`). The `data.value` field doesn't exist in the factory output.
@@ -326,7 +327,7 @@ A running list. Add to it.
 * **Free plan can only deploy static sites + 1 free-tier database.** `core/src/services/v1/verify-payment.service.ts:58-59` rejects every non-static project on Free at deploy time. So there's no path where a Free user picks a slider position that meters compute, don't write callouts about "quiet overage" on Free; it's impossible. Static sites have no compute allocation.
 * **Free databases are deleted after 15 days, not paused.** `core/src/services/v1/database.service.ts` `reapExpiredFreeTierDatabases` calls `projectService.deleteProject(project)`. The dashboard's "paused" copy is softer than the reality.
 * **Rate limiting is Cloudflare, not the proxy middleware.** The proxy has a `rate-limit.ts` middleware that defaults to "500 req / 10 min / IP / domain", but **it's not wired into the live request path**. Cloudflare handles it with adaptive rules. Don't quote the 500 number.
-* **MCP `x-brimble-key` is account-level, not per-project.** The key lives in the user profile drawer under **API key**, paid plans only. Action is **Reroll key** (not "Rotate"). One key authenticates every MCP server in the account.
+* **Platform API keys** authenticate Core, SDKs, and **Brimble MCP**. Keys can be scoped (permissions). See `mcp/overview` and `mcp/connect` for the hosted agent server; see `projects/deploy-an-mcp-server` for user-deployed MCP projects.
 * **Apex A record IP is `157.90.225.125` at `@`.** Don't say "see the dashboard for the IP"; write the value, sourced from `dns/lb/keepalived-backup.conf`.
 * **Workspace pricing: $5/seat + $8/build, min 2 builds.** Sourced from `dashboard/src/config/index.ts:36-37`. 3 seats + 2 builds = $31/mo. Don't write $7.50/build or 0/1 minimum builds.
 * **Payment retry copy avoids Stripe by name.** The user-facing retry flow describes what users see (warnings, builds disabled at attempt 3, projects suspended when retries exhaust, canceled at 30 days unpaid). It doesn't mention Stripe, Smart Retries, or webhook event names. The internal payment service handles the "how"; the user only needs the "what".

@@ -60,6 +60,14 @@
             ]
           },
           {
+            "group": "Brimble MCP",
+            "icon": "robot",
+            "pages": [
+              "mcp/overview",
+              "mcp/connect"
+            ]
+          },
+          {
             "group": "Projects",
             "icon": "cube",
             "pages": [
