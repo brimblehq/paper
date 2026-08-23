@@ -3,7 +3,7 @@ title: "API keys"
 description: "Create, manage, and rotate the API key that authenticates you against Brimble's HTTP API and SDKs."
 ---
 
-An **API key** is a long-lived secret you use to authenticate against Brimble's HTTP API and SDKs. The dashboard uses session cookies. Everything else, the Sandbox SDKs, raw curl, custom integrations, [**Brimble MCP**](/mcp/overview) (agents controlling Brimble), and Brimble-gated [MCP projects you deploy](/projects/deploy-an-mcp-server), uses an API key.
+An **API key** is a long-lived secret you use to authenticate against Brimble's HTTP API and SDKs. The dashboard uses session cookies. Everything else, the Sandbox SDKs, raw curl, custom integrations, [**Brimble MCP**](/mcp/overview) (external clients controlling Brimble), and Brimble-gated [MCP projects you deploy](/projects/deploy-an-mcp-server), uses an API key.
 
 You authenticate every request by sending the key in the `x-brimble-key` header:
 
@@ -13,6 +13,12 @@ curl https://sandbox.brimble.io/sandboxes \
 ```
 
 The SDKs read the same key from the `BRIMBLE_SANDBOX_KEY` environment variable, or you can pass it explicitly to the client constructor. See [SDKs → Authenticate](/sandboxes/sdks#authenticate).
+
+## Provider keys for Brimble Agent
+
+[Brimble Agent](/agent/overview) uses a different secret: a model provider key under **Settings → API Keys → Bring your own key**. That key belongs to Anthropic, OpenAI, Google, xAI, or DeepSeek. It does not authenticate the Brimble HTTP API, the sandbox SDKs, or [Brimble MCP](/mcp/overview).
+
+See [Keys and limits](/agent/keys-and-limits) for plans, session caps, and how to add a key.
 
 ## Prerequisites
 
@@ -160,7 +166,8 @@ Higher plans get higher quotas. If your workload regularly hits the ceiling and 
 
 ## Next steps
 
-- [Brimble MCP](/mcp/overview), connect agents to manage Brimble with this key.
+- [Brimble Agent keys and limits](/agent/keys-and-limits), bring-your-own-key for the in-dashboard agent.
+- [Brimble MCP](/mcp/overview), connect a client to manage Brimble with this key.
 - [Connect an agent](/mcp/connect), Claude Code, Cursor, and remote clients.
 - [SDKs](/sandboxes/sdks), authenticate, configure retries, handle `RateLimitError`.
 - [Sandbox API](/sandboxes), the raw REST contract that the key authenticates.

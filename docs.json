@@ -60,6 +60,16 @@
             ]
           },
           {
+            "group": "Brimble Agent",
+            "icon": "sparkles",
+            "pages": [
+              "agent/overview",
+              "agent/using-the-agent",
+              "agent/what-it-can-do",
+              "agent/keys-and-limits"
+            ]
+          },
+          {
             "group": "Brimble MCP",
             "icon": "robot",
             "pages": [

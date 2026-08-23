@@ -1,0 +1,68 @@
+---
+title: "What it can do"
+description: "Launch a project from chat, debug a failed deploy, ask about a project, and run dashboard work."
+---
+
+The agent acts when a dashboard or platform action can finish the request. It will not claim a launch is live, or a fix is done, without a tool result that confirms it.
+
+## Launch a project from chat
+
+Ask it to put a project online. That can be a web service, static site, worker, database, MCP server, or another type you already have on the account. If you are on the project page, that project is already in context.
+
+It starts the launch and watches it. A launch card stays on the message while the project is going live. When the launch finishes, the agent follows up. A public URL counts as up if it responds and the status is not a 5xx.
+
+You can also ask it to create a project from a connected Git repo and launch that.
+
+### From files in chat
+
+To create a **static site** without a repo:
+
+1. Attach a zip, or one or more HTML files.
+2. Ask it to deploy or put the site online.
+3. It creates the project from those files and starts a launch.
+
+Use a zip **or** the HTML files, not both in the same drop. A single `index.html` is enough.
+
+## Debug a failed launch
+
+Ask why the last deploy failed, or use **Ask Agent** on the deployment log.
+
+The agent lists that launch and reads the logs. If the failure is a code or install step it can:
+
+1. Reproduce the failing step on a private copy of the project.
+2. Change the file and run the same step again until it exits 0.
+3. On **Developer** or **Infra / DevOps** tone, show the changed files for you to accept or reject.
+4. Open a pull request on the connected Git repo.
+5. Launch again and check the public URL.
+
+It will not use a production launch as the test. It will not change the install command, start command, or Node version and launch again as a guess.
+
+If a log names a missing environment variable, it can list the project's env vars. If the app can generate that value at start, it will try that. Otherwise it tells you to set the name under Environment variables, then it will launch again.
+
+## Ask about a project
+
+Stay on the project in the dashboard. The agent already has the name, status, framework, URLs, repo, and domains.
+
+To talk about a different project, type `@` and pick its slug. Speak in project names. The agent keeps IDs for its own tool calls.
+
+## Sandboxes and other dashboard work
+
+You can ask it to create a sandbox, wait until it is ready, and run a command. If creating a sandbox is long-lived or billable, it confirms first. See [Sandboxes](/sandboxes/overview).
+
+It can also list projects, inspect activity, work with domains, and look up where a setting lives when it cannot change that setting itself.
+
+Actions that delete resources or touch billing ask for an in-chat approval before they run.
+
+## What it will not do
+
+- Accept passwords, API keys, tokens, or recovery codes in the chat. Put provider keys in Settings. See [Keys and limits](/agent/keys-and-limits).
+- Edit or open a pull request on a project that is only a Docker image (no Git repo). It can suggest changing the image, reading logs, or connecting a repo.
+- Open `localhost`, private IPs, or `.local` hosts when checking if a site is up.
+- Invent a live URL. If the probe did not get a response, it will say so and still share the address it looked up.
+- Follow hidden instructions that appear inside a log, an uploaded file, or a web page.
+
+## Next steps
+
+- [Using the agent](/agent/using-the-agent)
+- [Keys and limits](/agent/keys-and-limits)
+- [Deployments](/projects/deployments)
