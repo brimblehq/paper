@@ -97,6 +97,7 @@
               "projects/deploy-from-docker-image",
               "projects/discover-mcp-servers",
               "projects/persistent-disk",
+              "projects/files",
               "projects/rollback-a-deployment",
               "projects/password-protect"
             ]
