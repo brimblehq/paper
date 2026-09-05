@@ -1,108 +1,87 @@
 ---
 title: "Build minutes"
-description: "Every Brimble plan includes a monthly allowance of build minutes, the clock time spent in the builder across all of your projects."
+description: "How Brimble tracks included build minutes, purchased top-ups, and monthly resets."
 ---
 
-Every Brimble plan includes a monthly allowance of build minutes, the clock time spent in the builder across all of your projects. When the allowance runs out, you can top up with credits that never expire.
+Build minutes are a separate balance inside Brimble billing.
 
-## How build minutes are counted
+Your available build minutes come from two sources:
 
-A build minute is one minute of wall-clock time inside the builder, measured from the start of the clone phase to the end of the push phase. It includes:
+1. The minutes included with your current plan for the active billing cycle.
+2. Extra purchased build minutes that are added on top.
 
-- Cloning your repo.
-- Detecting the framework.
-- Installing dependencies.
-- Running your build command.
-- Pre-start commands (if configured).
-- Pushing the artifact to internal storage.
+## Included minutes vs purchased minutes
 
-It **does not** include:
+Brimble stores purchased build minutes separately from your plan's included allowance.
 
-- Time spent serving requests (your runtime is billed separately as compute).
-- Time the build is queued waiting for a free slot.
-- Cancelled builds (if cancelled before the build phase starts; cancelled mid-build still counts what ran).
+That matters because:
 
-## Where to see your usage
+- Included minutes reset with the billing cycle.
+- Purchased minutes carry forward until you use them.
 
-In the dashboard, build minutes are visible in two places:
+On paid subscriptions, the reset date follows the subscription's Stripe billing cycle. On free accounts, build minutes are reset by Brimble's monthly free-user reset job.
 
-1. **Account settings → Billing**, the **Build minutes** card shows used vs. included for the current cycle, with a progress bar and the next reset date.
-2. **Home page**, the stats row at the top has a **Build minutes** widget with the same number; click it to jump to the billing page.
+## How top-ups work
 
-<Frame caption="The Build minutes card in Billing settings.">
-  <img src="/images/billing/billing-usage.jpg" alt="Build minutes card in Billing settings showing the used/included progress bar,minutes left, reset date, top-up credits line, and the Top up butto" />
-</Frame>
+Build-minute top-ups are one-off purchases.
 
-## Cycles and resets
+Today, the billing service applies these rules:
 
-Each plan has a monthly cycle. Your **included minutes** reset to the plan's allowance on the cycle's renewal date. The reset date is shown on the card.
+- The minimum purchase amount is **$5**.
+- A successful top-up credits minutes immediately.
+- The credited minutes are added both to your current visible balance and to your stored extra-minute balance for future cycles.
 
-**Top-up credits do not reset**, they sit on top of the included minutes and stick around month over month until they're spent.
+By default, Brimble credits **288 build minutes per $1**. At that rate:
 
-The order Brimble bills against:
+- `$5` adds `1,440` minutes
+- `$10` adds `2,880` minutes
 
-1. Included minutes (this month's allowance).
-2. Top-up credits (additive, never expire).
+## What happens at renewal
 
-So a fresh cycle uses your monthly allowance first, then dips into credits if needed.
+When a paid subscription renews successfully, Brimble resets the build-minute balance for the new cycle to:
 
-## Top up
+```text
+plan-included minutes + any extra purchased minutes
+```
 
-When you're running low (or just want a buffer), top up:
+This prevents purchased top-ups from being wiped out when the monthly allowance refreshes.
 
-1. Open **Billing → Build minutes**.
-2. Click **Top up**.
-3. Pick a preset amount or enter a custom value:
-   - Presets: `$5`, `$10`, `$25`, `$50`.
-   - Minimum custom amount: **$5**.
-4. The modal previews how many minutes the amount buys at the current rate.
-5. Confirm. The card on file is charged immediately, and the minutes appear as **top-up credits** on your account.
+## What happens when you change plan
 
-<Frame caption="Topping up build minutes.">
-  <img src="/images/billing/build-minutes-topup.jpg" alt="Top up build minutes modal showing the preset dropdown, custom amount field with $ prefix, X minutes for $Y preview line, and the Pay with •••• 4" />
-</Frame>
+When you move between personal plans, Brimble adjusts your included build-minute baseline to match the new plan.
 
-The conversion rate (minutes per dollar) is set globally and visible in the modal, "X minutes per $1 · credits never expire."
+The extra purchased minutes stay attached to your account. They are not discarded during an upgrade, downgrade, or trial start.
 
-## What happens when you run out
+The same idea applies to Team workspaces: the team workspace keeps its own build-minute balance, and team top-ups are credited to that team workspace rather than to your personal workspace.
 
-When used minutes equal included minutes plus credits:
+## When build minutes can still be unavailable
 
-- **Free plan.** New builds queue indefinitely until the next cycle resets your included minutes. There's no overage billing on free.
-- **Paid plans.** Builds **don't fail** mid-flight, running builds finish. New builds start to consume top-up credits if you have any. If credits are exhausted, builds queue until the next reset or the next top-up.
+Running out of build minutes is not the only reason builds can stop.
 
-A "Builds disabled" state can also show up if billing failed for an extended period, that's separate from running out of minutes. See [Plans and pricing](/billing/plans).
+Builds can also be disabled when:
 
-## Estimating your usage
+- Your subscription becomes unpaid.
+- A spending limit reaches its configured pause threshold.
 
-Typical builds:
+If that happens, adding more build minutes alone may not restore builds. You may also need to pay the open invoice or raise the spending limit.
 
-- **Static site (Vite, Astro, simple Next.js export).** 30 seconds to 2 minutes.
-- **Node web service with cache hit.** 30 seconds to 1 minute.
-- **Node web service cold.** 1 to 4 minutes.
-- **Large Next.js / monorepo build.** 3 to 10 minutes.
-- **Python with native deps.** 1 to 5 minutes (cold), 30 seconds (cached).
-- **Java / Gradle full build.** 3 to 8 minutes.
+## Related billing behavior
 
-Multiply by your number of deploys per day across all projects. A team that pushes 20 times a day across 5 services typically lands somewhere between 200 and 1,500 minutes per month.
+Build-minute purchases are blocked in one important case: if you try to buy build minutes for a subscription that is already marked **unpaid**, Brimble rejects the purchase until the open invoice is settled.
 
-## Reduce your build time
+This prevents top-ups from being used as a workaround for a subscription debt state.
 
-A few cheap wins:
+## Where build minutes fit in billing
 
-- **Don't disable the build cache.** It's on by default; turning it off triples cold-build times.
-- **Use a lockfile.** `npm ci`, `pip --require-hashes`, `pnpm --frozen-lockfile` skip dependency resolution.
-- **Set watch paths in monorepos.** Pushes that don't touch the project's directory don't trigger a build.
-- **Multistage Dockerfiles.** Build in a heavy stage; run from a thin stage. The `docker build` cache reuses layers when only the source changes.
-- **Skip unnecessary work in CI/build flows.** Don't run tests in the build phase, run them in your CI before merge instead.
+Build minutes sit alongside, not inside, your metered infrastructure charges.
 
-## Troubleshooting
+That means:
 
-**Top-up confirmed but credits not visible.** Refresh the page. If still missing after a minute, check **Billing → Invoices** for the transaction status, SCA-protected cards sometimes take an extra step to clear.
-
-**My usage looks higher than expected.** Failed builds still count for the time they ran before failing, and builds that hit the build timeout count for the full timeout. Check **Deployment history** for any unusually long deployments and investigate what made them slow.
+- Your plan subscription is still billed on its normal cycle.
+- Usage-based charges such as CPU, memory, bandwidth, and storage still appear in the billing estimate.
+- Build-minute top-ups are separate one-off transactions.
 
 ## Next steps
 
-- [Plans and pricing](/billing/plans), what each plan includes.
-- [Builds](../projects/builds), what runs during a build, and how the cache works.
+- [How billing works](/billing/plans), the full billing lifecycle.
+- [Builds](../projects/builds), what runs during a build.
