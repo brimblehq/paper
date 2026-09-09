@@ -92,7 +92,7 @@ observability/             Metrics, logs
 analytics/                 Web analytics
 workspaces-and-teams/      Workspaces, team management
 security/                  2FA, passkeys
-billing/                   Plans, build minutes
+billing/                   Plans, build minutes, referrals
 notifications/             Notification preferences
 webhooks/                  Webhook setup + events reference
 troubleshooting/           Symptom-indexed debugging
@@ -331,6 +331,7 @@ A running list. Add to it.
 * **Apex A record IP is `157.90.225.125` at `@`.** Don't say "see the dashboard for the IP"; write the value, sourced from `dns/lb/keepalived-backup.conf`.
 * **Workspace pricing: $5/seat + $8/build, min 2 builds.** Sourced from `dashboard/src/config/index.ts:36-37`. 3 seats + 2 builds = $31/mo. Don't write $7.50/build or 0/1 minimum builds.
 * **Payment retry copy avoids Stripe by name.** The user-facing retry flow describes what users see (warnings, builds disabled at attempt 3, projects suspended when retries exhaust, canceled at 30 days unpaid). It doesn't mention Stripe, Smart Retries, or webhook event names. The internal payment service handles the "how"; the user only needs the "what".
+* **Referral rewards go to the referrer only.** Dashboard copy in `referral-form.tsx` says "you both earn credit when they join." Auth and payment convert on the referred user's first paid Hacker / Developer (including trial) / Team plan, not on signup, and only the referrer is credited. Domain subscriptions do not convert. Cap is 5. See `billing/referrals.mdx`.
 * **Header strip + Header inject sections were removed** from `networking/request-lifecycle.mdx`. The numbered spine goes 1-10 now; don't reintroduce header-injection or header-strip explanations without confirmation.
 * **Next.js / Nuxt SSR-vs-static gotcha.** A Next.js or Nuxt repo deployed as a static site (the only option on Free) needs explicit static-export config (`output: "export"` for Next, `nitro.preset: "static"` for Nuxt), otherwise the build emits SSR artifacts the static deploy can't serve, and the deployed site loads blank. Warning lives in `projects/service-types.mdx` Static site section.
 * **Database backups are rolling latest, not retained.** `heracle/internal/service/storage.go:752-755` deletes prior snapshots before each upload, so only one snapshot per project per backup type survives. Hourly schedule from `BackupCronSchedule envDefault:"0 0 * * * *"`. Don't claim a multi-day retention window.
