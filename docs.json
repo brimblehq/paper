@@ -148,7 +148,8 @@
               "domains/transfer-a-domain",
               "domains/manage-dns-records",
               "domains/redirect-a-domain",
-              "domains/dns-records"
+              "domains/dns-records",
+              "domains/email-forwarding"
             ]
           },
           {

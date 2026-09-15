@@ -63,6 +63,8 @@ For DNS providers that support apex CNAME flattening / ALIAS at the apex (Cloudf
 
 Don't proxy MX records, they're SMTP, not HTTP.
 
+If you just want to forward mail to an existing inbox rather than run a full mail provider, use [Email forwarding](/domains/email-forwarding) instead, no manual `MX` records needed.
+
 ### Domain ownership verification
 
 Most third-party services (Google Search Console, Stripe, GitHub) verify with a TXT record on the apex:
@@ -132,3 +134,4 @@ If those return the new value, you're done, local caches will refresh once their
 - [DNS record types](/domains/dns-records), every record type and its fields.
 - [DNS troubleshooting](../troubleshooting/dns), when records aren't behaving.
 - [Add a custom domain](/domains/custom-domains), point a Brimble-managed domain at a project.
+- [Email forwarding](/domains/email-forwarding), route mail on this domain to an inbox you already use.

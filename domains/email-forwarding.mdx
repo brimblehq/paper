@@ -1,0 +1,81 @@
+---
+title: "Email forwarding"
+description: "Forward mail sent to an address on your domain to an inbox you already use."
+---
+
+Forward mail sent to an address on your domain, like `hello@example.com`, to an inbox you already use, Gmail, Outlook, or anywhere else. No mail server to run: Brimble handles receiving and relaying.
+
+<video
+  controls
+  className="w-full aspect-video"
+  src="https://dashboard-assets.t3.tigrisfiles.io/documentation/forwading.mp4"
+></video>
+
+## Prerequisites
+
+* The domain's nameservers set to Brimble's (`ns1.brimble.io` and `ns2.brimble.io`). See [Manage DNS records](/domains/manage-dns-records) if you haven't switched over yet.
+* No existing mail setup on the domain. If you're already using something like Google Workspace or another mail provider (i.e. the domain has `MX` records pointing elsewhere), remove those records first, forwarding and an external mail provider can't run on the same domain at once.
+* A payment method on file, forwarding is a paid add-on (see [Pricing](#pricing) below).
+
+## Add a forwarding address
+
+1. Open the domain in the [dashboard](https://app.brimble.io) and go to its **DNS** tab.
+2. Scroll to **Email Forwarding** and click **Add first address** (or **Add Address** if you already have some set up).
+3. If this is the first address on the domain, you'll be asked to confirm enabling forwarding, and to add a card if you don't have one on file yet.
+4. Enter:
+   * **Address**, the part before `@`, e.g. `hello` for `hello@example.com`. Letters, numbers, dots, hyphens, and underscores are allowed.
+   * **Destination**, the real inbox to deliver to, e.g. `you@gmail.com`.
+5. Click **Add address**.
+
+The address appears with a **Pending** status while Brimble sets up the mail records behind the scenes, this is automatic and usually finishes within a few minutes. Once it flips to **Active**, mail sent to that address starts forwarding.
+
+Add as many addresses as you like on the same domain, `hello@`, `support@`, `billing@`, whatever routes you need. They all route to whatever destination you set per address.
+
+## Test an address
+
+Once an address is **Active**, click the send icon next to it to fire off a test message. Brimble delivers a message with the subject "Brimble email forwarding test" to the configured destination, delivery can take a few moments. This is the fastest way to confirm a route actually works before you start giving the address out.
+
+## Edit or delete an address
+
+* **Edit** (pencil icon), change where an address forwards to. The address itself (the part before `@`) can't be changed, delete the address and add a new one instead.
+* **Delete** (trash icon), stops forwarding for that address immediately. This can't be undone.
+
+Deleting the last remaining address on a domain turns off forwarding for that domain entirely.
+
+## Status reference
+
+| Status | Meaning |
+|---|---|
+| **Active** | Mail is forwarding normally. |
+| **Pending** | Mail records are still propagating. This is normal right after adding an address and usually clears within a few minutes. |
+| **Failed** | Something's wrong with the setup, an error message is shown under the address. Common cause: a conflicting `MX` record was added back on the domain after forwarding was set up. |
+| **Disabled** | Forwarding for this address is currently paused, most commonly because the domain hit its daily sending limit (see below). Disabled addresses resume automatically once the condition clears. |
+
+## Pricing
+
+Email forwarding costs **$0.75/month per domain**, not per address. Add as many addresses as you need on that domain at no extra charge. Billing starts when you create the first forwarding address on a domain.
+
+## Limits
+
+Each domain can forward up to **500 messages a day**, tracked on a rolling UTC day. This is a generous limit for personal and small-business use and exists to prevent abuse. If a domain hits it, forwarding pauses for the rest of the day, addresses show as **Disabled**, and the domain owner gets an email notice. Forwarding resumes automatically at the start of the next UTC day, no action needed on your part.
+
+## Troubleshooting
+
+**Address stuck on "Pending" for a while.** This is usually just propagation, wait a few minutes. If it's been more than 30 minutes, double-check the domain's nameservers point at Brimble:
+
+```bash
+dig your-domain.com NS +short
+```
+
+If you don't see `ns1.brimble.io` and `ns2.brimble.io`, the domain isn't using Brimble's DNS and forwarding can't complete setup.
+
+**Address shows "Failed".** Read the error shown under the address. The most common cause is a conflicting `MX` record on the domain, check the domain's [DNS records](/domains/manage-dns-records) for any `MX` entries you (or a previous provider) added, and remove them.
+
+**Can't add an address at all.** Check the banner or tooltip on the **Add Address** button, it tells you why: nameservers not pointed at Brimble, a conflicting `MX` record, or the domain's daily limit.
+
+**Test email never arrives.** Check spam/junk at the destination first. If the address's status isn't **Active** yet, wait for it to finish propagating, a test can't send until it is.
+
+## Next steps
+
+* [Manage DNS records](/domains/manage-dns-records), if you need to clear a conflicting `MX` record first.
+* [Add a custom domain](/domains/custom-domains), point a domain at a deployed project.
