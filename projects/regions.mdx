@@ -12,7 +12,7 @@ Latency between your users and the region they hit is the single biggest control
 Region also determines:
 
 * Where the project's database and disk live.
-* Which IP range outbound traffic comes from (relevant if you whitelist Brimble at a third-party API).
+* Which regional pool static outbound IPs use, if you enable that feature.
 * The price of storage. Storage cost is multiplied by a per-region factor.
 
 ## Region tiers
@@ -74,6 +74,8 @@ For database projects the move involves migrating the underlying volume, which B
 
 Storage cost is multiplied by a per-region factor. Most regions are at the base rate; a few high-cost regions carry a small multiplier. The exact rate per region appears during project creation and on the project's billing page.
 
-## Outbound IP ranges
+## Outbound IPs
 
-Outbound traffic from your project comes from a region-specific IP range. If you're whitelisting Brimble at a third-party API, request the current ranges from support, since they aren't fixed forever.
+By default, outbound traffic does not use a published, fixed address. The source IP can change if the project is rescheduled onto another host. Don't allowlist that address, and don't ask support for a default range, we don't publish one.
+
+If you need a stable allowlist for a bank, payment processor, or partner API, enable [Static outbound IPs](/networking/static-outbound-ips). That feature is regional: Europe is live; Africa, the US, and Asia are not yet.

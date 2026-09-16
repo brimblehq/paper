@@ -117,7 +117,9 @@ If you've configured an [autoscaling group](../scaling/overview) and the project
 
 Your service can make outbound HTTP(S) requests freely. There's no egress whitelist for normal traffic.
 
-Outbound traffic from a Brimble service appears to come from a region-specific IP range. If you're whitelisting Brimble at a third-party API, get the current ranges from support, they aren't fixed forever.
+By default, outbound IPs are unpublished and can change when a project moves hosts. Don't allowlist them.
+
+If a bank, payment processor, or API requires a fixed outbound IP, enable [Static outbound IPs](/networking/static-outbound-ips) on a plan that includes the feature.
 
 ## Next steps
 

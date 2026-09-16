@@ -169,6 +169,7 @@
               "networking/http",
               "networking/request-lifecycle",
               "networking/internal-services",
+              "networking/static-outbound-ips",
               "networking/rate-limits"
             ]
           },
