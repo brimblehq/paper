@@ -1,105 +1,91 @@
 ---
 title: "How billing works"
-description: "How subscriptions, usage charges, invoices, payment failures, spending limits, and renewals work on Brimble today."
+description: "Plans, seats, metered compute, invoices, and how Brimble charges for what you run."
 ---
 
-Brimble billing has four moving parts:
+Brimble billing has four parts:
 
-1. A recurring subscription for your plan.
-2. Metered usage for billable resources in that billing cycle.
-3. One-off purchases, such as build-minute top-ups.
-4. Invoices, payment recovery, and spending-limit controls.
+1. A recurring **plan** charge (or Team seats).
+2. **Metered usage** for compute and other resources you run during the cycle.
+3. **One-off purchases**, such as build-minute top-ups.
+4. **Invoices**, payment recovery, and spending limits.
 
-This page explains how those pieces behave today.
+This page explains how those pieces fit together. For a full breakdown of CPU and memory rates, see [Compute pricing](/billing/compute).
 
 ## Two billing scopes
-
-Brimble bills at two scopes:
 
 - **Personal billing** covers your personal workspace.
 - **Team billing** covers a specific team workspace.
 
 These are independent. Upgrading your personal plan does not change a team subscription, and changes to a team subscription do not affect your personal workspace.
 
-## Plans and subscriptions
+## Plans
 
-This service recognizes four plan types:
+| Plan | Monthly price | Who it's for |
+| ---- | ------------- | ------------ |
+| **Free** | $0 | Trying Brimble |
+| **Hacker** | **$3** | Solo builders |
+| **Developer** | **$11** | Production personal projects |
+| **Team** | **$11 per seat** | Shared workspaces |
 
-- **Free**
-- **Hacker**
-- **Developer**
-- **Team**
-
-Free does not require an active paid subscription record. The paid plans do.
-
-For personal billing, Brimble creates one subscription on your account. For team billing, Brimble creates a separate subscription tied to that team workspace.
+Paid plans need a payment method and an active subscription. Free does not.
 
 <Note>
-  The service refers to the paid personal top tier as **Developer**. If another Brimble surface labels the same tier differently, this service is still talking about the same paid personal plan.
+  Some Brimble surfaces label the personal mid tier as **Pro**. In billing it is the same plan as **Developer**.
 </Note>
+
+### What the plan price covers
+
+The plan (or Team seats) covers platform access and the allowances listed on [brimble.io/pricing](https://brimble.io/pricing) and in the dashboard — for example included bandwidth, build minutes, and sandbox allowances where your plan has them.
+
+**CPU and memory are not included in the plan price.** Anything you provision is metered. See [Compute pricing](/billing/compute).
 
 ## Starting a paid subscription
 
-To start a paid subscription, you need:
+You need:
 
 - A payment method on file.
 - Acceptance of the billing terms.
 
-When the first payment succeeds, the subscription becomes active immediately.
-
-If your card requires extra confirmation, Brimble keeps the subscription in a pending state and asks you to finish the card confirmation step before activation completes.
+When the first payment succeeds, the subscription becomes active immediately. If your card needs extra confirmation, finish that step before activation completes.
 
 ## Team billing
 
-Team workspaces have their own subscription. Today, the recurring Team charge is made up of:
+Team workspaces have their own subscription. The recurring Team charge is **$11 per seat per month**. You can start with any number of seats (at least one) and add seats later.
 
-- A per-member charge.
-- A concurrent-builds charge.
-
-The exact price comes from the configured Team subscription items, not a single flat amount.
-
-When a Team subscription is created, Brimble also stores the seat count and concurrent-build allocation with that workspace. Team billing can later be updated by changing those quantities.
+When you create a Team workspace, Brimble stores that seat count with the workspace. You can update seats under workspace billing as long as you do not go below the number of members already on the team.
 
 ### Team billing ownership
 
-A Team subscription has a billing owner, the person whose Stripe customer and default payment method are used for that team subscription.
+A Team subscription has a billing owner — the person whose payment method is charged for that team.
 
-Billing ownership can be transferred, but only when all of these are true:
+Billing ownership can be transferred when:
 
-- The team subscription is active.
-- It is not already pending cancellation.
-- There are no open invoices for that team subscription.
-- The new owner is already an accepted **Creator** or **Administrator** on the team.
+- The team subscription is active and not pending cancellation.
+- There are no open invoices for that team.
+- The new owner is an accepted **Creator** or **Administrator** on the team.
 - The new owner has a payment method on file.
 
 The remaining billing period is preserved during the transfer.
 
 ## Billing cycles
 
-Paid subscriptions are billed in cycles tracked by Stripe.
-
-Brimble uses that cycle window for:
+Paid subscriptions renew on a monthly cycle. Brimble uses that window for:
 
 - Your next renewal date.
 - Build-minute resets on paid plans.
 - Usage estimates for the current cycle.
 - Trial end handling.
 
-If you are on a trial, the trial end acts as the end of the current cycle until the trial finishes.
-
 ## Upgrades, downgrades, and cancellation
 
 ### Upgrades
 
-When you move to a higher personal plan, Brimble applies the change immediately.
-
-If the card can be charged off-session, the plan change completes right away. If the card needs confirmation, Brimble pauses the change and asks you to finish confirmation before the swap completes.
+Moving to a higher personal plan applies immediately when payment succeeds. If your card needs confirmation, finish that step before the change completes.
 
 ### Downgrades
 
-When you move to a lower personal plan, Brimble schedules the change for the end of the current billing period.
-
-Your current plan stays active until that date. Brimble stores the pending target plan and lets you cancel that pending change before it takes effect.
+Moving to a lower personal plan is scheduled for the end of the current billing period. Your current plan stays active until then. You can cancel a pending change before it takes effect.
 
 <Warning>
   A pending plan change blocks starting another plan change until you cancel the pending one or it takes effect.
@@ -107,283 +93,136 @@ Your current plan stays active until that date. Brimble stores the pending targe
 
 ### Cancellation
 
-Canceling a paid subscription schedules it to end at the end of the current billing period.
-
-Brimble records the cancellation reason and, if you supplied one, your comment. When the subscription is finally deleted, Brimble treats that as the point where the workspace drops out of the paid plan.
+Canceling a paid subscription schedules it to end at the end of the current billing period. When the period ends, the workspace leaves the paid plan.
 
 ## Trials
 
-Brimble supports a one-time **Developer trial** for eligible personal accounts.
+Brimble offers a one-time **Developer trial** for eligible personal accounts:
 
-Today, the trial rules are:
+- Available to **Free** and **Hacker** users.
+- Once per account.
+- Requires a payment method before it starts.
+- Default length is **14 days**.
 
-- It is only available to **Free** and **Hacker** users.
-- It can only be used once per account.
-- It requires a payment method before it starts.
-- The default trial length is **14 days**.
+You get a warning before the trial ends. If it ends without a usable payment method, the trial cancels instead of converting unpaid.
 
-Brimble sends a warning before the trial ends. If the trial reaches its end without a usable payment method, Stripe is configured to cancel it rather than keep it alive without payment.
+## What else appears on your bill
 
-## What gets billed besides the base plan
+Besides the plan or seats, a cycle can include:
 
-Every paid plan has a **base value** made up of the usage included with that plan.
+| Category | How it's charged |
+| -------- | ---------------- |
+| **CPU** | Metered — see [Compute pricing](/billing/compute) |
+| **Memory** | Metered — see [Compute pricing](/billing/compute) |
+| **Bandwidth** | Included amount per plan; overage at **$0.25/GB** |
+| **Volume / disk storage** | Metered while attached |
+| **Object storage** | Metered |
+| **PgBouncer** | Metered when enabled |
+| **Database backup storage** | Metered (above plan thresholds where applicable) |
+| **Sandbox CPU / memory** | Metered above plan-included sandbox allowances |
+| **Sandbox snapshot storage** | Metered above plan-included snapshot allowance |
+| **Build minutes** | Included + optional top-ups — see [Build minutes](/billing/build-minutes) |
+| **Add-ons** | For example [static outbound IPs](/networking/static-outbound-ips) or [email forwarding](/domains/email-forwarding) |
 
-That base value is what Brimble treats as included before overage starts.
+The dashboard estimate updates through the cycle so you can see where spend is coming from before the invoice closes.
 
-The current-cycle estimate can include:
+## How your bill is calculated
 
-- CPU overage
-- Memory overage
-- Bandwidth overage
-- Volume storage
-- Object storage
-- PgBouncer usage
-- Database backup storage
-- Sandbox CPU
-- Sandbox memory
-- Sandbox snapshot storage
-
-Brimble builds these charges from Stripe meter prices plus usage tracked during the current billing cycle.
-
-The exact included quotas and price IDs are loaded from Brimble's plan configuration and Stripe pricing data. That is why the dashboard can show a live estimate without waiting for the final invoice.
-
-## How Brimble calculates your bill
-
-At a high level, Brimble calculates your current bill in four steps:
-
-1. Start with your base plan charge.
-2. Add any overage above your plan's included base values.
+1. Start with the plan charge (or Team seats × $11).
+2. Add metered usage for that cycle (compute, bandwidth overage, storage, sandboxes, and so on).
 3. Add any one-off purchases in the same cycle.
-4. Subtract any credit already sitting on your Stripe customer balance.
-
-In practice, the important part is this:
-
-**your plan gives you an included base value, and Brimble only bills the extra usage above that base as overage.**
-
-That is the pattern in the code:
-
-- Plan inclusions come from the per-plan configuration.
-- CPU, memory, storage, and bandwidth usage arrive at billing already compared against the plan defaults.
-- Sandbox usage is compared against the plan's included sandbox allowance before pricing is applied.
-
-### What counts as overage
-
-Overage means usage that goes beyond what your current plan includes.
-
-Depending on the product you use, that can include overage on:
-
-- CPU above the included plan baseline
-- Memory above the included plan baseline
-- Bandwidth above the included plan limit
-- Sandbox CPU, memory, or snapshot usage above the included sandbox allowance
-
-Some categories are still billed directly from measured usage in this service today, such as volume storage, object storage, PgBouncer usage, and database backup storage.
-
-### How to read the estimate
-
-The live billing estimate is meant to answer a simple question:
-
-**"If my cycle ended right now, what would I owe?"**
-
-Brimble gets that estimate from Stripe's upcoming invoice when it can, then breaks it down into:
-
-- Base plan cost
-- Metered total
-- Per-category usage amounts
-- Open invoices that are still unpaid
+4. Apply any credit on your account balance.
 
 ### Simple examples
 
-Here is the user-friendly way to think about it:
-
-- **You stay within your plan's included limits all month.** You pay the base plan charge only.
-- **You scale a project above the CPU or memory included in your plan.** Only the amount above the included base starts adding overage for the time you run at that size.
-- **You attach billable storage.** Storage starts contributing to the metered total while it exists.
-- **You go over your included bandwidth.** The extra outbound traffic shows up as bandwidth overage in the current-cycle estimate.
-- **You buy extra build minutes.** That is not folded into your plan price. It shows up as a separate one-off purchase.
+- **Hacker plan, light usage.** You pay **$3** for the plan, plus whatever CPU and memory your projects actually ran, plus any bandwidth over the included amount.
+- **Two vCPU and 2 GB always on for a full month** in a standard-rate region costs about **$4** in compute ($2 CPU + $2 memory), on top of the plan. See [Compute pricing](/billing/compute) for the hourly view.
+- **Team with 3 seats.** Seats are **$33/month**, plus metered compute and other usage for that workspace.
+- **You buy build-minute top-ups.** Those are separate one-off charges, not folded into the plan price.
 
 <Info>
-  The final source of truth for the amount due is the Stripe invoice for that billing cycle. Brimble's live estimate is designed to match that invoice as closely as possible before the cycle closes.
+  The invoice for the cycle is the final amount due. The live estimate in the dashboard is meant to track that invoice as closely as possible before the cycle closes.
 </Info>
 
 ## Usage estimates and invoices
 
-Brimble exposes two related views of what you owe:
-
-- A **live estimate** for the current cycle.
-- The actual **Stripe invoices** for settled and open charges.
-
-The live estimate includes:
-
-- The current cycle total.
-- The base plan portion.
-- A metered usage breakdown by category.
-- Any currently outstanding invoice count and amount due.
-
-That estimate is based on the upcoming Stripe invoice when one is available, so it reflects the same billing engine that will produce the final invoice.
+- A **live estimate** for the current cycle (base plan, metered breakdown, open invoice totals).
+- **Invoices** for settled and open charges.
 
 ## Open invoices block some billing actions
 
-Brimble treats open or uncollectible invoices as blockers for important billing changes.
-
-If you have outstanding invoices, Brimble can block actions such as:
+Outstanding invoices can block:
 
 - Starting a new paid subscription.
 - Changing a personal plan.
-- Updating Team seat or build quantities.
-- Syncing Team seat counts.
+- Updating Team seat counts.
+- Transferring Team billing ownership.
 
-For teams, transfer of billing ownership is also blocked until the open invoices are settled.
+Settle open invoices first, then retry the change.
 
 ## Paying an invoice manually
 
-Brimble lets you manually settle an open invoice.
+If you have a default payment method, Brimble tries that card first. If off-session payment cannot complete, you can finish on the hosted invoice page.
 
-If you already have a default payment method, Brimble tries to pay the invoice with that card. If that off-session payment cannot be completed, Brimble falls back to Stripe's hosted invoice page so you can finish payment there.
-
-Once payment succeeds and there are no other outstanding invoices left for that customer, Brimble clears the billing lock and re-enables features that were disabled because of non-payment.
+When payment succeeds and nothing else is outstanding, billing locks clear and features paused for non-payment can turn back on.
 
 ## Payment failures and recovery
 
-When a subscription payment fails, Brimble does three user-visible things:
+When a renewal fails, Brimble records the attempt, notifies you, and waits for the subscription status to update.
 
-1. It records the failed invoice attempt.
-2. It sends an email and an in-app warning asking you to update your card or pay the invoice.
-3. It waits for Stripe's subscription status changes to decide what happens next.
+| Status | Meaning |
+| ------ | ------- |
+| **trialing** | Trial is active; first paid renewal has not happened yet. |
+| **past_due** | Payment failed; the subscription can still recover. |
+| **unpaid** | Paid features are paused until the invoice is settled. |
+| **canceled** | The subscription has ended. |
 
-The important subscription states are:
-
-- **trialing**: the subscription is active as a trial and has not reached its first paid renewal yet.
-- **past_due**: payment has failed, but the subscription still exists and can recover.
-- **unpaid**: paid features are paused until the open invoice is settled.
-- **canceled**: the subscription has ended.
-
-If a subscription reaches **unpaid**, Brimble records when that happened. A daily cleanup job cancels subscriptions that have stayed unpaid for **30 days** or more.
+Subscriptions that stay **unpaid** for **30 days** or more are canceled.
 
 <Warning>
-  Once a subscription becomes **unpaid**, Brimble treats paid features as paused until the debt is cleared.
+  Once a subscription becomes **unpaid**, paid features stay paused until the debt is cleared.
 </Warning>
-
-When payment eventually succeeds:
-
-- Open-invoice caches are cleared.
-- Build-minute balances for the new cycle are reset when the invoice is a renewal invoice.
-- Features disabled because of payment failure can be re-enabled.
 
 ## Build minutes
 
-Build minutes have two parts:
-
-- A plan-included balance for the current cycle.
-- Extra purchased minutes that sit on top of the included balance.
-
-Paid subscriptions reset their included build minutes on each renewal cycle. Free users are reset by a monthly background job.
-
-Purchased build minutes are stored separately as extra minutes, then added to the live remaining balance. Those extra minutes carry forward until you use them.
-
-See [Build minutes](/billing/build-minutes) for the dedicated guide.
+Included minutes reset each paid renewal cycle (or monthly for free accounts). Purchased top-ups carry forward until used. See [Build minutes](/billing/build-minutes).
 
 ## Spending limits
 
-Brimble supports optional spending limits on both personal accounts and team workspaces.
+Optional spending limits on personal accounts and team workspaces:
 
-Each spending limit has:
-
-- A dollar amount.
+- A dollar amount (minimum **$5**).
 - An action: **notify** or **pause**.
 
-The minimum spending limit Brimble accepts is **$5**.
-
-### Notify mode
-
-When usage reaches the limit in **notify** mode:
-
-- Brimble sends an email.
-- Brimble shows an in-app warning.
-- Compute keeps running.
-
-### Pause mode
-
-When usage reaches the limit in **pause** mode:
-
-- Brimble sends an email.
-- Brimble shows an in-app warning.
-- Brimble disables builds.
-- Brimble disables sandboxes.
-
-If usage later drops below the limit for the active cycle, or you raise the limit, Brimble can resume those features automatically.
+**Notify** warns you and keeps compute running. **Pause** warns you and disables builds and sandboxes until usage drops below the limit or you raise it.
 
 ## Payment methods
 
-Brimble stores payment methods through Stripe setup intents.
-
-That means:
-
-- Brimble can ask Stripe to save a card for future off-session charges.
-- Some cards may require a separate confirmation step, such as 3D Secure.
-- You can list, remove, and change the default payment method later.
-
-The default payment method is the one Brimble uses first for subscription renewals and invoice payment attempts.
+You can save, list, remove, and set a default card. The default method is used first for renewals and invoice attempts. Some cards require an extra confirmation step (for example 3D Secure).
 
 ## One-off purchases
 
-In addition to recurring subscriptions, Brimble supports one-off purchases for:
+Separate from the recurring plan:
 
 - Build-minute top-ups
 - Agent token top-ups
 - Domain purchases and renewals
 
-These purchases create transaction records separate from the recurring plan subscription.
-
-For build minutes and token top-ups, the minimum purchase amount is **$5**.
+Minimum for build minutes and token top-ups is **$5**.
 
 ## Domain auto-renewal
 
-Domain renewals are billed separately from your main workspace plan.
-
-When auto-renewal is enabled for a domain, Brimble creates a dedicated recurring subscription for that domain using:
-
-- The domain's renewal price
-- The renewal interval in years
-- A billing-cycle anchor based on the domain's renewal date
-
-You can:
-
-- Check whether auto-renewal exists for a domain
-- Reset the renewal setup if the renewal details change
-- Cancel auto-renewal for the next renewal cycle
-
-If a domain renewal payment fails, Brimble notifies you. If a duplicate renewal charge has to be unwound, Brimble can refund the Stripe invoice tied to that renewal.
+Domain renewals are billed separately from your workspace plan. When auto-renewal is on, Brimble creates a dedicated recurring charge anchored to the domain's renewal date. Failed renewals notify you; duplicate charges can be refunded when appropriate.
 
 ## Refunds
 
-Brimble supports refunds for successful one-off transactions, subject to the payment channel used for that transaction.
-
-In this service today:
-
-- Stripe-backed one-off charges can be refunded back through Stripe.
-- Blockradar-backed one-off charges can be refunded back to the originating wallet when the required refund details are available.
-
-Brimble only allows refunds of transactions that were actually successful. It rejects refunds for missing, pending, or already-refunded transactions.
+Successful one-off charges can be refunded through the original payment channel when the transaction is eligible. Pending or already-refunded transactions cannot be refunded again.
 
 ## Weekly usage insights
 
-For active paid subscriptions, Brimble can generate a detailed usage report for the current billing window and export it as a PDF.
-
-That report breaks down the current cycle into:
-
-- Base plan cost
-- Metered totals
-- Per-project cost contributors
-- Sandbox costs
-- Object-storage costs
-- Bandwidth overage
-
-Brimble also has a scheduled weekly usage-insights email job for production accounts.
+Active paid subscriptions can receive a usage report for the current window (base plan, metered totals, and major contributors). Production accounts may also get a scheduled weekly summary email.
 
 ## What to expect in the dashboard
-
-For day-to-day billing work, the important user-visible actions are:
 
 - Add or confirm a payment method
 - Start or change a subscription
@@ -396,6 +235,8 @@ For day-to-day billing work, the important user-visible actions are:
 
 ## Next steps
 
-- [Build minutes](/billing/build-minutes), how top-ups and monthly resets work.
-- [Referrals](/billing/referrals), how referral codes, domain credits, and invoice discounts work.
-- [Persistent disk](../projects/persistent-disk), storage that can contribute to usage billing.
+- [Compute pricing](/billing/compute), CPU and memory rates, hourly equivalents, and regions.
+- [Build minutes](/billing/build-minutes), top-ups and monthly resets.
+- [Referrals](/billing/referrals), referral codes, domain coupons, and invoice discounts.
+- [Regions](/projects/regions), how region choice affects latency and price.
+- [Persistent disk](/projects/persistent-disk), storage that contributes to usage billing.

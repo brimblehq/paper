@@ -53,7 +53,7 @@ Pull requests and merge requests open against your tracked branch trigger a **pr
 - **GitLab:** Same flow keyed off merge request events. `open` opens the preview, `close` and `merge` tear it down.
 - **Bitbucket:** Same flow keyed off pull request events. `pullrequest:created` opens the preview, `pullrequest:fulfilled` and `pullrequest:rejected` tear it down.
 
-PR previews are gated by plan, see [Plans and pricing](../billing/plans).
+PR previews are gated by plan, see [How billing works](/billing/plans).
 
 ## Commit status
 
@@ -88,7 +88,7 @@ A project's git source is set at creation. To switch a project from GitHub to Gi
 
 **Pushed a commit but no build kicked off.** Either the push didn't go to the tracked branch (check your project's branch in **Configuration**), the provider's webhook was deleted on their side, or the auto-deploy toggle is off in **Configuration**. Re-register the webhook by disconnecting and reconnecting the provider.
 
-**PR opened but no preview deployment.** PR previews are plan-gated. Confirm your plan allows them; see [Plans and pricing](../billing/plans). Also confirm the PR targets the tracked branch.
+**PR opened but no preview deployment.** PR previews are plan-gated. Confirm your plan allows them; see [How billing works](/billing/plans). Also confirm the PR targets the tracked branch.
 
 **Submodule clone fails.** Brimble authenticates with the parent repo's credentials. If a submodule lives in a different repo or different provider, Brimble can't authenticate to it. Switch submodule URLs to ones reachable with the same credentials, or vendor the submodule.
 

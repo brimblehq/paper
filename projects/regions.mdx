@@ -13,14 +13,14 @@ Region also determines:
 
 * Where the project's database and disk live.
 * Which regional pool static outbound IPs use, if you enable that feature.
-* The price of storage. Storage cost is multiplied by a per-region factor.
+* The price of **compute** (CPU and memory) and **storage**. Some regions use a higher rate than the base.
 
 ## Region tiers
 
 | Tier | Available on | Description |
 | ---- | ------------ | ----------- |
 | **Free** | Free plan and up | Limited selection. Suitable for side projects and testing. |
-| **Paid** | Hacker, Pro, Team | Wider selection across continents. |
+| **Paid** | Hacker, Developer, Team | Wider selection across continents. |
 
 The dashboard marks paid regions clearly during project creation. You can't deploy to a paid region from the free plan.
 
@@ -70,9 +70,13 @@ Brimble redeploys the project in the new region on save. Custom domains, environ
 
 For database projects the move involves migrating the underlying volume, which Brimble does as part of the redeploy. Larger volumes take longer; expect a brief connection interruption while the new instance comes up.
 
-## Storage pricing per region
+## Compute and storage pricing per region
 
-Storage cost is multiplied by a per-region factor. Most regions are at the base rate; a few high-cost regions carry a small multiplier. The exact rate per region appears during project creation and on the project's billing page.
+CPU and memory use Brimble's metered [compute pricing](/billing/compute) (**$1 per vCPU-month** and **$1 per GB-month** at the base rate). Most regions bill at that base. A few regions apply a multiplier (for example **1.45×**), so the same size costs more there.
+
+Storage is also multiplied by a per-region factor where applicable.
+
+The dashboard shows the effective rates for the region you select during project creation and when you change size. Use that display as the source of truth for the region you pick.
 
 ## Outbound IPs
 

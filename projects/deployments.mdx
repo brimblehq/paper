@@ -56,10 +56,9 @@ Deployments don't all run at once. Each plan grants a fixed number of **concurre
 
 - Free: builds queued, no concurrent build slot
 - Hacker: 1
-- Pro: 2
-- Team: configurable (each extra concurrent build is metered)
+- Developer and Team: 2
 
-If all your slots are busy, new deployments enter `pending` and start as soon as a slot opens. Cancel a queued deployment by clicking **Cancel** on the deployment in the dashboard.
+Developer and Team share the same concurrency model. If all your slots are busy, new deployments enter `pending` and start as soon as a slot opens. Cancel a queued deployment by clicking **Cancel** on the deployment in the dashboard.
 
 ## Rollbacks
 

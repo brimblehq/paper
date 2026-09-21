@@ -53,9 +53,9 @@ Terms you'll see across Brimble docs and the dashboard, in alphabetical order.
 
 **Commit status.** A check mark or red X that Brimble posts to GitHub, GitLab, or Bitbucket on a commit, linking back to the deployment. Shows up next to commits in the provider's UI.
 
-**Compute.** CPU and memory allocated to a project. Plans include a baseline; usage above the baseline meters at $4/GB-month.
+**Compute.** CPU and memory allocated to a project. Metered at **$1 per vCPU-month** and **$1 per GB-month** at the base rate (about **$0.0014/hour** each over a 720-hour month). Some regions apply a multiplier. See [Compute pricing](/billing/compute).
 
-**Concurrent builds.** How many builds can run in parallel under your plan. Above the limit, builds queue.
+**Concurrent builds.** How many builds can run in parallel under your plan. Free queues builds; Hacker gets 1; Developer and Team both get 2. Above the limit, builds queue.
 
 **Connection string.** A full URI Brimble exposes for a managed database (`CONNECTION_STRING`) using the public load-balancer hostname. For services in the same workspace and region, prefer `PRIVATE_SERVICE_HOST` instead.
 
@@ -129,7 +129,7 @@ Terms you'll see across Brimble docs and the dashboard, in alphabetical order.
 
 **Let's Encrypt.** The certificate authority Brimble uses for automatic TLS. Certificates are issued and renewed without action on your side; the only common blocker is a CAA record that doesn't authorize Let's Encrypt.
 
-**Log retention.** How long application and request logs are kept. Plan-dependent: 1 day on Free, 7 on Hacker, 14 on Pro, 30 on Team.
+**Log retention.** How long application and request logs are kept. Plan-dependent: 1 day on Free, 7 on Hacker, 14 on Developer, 30 on Team.
 
 ## M
 
@@ -137,7 +137,7 @@ Terms you'll see across Brimble docs and the dashboard, in alphabetical order.
 
 **MCP server.** A Model Context Protocol server. **[Brimble MCP](/mcp/overview)** is Brimble's official server at `https://mcp.brimble.io` for controlling your account. You can also [deploy your own MCP servers](/projects/deploy-an-mcp-server) as projects.
 
-**Metered.** Pricing where you pay for what you use, like compute above plan default or bandwidth above the included amount.
+**Metered.** Pricing where you pay for what you use, like CPU and memory for the time they run, or bandwidth above the included amount.
 
 **Multipart upload.** S3 protocol pattern for uploading a large object as a series of parts (5 MB minimum per part, 5 GB max) that the bucket assembles into the final object on completion. Use the high-level helpers in your S3 SDK (`@aws-sdk/lib-storage`'s `Upload`, boto3's `upload_file`) for anything above ~100 MB.
 
@@ -159,7 +159,7 @@ Terms you'll see across Brimble docs and the dashboard, in alphabetical order.
 
 **Persistent disk.** A durable volume attached to a project so files survive restarts and redeploys. 10 to 150 GB in 10 GB steps, billed at $0.25/GB-month base. See [Persistent disk](/projects/persistent-disk).
 
-**Plan.** Free, Hacker, Pro, or Team. Each has a base price, an included quota of resources, and a feature set. See [Plans and pricing](/billing/plans).
+**Plan.** Free, Hacker, Developer (sometimes labeled Pro in the product), or Team. Each has a base price (or per-seat price for Team), included allowances, and a feature set. CPU and memory are metered separately. See [How billing works](/billing/plans).
 
 **Presigned URL.** A temporary, signed URL generated server-side that lets the holder upload (`PUT`) or download (`GET`) one object in a bucket without your credentials being involved. Standard S3 feature; expiry is set when the URL is generated. See [Presigned URLs](/object-storage/objects#presigned-urls).
 
@@ -181,7 +181,7 @@ Terms you'll see across Brimble docs and the dashboard, in alphabetical order.
 
 **Recovery code.** An 8-character single-use code generated when you enable TOTP. Use it to sign in if you lose access to your authenticator app. Shown once at setup; save them.
 
-**Referral code.** An 8-character code on your account, shown in the profile drawer. When someone who used your code starts a paid plan, you can earn a domain credit and 25% off your next invoice, up to 5 times. See [Referrals](/billing/referrals).
+**Referral code.** An 8-character code on your account, shown in the profile drawer. When someone who used your code starts a paid plan, you can earn a free domain coupon and 25% off your next invoice, up to 5 times. See [Referrals](/billing/referrals).
 
 **Redeploy.** Re-running a deployment without a new commit. Picks up env-var changes, retries a failed deploy, or rolls back to a previous artifact.
 

@@ -207,7 +207,7 @@
           {
             "group": "Billing",
             "icon": "receipt",
-            "pages": ["billing/plans", "billing/build-minutes", "billing/referrals"]
+            "pages": ["billing/plans", "billing/compute", "billing/build-minutes", "billing/referrals"]
           },
           {
             "group": "Notifications",

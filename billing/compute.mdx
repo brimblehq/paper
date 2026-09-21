@@ -1,0 +1,79 @@
+---
+title: "Compute pricing"
+description: "How Brimble charges for CPU and memory — monthly rates, hourly equivalents, and region multipliers."
+---
+
+Every running project uses **CPU** and **memory**. On Brimble those resources are **metered**: you pay for what you provision for the time it runs. Plan prices (Hacker, Developer, Team seats) do **not** include free CPU or RAM.
+
+See [How billing works](/billing/plans) for the full bill structure.
+
+## Base rates
+
+| Resource | Monthly rate | Rough hourly rate |
+| -------- | ------------ | ----------------- |
+| **1 vCPU** | **$1 / month** | **~$0.0014 / hour** |
+| **1 GB RAM** | **$1 / month** | **~$0.0014 / hour** |
+
+Hourly figures use a **720-hour** billing month ($1 ÷ 720). Billing tracks usage over the cycle; apps that are scaled down or stopped cost less than always-on capacity.
+
+## How usage is measured
+
+- You choose CPU and memory when you create or resize a project (or database).
+- Brimble tracks how long that capacity runs during the billing cycle.
+- The charge is proportional: half a month at 2 vCPU costs about half of a full month at 2 vCPU.
+
+The live estimate under **Billing** in the dashboard updates as usage accumulates.
+
+## Region multipliers
+
+Most regions bill at the base rates above. Some regions cost more because infrastructure is more expensive there. When that applies, the dashboard shows the **effective** CPU and memory rate for the region you pick (base rate × regional factor).
+
+For example, if a region uses a **1.45×** factor:
+
+| Resource | Effective monthly rate | Rough hourly rate |
+| -------- | ---------------------- | ----------------- |
+| 1 vCPU | **$1.45** | **~$0.0020 / hour** |
+| 1 GB RAM | **$1.45** | **~$0.0020 / hour** |
+
+Always check the rate shown at create or resize time for the region you selected. Details: [Regions](/projects/regions).
+
+## Examples
+
+All examples assume a **standard-rate** region (1.0×) and full-month always-on usage, **before** plan or seat fees.
+
+| Setup | Compute / month |
+| ----- | --------------- |
+| 0.5 vCPU + 0.5 GB | ~$1 |
+| 1 vCPU + 1 GB | ~$2 |
+| 2 vCPU + 2 GB | ~$4 |
+| 2 vCPU + 2 GB on **10** projects | ~$40 |
+
+Add your plan on top:
+
+- Hacker: **+$3**
+- Developer: **+$11**
+- Team: **+$11 × seats**
+
+So **Hacker + one project at 2 vCPU / 2 GB** ≈ **$7/month** ($3 plan + $4 compute) in a standard region.
+
+At **1.45×**, the same 2 + 2 project is about **$5.80** compute instead of $4.
+
+## What is not included here
+
+Compute pricing on this page is **CPU and memory only**. Separately:
+
+- Bandwidth overage, volume storage, object storage, sandboxes, backups, and add-ons — see [How billing works](/billing/plans).
+- Build minutes — see [Build minutes](/billing/build-minutes).
+
+## Tips to control spend
+
+- Right-size CPU and memory; don't leave unused headroom running.
+- Prefer a region close to users that also matches your budget (check the rate in the UI).
+- Use a [spending limit](/billing/plans#spending-limits) if you want a notify or pause threshold.
+- Watch the live billing estimate during the cycle.
+
+## Next steps
+
+- [How billing works](/billing/plans)
+- [Regions](/projects/regions)
+- [Pricing on the website](https://brimble.io/pricing)

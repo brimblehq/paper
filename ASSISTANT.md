@@ -119,7 +119,7 @@ Mintlify renders the `title` as the H1, so **don't** write a duplicate `# Title`
 **Internal links.** Use Mintlify's path-style links without the `.mdx` extension:
 
 ```mdx
-See [Builds](/projects/builds) or [Plans and pricing](../billing/plans).
+See [Builds](/projects/builds) or [How billing works](/billing/plans).
 ```
 
 Both absolute (`/path`) and relative (`../area/page`) work. Drop `.mdx` either way.
@@ -312,15 +312,15 @@ A running list. Add to it.
 
 * **`_id` on the wire.** The webhook payload uses `id`, not `_id`. The dashboard backend strips Mongo's `_id` before sending. Don't expose `ObjectId` as a TypeScript type in docs; it's `string`.
 * **Dashboard label vs runtime behavior.** The database overview card says "Backup frequency: Daily" but `heracle/internal/service/cron.go:42-43` cron is `0 0 * * * *` — every hour. The cron is the truth.
-* **Hacker price.** $5/month, not $7. Pro is $15, not $19. Sourced from `dashboard/src/utils/default-pricing.ts` (the live config). Older internal docs have $7/$19; ignore them.
-* **Plan free CPU/memory baseline.** Free is 0.25 vCPU / 0.25 GB. The compute slider's smallest stop is 0.5 — meaning Free-plan projects pick up metered overage as soon as they create a project. Document this honestly.
+* **Plan prices.** Hacker **$3**/month, Developer **$11**/month, Team **$11 per seat**/month (minimum 1 seat). Some UI still says **Pro** for the Developer tier — same plan. Older docs with $5/$15 Hacker/Pro or $5/seat + $8/concurrent-build are obsolete; do not revive them.
+* **Compute is fully metered.** **$1 per vCPU-month** and **$1 per GB-month** at the base rate (~**$0.0014/hour** each over 720 hours). Plan price does **not** include free CPU/RAM. Some regions multiply (e.g. 1.45×). See `billing/compute.mdx` and `billing/plans.mdx`.
 * **Persistent disk default.** 10 GB minimum, not 1. Sizes go 10–150 GB in 10 GB steps (`disk-size-options.ts`).
 * **Password protection** uses a session cookie + form login (`x-brimble-session`), **not** HTTP Basic Auth. `curl -u user:pass` is wrong. There's no self-serve toggle in the dashboard yet.
 * **MCP auth header** for projects with edge MCP auth is `x-brimble-key`. **Brimble MCP** (`https://mcp.brimble.io`) also accepts `Authorization: Bearer <api-key>` and maps it to `x-brimble-key` toward Core.
 * **`subscription_id` in webhook envelope** is in the internal RabbitMQ payload, but `brimble-email/src/factory/webhook.factory.ts` strips it before sending to the user. The user-visible envelope is `{event, data}`.
 * **Webhook signing.** Real events (factory → Hookdeck → user) are unsigned. The `X-Brimble-Webhook` HMAC and `X-Brimble-Test` header only apply to the one-off test endpoint, not production deliveries. Don't claim users should verify HMAC.
 * **Env var values are not in webhook payloads.** Only the variable name (`envData.name`). The `data.value` field doesn't exist in the factory output.
-* **Region defaults are read at runtime** from the `PlanConfiguration` Mongo collection, not hardcoded. The internal `COMPUTE_PRICING_GUIDE.md` documents the values; the dashboard's `default-pricing.ts` mirrors them as fallbacks.
+* **Region defaults are read at runtime** from the `PlanConfiguration` Mongo collection, not hardcoded. User-facing docs should point at dashboard rates and `billing/compute` / `projects/regions`, not internal guides.
 * **Hugging Face git integration was removed.** Don't reintroduce it without confirmation.
 * **Builder, not Runner.** The build worker is called the **Builder** everywhere user-facing. The codebase still uses "runner" in file names and class names, but the docs are renamed. Don't backslide.
 * **Build pipeline step 7 is "Launch", not "Orchestrate".** That's the step where the artifact goes live on the Nomad cluster. Same applies in `projects/builds.mdx` and `projects/build-system.mdx`.
@@ -329,7 +329,7 @@ A running list. Add to it.
 * **Rate limiting is Cloudflare, not the proxy middleware.** The proxy has a `rate-limit.ts` middleware that defaults to "500 req / 10 min / IP / domain", but **it's not wired into the live request path**. Cloudflare handles it with adaptive rules. Don't quote the 500 number.
 * **Platform API keys** authenticate Core, SDKs, and **Brimble MCP**. Keys can be scoped (permissions). See `mcp/overview` and `mcp/connect` for the hosted agent server; see `projects/deploy-an-mcp-server` for user-deployed MCP projects.
 * **Apex A record IP is `157.90.225.125` at `@`.** Don't say "see the dashboard for the IP"; write the value, sourced from `dns/lb/keepalived-backup.conf`.
-* **Workspace pricing: $5/seat + $8/build, min 2 builds.** Sourced from `dashboard/src/config/index.ts:36-37`. 3 seats + 2 builds = $31/mo. Don't write $7.50/build or 0/1 minimum builds.
+* **Team seats only.** Team recurring charge is **$11 × seats**. Concurrent builds are a plan capacity (Developer and Team both get **2**), not a separate $8/slot line item. Don't write $5/seat + $8/build or imply Team has higher concurrency than Developer.
 * **Payment retry copy avoids Stripe by name.** The user-facing retry flow describes what users see (warnings, builds disabled at attempt 3, projects suspended when retries exhaust, canceled at 30 days unpaid). It doesn't mention Stripe, Smart Retries, or webhook event names. The internal payment service handles the "how"; the user only needs the "what".
 * **Referral rewards go to the referrer only.** Dashboard copy in `referral-form.tsx` says "you both earn credit when they join." Auth and payment convert on the referred user's first paid Hacker / Developer / Team plan, not on signup, and only the referrer is credited. Developer trial does not convert; conversion waits for a paid invoice. Domain subscriptions do not convert. Cap is 5. See `billing/referrals.mdx`.
 * **Header strip + Header inject sections were removed** from `networking/request-lifecycle.mdx`. The numbered spine goes 1-10 now; don't reintroduce header-injection or header-strip explanations without confirmation.
