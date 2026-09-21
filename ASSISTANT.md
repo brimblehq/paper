@@ -313,6 +313,7 @@ A running list. Add to it.
 * **`_id` on the wire.** The webhook payload uses `id`, not `_id`. The dashboard backend strips Mongo's `_id` before sending. Don't expose `ObjectId` as a TypeScript type in docs; it's `string`.
 * **Dashboard label vs runtime behavior.** The database overview card says "Backup frequency: Daily" but `heracle/internal/service/cron.go:42-43` cron is `0 0 * * * *` — every hour. The cron is the truth.
 * **Plan prices.** Hacker **$3**/month, Developer **$11**/month, Team **$11 per seat**/month (minimum 1 seat). Some UI still says **Pro** for the Developer tier — same plan. Older docs with $5/$15 Hacker/Pro or $5/seat + $8/concurrent-build are obsolete; do not revive them.
+* **Developer and Team share entitlements.** Same bandwidth, build minutes, concurrency, sandboxes, log retention, etc. Team is a seat-based workspace on that tier; only Stripe price IDs differ. After changing Developer limits, run `php artisan billing:align-team-plan-config`.
 * **Compute is fully metered.** **$1 per vCPU-month** and **$1 per GB-month** at the base rate (~**$0.0014/hour** each over 720 hours). Plan price does **not** include free CPU/RAM. Some regions multiply (e.g. 1.45×). See `billing/compute.mdx` and `billing/plans.mdx`.
 * **Persistent disk default.** 10 GB minimum, not 1. Sizes go 10–150 GB in 10 GB steps (`disk-size-options.ts`).
 * **Password protection** uses a session cookie + form login (`x-brimble-session`), **not** HTTP Basic Auth. `curl -u user:pass` is wrong. There's no self-serve toggle in the dashboard yet.

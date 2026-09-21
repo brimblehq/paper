@@ -53,6 +53,8 @@ When the first payment succeeds, the subscription becomes active immediately. If
 
 Team workspaces have their own subscription. The recurring Team charge is **$11 per seat per month**. You can start with any number of seats (at least one) and add seats later.
 
+Team workspaces use the **same plan allowances as Developer** — bandwidth, build minutes, concurrent builds, sandboxes, and feature flags. The difference is shared seats and workspace billing, not a richer entitlement tier.
+
 When you create a Team workspace, Brimble stores that seat count with the workspace. You can update seats under workspace billing as long as you do not go below the number of members already on the team.
 
 ### Team billing ownership
@@ -133,12 +135,16 @@ The dashboard estimate updates through the cycle so you can see where spend is c
 3. Add any one-off purchases in the same cycle.
 4. Apply any credit on your account balance.
 
-### Simple examples
+### Estimate before you deploy
 
-- **Hacker plan, light usage.** You pay **$3** for the plan, plus whatever CPU and memory your projects actually ran, plus any bandwidth over the included amount.
-- **Two vCPU and 2 GB always on for a full month** in a standard-rate region costs about **$4** in compute ($2 CPU + $2 memory), on top of the plan. See [Compute pricing](/billing/compute) for the hourly view.
-- **Team with 3 seats.** Seats are **$33/month**, plus metered compute and other usage for that workspace.
-- **You buy build-minute top-ups.** Those are separate one-off charges, not folded into the plan price.
+For a full monthly estimate (plan or seats, CPU, memory, region), use the [pricing calculator](https://brimble.io/pricing-calculator). Rates and how the bill is built are covered in [Compute pricing](/billing/compute).
+
+Quick orientation:
+
+- **Hacker** starts at **$3**/month for the plan, plus metered compute and other usage.
+- **Developer** starts at **$11**/month, plus metered usage.
+- **Team** is **$11 × seats**, plus metered usage for that workspace.
+- Build-minute top-ups are separate one-off charges.
 
 <Info>
   The invoice for the cycle is the final amount due. The live estimate in the dashboard is meant to track that invoice as closely as possible before the cycle closes.
@@ -235,6 +241,7 @@ Active paid subscriptions can receive a usage report for the current window (bas
 
 ## Next steps
 
+- [Pricing calculator](https://brimble.io/pricing-calculator), estimate plan, seats, and compute before you deploy.
 - [Compute pricing](/billing/compute), CPU and memory rates, hourly equivalents, and regions.
 - [Build minutes](/billing/build-minutes), top-ups and monthly resets.
 - [Referrals](/billing/referrals), referral codes, domain coupons, and invoice discounts.
