@@ -37,7 +37,9 @@ Skip object storage when:
 
 ## Regions
 
-Buckets live in a single region; objects don't replicate across regions automatically. Pull the current region list from the dashboard's **New bucket** dialog, the catalog changes from time to time as Brimble brings new regions online.
+Buckets live in a single region; objects don't replicate across regions automatically. Pull the current region list from the dashboard's **New bucket** dialog; the catalog changes from time to time as Brimble brings new regions online.
+
+**Lagos** (`los`) is available for workloads that should keep data in West Africa. It has a few feature limits relative to other regions (no lifecycle rules, no bucket policies, no server-side object copy). Details: [Buckets → Lagos region](/object-storage/buckets#lagos-region).
 
 ## S3 compatibility
 
@@ -49,7 +51,7 @@ aws s3 ls s3://<bucket-name>/ \
   --region <bucket-region>
 ```
 
-The endpoint is shown on the bucket's detail page in the dashboard. The same endpoint accepts the standard S3 verbs you'd expect: list, head, get, put, delete, multipart upload, and copy. Access is gated by [storage credentials](/object-storage/credentials), not by per-object ACLs. See [Working with objects](/object-storage/objects) for code snippets in the major SDKs.
+The endpoint is shown on the bucket's detail page in the dashboard. The same endpoint accepts the standard S3 verbs you'd expect: list, head, get, put, delete, and multipart upload. Server-side object copy is available in most regions; see [Buckets → Lagos region](/object-storage/buckets#lagos-region) for the exception. Access is gated by [storage credentials](/object-storage/credentials), not by per-object ACLs. See [Working with objects](/object-storage/objects) for code snippets in the major SDKs.
 
 ## Pricing
 

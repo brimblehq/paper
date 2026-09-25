@@ -48,6 +48,24 @@ What you can change post-creation:
 - **Credentials** issued against the bucket. See [Storage credentials](/object-storage/credentials).
 - **Object data**. See [Working with objects](/object-storage/objects).
 
+## Lagos region
+
+**Lagos** (`los`) is Brimble's object-storage region in Lagos, Nigeria. Choose it when most of your uploads or downloads are in West Africa and you want the data to live close to those clients.
+
+Like every other region, the choice is permanent for that bucket. The region string you pass to S3 clients is `los`. The endpoint URL is on the bucket's detail page after create; configure your client with path-style addressing (`forcePathStyle: true` or the equivalent in your SDK), the same as for other Brimble buckets. See [Working with objects](/object-storage/objects).
+
+Lagos buckets support the usual day-to-day S3 work: list, head, get, put, delete, multipart upload, CORS, storage credentials, and making a bucket public or private from the dashboard.
+
+### Limitations
+
+Compared with other object-storage regions, Lagos does not support:
+
+- **Lifecycle rules.** You can't attach expiry or transition rules on the bucket. Delete or rewrite objects from your app or with an S3 client when you need cleanup.
+- **Bucket policies.** Access is only through [storage credentials](/object-storage/credentials) (and public read when the bucket is marked public). There is no separate bucket-policy document to attach.
+- **Server-side object copy.** Operations that rely on S3 `CopyObject` (copying or renaming a key inside the bucket without downloading it) are not available. To duplicate or move an object, download it and upload it under the new key, or [migrate](/object-storage/migrate) into another bucket.
+
+If you need lifecycle rules or server-side copy, create the bucket in a region that lists those capabilities in the dashboard, or keep Lagos for the Africa-local data path and use another bucket for workflows that need those features.
+
 ## CORS rules
 
 If you upload to or read from a bucket directly from a browser (presigned URLs in a single-page app, file-picker uploads, direct video playback), the browser will check the bucket's CORS configuration before issuing requests from your domain.
