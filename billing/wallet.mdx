@@ -1,0 +1,124 @@
+---
+title: "Wallet"
+description: "Add credit to your Brimble wallet, pay for plans and purchases with balance, and choose when the wallet is used first."
+---
+
+A **wallet** holds prepaid credit on Brimble. You add money once, then use that balance for subscriptions, renewals, and eligible one-off purchases without charging your card for every payment.
+
+Wallet credit is always tracked in **USD**, even if you complete checkout in another currency with a supported local provider.
+
+## Why use a wallet
+
+- **Fewer card charges.** Top up when it suits you, then spend from balance.
+- **Team and personal are separate.** A team wallet pays for that team's billing. Your personal wallet pays for your personal workspace.
+- **Works alongside a card.** You can keep a card on file for fallback, or prefer the wallet for subscription charges when balance covers them.
+- **Clear history.** Funding and spends show up as wallet transactions with receipts where available.
+
+## Personal vs team wallets
+
+| Scope | What it pays for |
+| ----- | ---------------- |
+| **Personal** | Your personal plan, personal add-ons, and other charges on your account |
+| **Team** | That team's seats, renewals, and team purchases |
+
+Opening billing for a personal workspace uses your personal wallet. Opening billing for a team uses that team's wallet. They do not share balance.
+
+You need **billing manage** permission on a team to fund or manage that team's wallet.
+
+## How funding works end to end
+
+1. Open **Billing** (or wallet) settings for the workspace you want to fund.
+2. Choose an amount. The usual minimum is **$5**; the maximum depends on the payment option you pick (often up to **$10,000** for card).
+3. Pick a payment option when more than one is available (for example card in USD, or a local option where offered).
+4. Complete checkout with the provider.
+5. Return to Brimble. Balance updates after payment is confirmed. You get an email when the top-up succeeds.
+
+Until confirmation finishes, the new credit may not appear yet. Refresh balance after you land back on billing, or wait a moment and check again.
+
+<Tip>
+  Fund the **team** wallet before you activate a new team that will pay from wallet. Personal balance cannot pay a team's first invoice.
+</Tip>
+
+## What you can pay with wallet credit
+
+Depending on your workspace and settings, wallet balance can cover:
+
+- Starting or activating a paid subscription when wallet payment is allowed.
+- Renewals when you prefer wallet as the default source and balance is enough.
+- Plan or seat changes that create an invoice.
+- Eligible one-off purchases (for example build-minute top-ups) when you choose to pay with wallet.
+
+If balance is short for a charge that needs the wallet, Brimble asks you to add funds (or uses your card when that path is available). You may get an email when a charge fails because the wallet is too low.
+
+## Default payment source
+
+On billing settings you can set whether subscription charges should prefer:
+
+- **Card** (default for most accounts), or
+- **Wallet** when balance covers the amount
+
+That preference is stored **per wallet** (personal and each team separately).
+
+When wallet is preferred and balance is enough, renewals and similar subscription charges draw from the wallet first. If balance is short and a card is on file, Brimble can charge the card instead and notify you. If there is no usable card and balance is short, the payment fails until you fund the wallet or add a card.
+
+You can still choose a specific card for a given action when the product asks for a payment method.
+
+## Team activation with wallet only
+
+If you create a team without a card and wallet funding is available:
+
+1. Brimble creates the team as **not active yet**.
+2. You fund the **team** wallet.
+3. You activate the team so the first subscription invoice is paid from that balance.
+
+Until activation succeeds, the team is not fully usable for billing-backed features (for example invites and builds that depend on an active plan). Inactive team shells that never get funded can be removed after a waiting period.
+
+## Trials and deferred charges
+
+Some flows check that the wallet can cover a charge that happens **later** (for example a trial ending, or domain auto-renew set up without a card). Nothing is locked aside at that moment. When the charge is due, Brimble uses your payment preference and available methods as usual.
+
+## Low balance
+
+If a wallet payment cannot complete because balance is too low:
+
+- The charge does not go through from the wallet.
+- You are prompted to fund (or use a card when that option applies).
+- You may receive an email asking you to top up.
+
+Keep enough balance for your next renewal if you rely on wallet-first billing.
+
+## Limits and currency
+
+| Rule | Typical value |
+| ---- | ------------- |
+| Minimum top-up | **$5** |
+| Maximum top-up | Provider-dependent (often **$10,000** for card) |
+| Ledger currency | **USD** |
+
+Local checkout options may collect in another currency. The credit added to your wallet is still USD.
+
+## Wallet vs card
+
+| | Wallet | Card |
+| - | ------ | ---- |
+| Timing | Pay ahead, spend later | Charged when the invoice or purchase runs |
+| Control | You choose when to top up | Charged on renewals and one-offs by default |
+| Fallback | Short balance can fall back to card if one is saved | Failed card can fall back to wallet when allowed |
+| Scope | Separate personal and team balances | Payment method on the billing owner |
+
+Most workspaces keep both available: a card for reliability, and a wallet for prepaid spend.
+
+## Where to manage it
+
+In the dashboard, open **Settings → Billing** (or the workspace billing page for a team):
+
+- View balance and recent wallet transactions.
+- Add credit.
+- Set whether wallet or card is preferred for subscription charges.
+- Download or open receipts for funding and invoice payments where offered.
+
+## Related
+
+- [How billing works](/billing/plans), plans, invoices, and renewals.
+- [Build minutes](/billing/build-minutes), top-ups you can pay with card or wallet when offered.
+- [Referrals](/billing/referrals), credits and discounts from inviting others.

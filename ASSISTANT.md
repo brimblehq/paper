@@ -92,7 +92,7 @@ observability/             Metrics, logs
 analytics/                 Web analytics
 workspaces-and-teams/      Workspaces, team management
 security/                  2FA, passkeys
-billing/                   Plans, build minutes, referrals
+billing/                   Plans, wallet, build minutes, referrals
 notifications/             Notification preferences
 webhooks/                  Webhook setup + events reference
 troubleshooting/           Symptom-indexed debugging

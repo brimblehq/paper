@@ -243,6 +243,8 @@ Terms you'll see across Brimble docs and the dashboard, in alphabetical order.
 
 **`waitUntilReady`.** An SDK option on runtime methods (`exec`, `runCode`, `putFile`, etc.) and a standalone helper on the sandbox handle that waits until the sandbox is `ready` before running the operation. Useful after **resume** or when reconnecting to an existing sandbox via `getReady`. Not required immediately after `create()` — create already blocks until `ready`.
 
+**Wallet.** Prepaid USD credit on a personal or team billing scope. You fund it from billing settings, then use the balance for subscriptions, renewals, and eligible purchases. See [Wallet](/billing/wallet).
+
 **Watch paths.** A project setting that limits which file changes trigger a build. For monorepos, set this to the directory of the project so unrelated pushes don't redeploy.
 
 **Webhook.** An HTTP POST Brimble sends to a URL you configure when an event happens (deployment success, domain renewed, env var changed, etc.). See [Webhooks](/webhooks/overview).
