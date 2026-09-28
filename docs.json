@@ -1,6 +1,6 @@
 {
   "$schema": "https://mintlify.com/docs.json",
-  "theme": "maple",
+  "theme": "aspen",
   "name": "Brimble",
   "description": "Brimble documentation. Deploy applications, manage domains, scale services, and ship without operating infrastructure.",
   "colors": {
@@ -193,7 +193,8 @@
             "icon": "users",
             "pages": [
               "workspaces-and-teams/create-a-workspace",
-              "workspaces-and-teams/manage-teams"
+              "workspaces-and-teams/manage-teams",
+              "workspaces-and-teams/roles-and-permissions"
             ]
           },
           {

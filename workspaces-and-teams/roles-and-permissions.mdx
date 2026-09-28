@@ -1,0 +1,201 @@
+---
+title: "Roles and permissions"
+description: "What each workspace role can do, how environment access works, and how to build custom roles."
+---
+
+Every member of a workspace has a **role**. The role decides which actions they can take, and whether they can work in every environment or only the ones you assign to them.
+
+Brimble has four built-in roles, and you can create **custom roles** when none of them fit.
+
+## Built-in roles
+
+| Role | What it's for | Environments |
+| ---- | ------------- | ------------ |
+| **Creator** | The workspace owner. Full control, including billing, changing roles, custom roles, transferring ownership, and deleting the workspace. | Every environment |
+| **Administrator** | Runs the workspace day to day. Manages members, environments, webhooks, and API keys, and can delete or transfer projects. | Every environment |
+| **Member** | Builds and ships. Creates, deploys, and edits projects and their resources. | Only environments you assign |
+| **Viewer** | Read-only. Sees projects, deployments, logs, and settings without changing anything. | Only environments you assign |
+
+A workspace always has exactly one Creator. Administrators can't manage billing, change anyone's role, transfer ownership, or delete the workspace. Those stay with the Creator.
+
+See the [permission reference](#permission-reference) for the full list.
+
+## Environment access
+
+Members and Viewers only work in the environments you give them. Creators and Administrators always have every environment.
+
+- A new member starts with access to the workspace's default environment.
+- To change it, open **Settings → Members**, click **⋯** on their row, then **Environment access**, and tick the environments they should see.
+- Everything outside those environments is hidden from them, including projects, variables, and deployments.
+
+Environment access limits *where* someone can act, not *what* they can do. A Viewer with access to Production still can't deploy there.
+
+<Note>
+  Environment access only applies to roles that are limited to assigned environments. If a member's role covers every environment, Brimble tells you to change the role instead of saving the selection.
+</Note>
+
+## Custom roles
+
+Create a custom role when you need a different mix of permissions, for example an **Accounting** role that manages billing and reads projects, or a **Deploy-only** role for a contractor.
+
+Only the Creator can create, edit, or delete custom roles.
+
+### Create a custom role
+
+1. Open **Settings → Members** and find **Custom roles**.
+2. Click **Create role**.
+3. Give it a name and a short description.
+4. Choose **Where can members use this role?**:
+   - **Every environment**: they can use the role in Production, Staging, and any other environment.
+   - **Only environments you assign**: works like Member and Viewer. You pick each person's environments after assigning the role.
+5. Pick the permissions the role should allow.
+6. Review, then click **Create role**.
+
+To give someone the role, change their role on the member's row and pick it from the list.
+
+### What every custom role includes
+
+Every custom role can always:
+
+- See the workspace and its members.
+- See the workspace's environments. A role limited to assigned environments only sees the ones you assign.
+- Read and dismiss its notifications.
+
+A custom role that can create, change, or delete something can also view it. For example, a role that can update domains can also see domains, even if you didn't tick **domain.read**.
+
+### Permissions a custom role can't have
+
+Four permissions stay with the Creator, because they would let someone take over the workspace:
+
+- Delete the workspace (**team.delete**)
+- Transfer ownership (**team.transfer_ownership**)
+- Change members' roles (**team.change_role**)
+- Create and manage custom roles (**role.manage**)
+
+Brimble rejects a custom role that includes any of them. **Billing** (**billing.manage**) is allowed, so you can give a finance or accounting role access to billing without making them the Creator.
+
+### Edit or delete a custom role
+
+Changes to a custom role apply to everyone who has it. You can't delete a role while members still have it; move them to another role first.
+
+## Permission reference
+
+✓ means the built-in role includes the permission. Custom roles can include any permission except the four listed in [Permissions a custom role can't have](#permissions-a-custom-role-cant-have).
+
+### Workspace
+
+| Permission | Allows | Creator | Administrator | Member | Viewer |
+| ---------- | ------ | :-----: | :-----------: | :----: | :----: |
+| team.read | View the workspace and its members | ✓ | ✓ | ✓ | ✓ |
+| team.update | Update workspace settings | ✓ | ✓ | | |
+| team.invite | Invite people | ✓ | ✓ | | |
+| team.remove_member | Remove members | ✓ | ✓ | | |
+| team.assign_environments | Choose which environments members can access | ✓ | ✓ | | |
+| team.enforce_2fa | Require two-factor authentication | ✓ | ✓ | | |
+| team.change_role | Change members' roles | ✓ | | | |
+| team.transfer_ownership | Transfer ownership | ✓ | | | |
+| team.delete | Delete the workspace | ✓ | | | |
+| role.manage | Create and manage custom roles | ✓ | | | |
+| billing.manage | Manage billing and subscriptions | ✓ | | | |
+| api_key.manage | Create and manage workspace API keys | ✓ | ✓ | | |
+| activity_log.read | View workspace activity | ✓ | ✓ | ✓ | ✓ |
+| notification.read | View notifications | ✓ | ✓ | ✓ | ✓ |
+| notification.update | Mark notifications as seen | ✓ | ✓ | ✓ | ✓ |
+
+### Projects and deployments
+
+| Permission | Allows | Creator | Administrator | Member | Viewer |
+| ---------- | ------ | :-----: | :-----------: | :----: | :----: |
+| project.read | View projects | ✓ | ✓ | ✓ | ✓ |
+| project.create | Create projects | ✓ | ✓ | ✓ | |
+| project.update | Update project settings | ✓ | ✓ | ✓ | |
+| project.deploy | Deploy projects | ✓ | ✓ | ✓ | |
+| project.exec | Run commands in project containers | ✓ | ✓ | ✓ | |
+| project.debug | Use project debug tools | ✓ | ✓ | ✓ | |
+| project.delete | Delete projects | ✓ | ✓ | | |
+| project.transfer | Move projects between workspaces | ✓ | ✓ | | |
+| log.read | View build and request logs | ✓ | ✓ | ✓ | ✓ |
+| repo.read | View linked git repositories | ✓ | ✓ | ✓ | ✓ |
+| repo.link | Link repositories | ✓ | ✓ | ✓ | |
+
+### Environments and variables
+
+| Permission | Allows | Creator | Administrator | Member | Viewer |
+| ---------- | ------ | :-----: | :-----------: | :----: | :----: |
+| environment.read | View environments | ✓ | ✓ | ✓ | ✓ |
+| environment.create | Create environments | ✓ | ✓ | | |
+| environment.update | Update environments | ✓ | ✓ | | |
+| environment.delete | Delete environments | ✓ | ✓ | | |
+| env.read | View environment variables | ✓ | ✓ | ✓ | ✓ |
+| env.write | Create or update environment variables | ✓ | ✓ | ✓ | |
+| env.delete | Delete environment variables | ✓ | ✓ | ✓ | |
+
+### Domains and networking
+
+| Permission | Allows | Creator | Administrator | Member | Viewer |
+| ---------- | ------ | :-----: | :-----------: | :----: | :----: |
+| domain.read | View domains | ✓ | ✓ | ✓ | ✓ |
+| domain.create | Add domains | ✓ | ✓ | ✓ | |
+| domain.update | Update domain settings and DNS | ✓ | ✓ | ✓ | |
+| domain.delete | Remove domains | ✓ | ✓ | ✓ | |
+| networking.read | View networking settings | ✓ | ✓ | ✓ | ✓ |
+| networking.update | Update networking settings | ✓ | ✓ | ✓ | |
+| ratelimit.read | View rate limits | ✓ | ✓ | ✓ | ✓ |
+| ratelimit.update | Update rate limits | ✓ | ✓ | ✓ | |
+
+### Data, storage, and compute
+
+| Permission | Allows | Creator | Administrator | Member | Viewer |
+| ---------- | ------ | :-----: | :-----------: | :----: | :----: |
+| sandbox.read | View sandboxes | ✓ | ✓ | ✓ | ✓ |
+| sandbox.create | Create sandboxes | ✓ | ✓ | ✓ | |
+| sandbox.update | Update sandboxes | ✓ | ✓ | ✓ | |
+| sandbox.delete | Delete sandboxes | ✓ | ✓ | ✓ | |
+| sandbox.exec | Run commands in sandboxes | ✓ | ✓ | ✓ | |
+| volume.read | View volumes | ✓ | ✓ | ✓ | ✓ |
+| volume.create | Create volumes | ✓ | ✓ | ✓ | |
+| volume.delete | Delete volumes | ✓ | ✓ | ✓ | |
+| storage.read | View object storage | ✓ | ✓ | ✓ | ✓ |
+| storage.create | Create buckets and objects | ✓ | ✓ | ✓ | |
+| storage.update | Update storage settings | ✓ | ✓ | ✓ | |
+| storage.delete | Delete storage resources | ✓ | ✓ | ✓ | |
+| autoscaling.read | View autoscaling | ✓ | ✓ | ✓ | ✓ |
+| autoscaling.create | Create autoscaling groups | ✓ | ✓ | ✓ | |
+| autoscaling.update | Update autoscaling | ✓ | ✓ | ✓ | |
+| autoscaling.delete | Delete autoscaling groups | ✓ | ✓ | ✓ | |
+
+### Observability and integrations
+
+| Permission | Allows | Creator | Administrator | Member | Viewer |
+| ---------- | ------ | :-----: | :-----------: | :----: | :----: |
+| analytics.read | View analytics | ✓ | ✓ | ✓ | ✓ |
+| analytics.update | Turn analytics on or off | ✓ | ✓ | ✓ | |
+| drain.read | View log drains | ✓ | ✓ | ✓ | ✓ |
+| drain.create | Create log drains | ✓ | ✓ | ✓ | |
+| drain.update | Update log drains | ✓ | ✓ | ✓ | |
+| drain.delete | Delete log drains | ✓ | ✓ | ✓ | |
+| webhook.read | View webhooks | ✓ | ✓ | ✓ | ✓ |
+| webhook.update | Create or update webhooks | ✓ | ✓ | | |
+| tag.read | View tags | ✓ | ✓ | ✓ | ✓ |
+| tag.create | Create tags | ✓ | ✓ | ✓ | |
+| tag.update | Update tags and assignments | ✓ | ✓ | ✓ | |
+| tag.delete | Delete tags | ✓ | ✓ | ✓ | |
+| agent_chat.read | View agent chats and skills | ✓ | ✓ | ✓ | ✓ |
+| agent_chat.create | Start agent chats | ✓ | ✓ | ✓ | |
+| agent_chat.update | Update agent chats and skills | ✓ | ✓ | ✓ | |
+| agent_chat.delete | Delete agent chats | ✓ | ✓ | ✓ | |
+
+## Troubleshooting
+
+**"You do not have permission to perform this action in this workspace."** The member's role doesn't include the permission that action needs. Check the [permission reference](#permission-reference), then add the permission to their custom role or give them a role that has it.
+
+**A member still sees every environment after you limited their access.** Their role covers every environment. Edit the role and set **Where can members use this role?** to **Only environments you assign**, then pick their environments again.
+
+**Saving a custom role fails with "Only the workspace creator can hold these permissions".** The role includes one of the four [Creator-only permissions](#permissions-a-custom-role-cant-have). Remove it and save again.
+
+**You can't delete a custom role.** Members still have it. Move them to another role first.
+
+## Related
+
+- [Manage teams](/workspaces-and-teams/manage-teams), invite members, change roles, and transfer ownership.
+- [Create a workspace](/workspaces-and-teams/create-a-workspace), set up a new team workspace.

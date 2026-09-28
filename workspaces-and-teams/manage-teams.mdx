@@ -23,14 +23,16 @@ Members of a team have one of these roles:
 
 | Role | Permissions |
 |---|---|
-| **Creator** | Full control. Created the team. Can transfer ownership. |
-| **Administrator** | Same as Creator except can't transfer ownership. Manages billing, members, projects. |
-| **Member** | Read and write to projects. Can deploy, manage env vars, add domains. Cannot manage billing or members. |
-| **Viewer** | Read-only access to projects, deployments, and logs. |
+| **Creator** | Full control. Created the team. The only role that manages billing, changes roles, manages custom roles, transfers ownership, and deletes the team. |
+| **Administrator** | Manages members, environments, webhooks, and API keys, and can delete or transfer projects. Works in every environment. |
+| **Member** | Creates, deploys, and edits projects in the environments you assign. Can't manage the team or delete projects. |
+| **Viewer** | Read-only access to projects, deployments, and logs in the environments you assign. |
 
-A team always has exactly one Creator. There can be many Administrators, Members, and Viewers.
+A team always has exactly one Creator. There can be many Administrators, Members, and Viewers. You can also create custom roles. See [Roles and permissions](/workspaces-and-teams/roles-and-permissions) for the full breakdown and environment access.
 
 ## Invite members
+
+The Creator and Administrators can invite members.
 
 1. Open the team.
 2. Go to **Settings** → **Members**.
@@ -47,6 +49,8 @@ The invitee gets an email with a link. If they don't already have a Brimble acco
 Pending invites stay listed under **Members** until accepted, expired, or revoked. To revoke, click **⋯** → **Revoke invite**.
 
 ## Change a member's role
+
+Only the Creator can change roles.
 
 1. Open **Settings** → **Members**.
 2. Click the role on the member's row.
