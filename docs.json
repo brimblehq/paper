@@ -103,6 +103,14 @@
             ]
           },
           {
+            "group": "Config as code",
+            "icon": "file-code",
+            "pages": [
+              "config-as-code/brimble-toml",
+              "config-as-code/reference"
+            ]
+          },
+          {
             "group": "Sandboxes",
             "icon": "box",
             "pages": [

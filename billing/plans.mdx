@@ -1,11 +1,11 @@
 ---
 title: "How billing works"
-description: "Plans, seats, metered compute, invoices, and how Brimble charges for what you run."
+description: "Plans, Team pricing, metered compute, invoices, and how Brimble charges for what you run."
 ---
 
 Brimble billing has four parts:
 
-1. A recurring **plan** charge (or Team seats).
+1. A recurring **plan** charge (or the Team charge).
 2. **Metered usage** for compute and other resources you run during the cycle.
 3. **One-off purchases**, such as build-minute top-ups.
 4. **Invoices**, payment recovery, and spending limits.
@@ -26,7 +26,7 @@ These are independent. Upgrading your personal plan does not change a team subsc
 | **Free** | $0 | Trying Brimble |
 | **Hacker** | **$3** | Solo builders |
 | **Developer** | **$11** | Production personal projects |
-| **Team** | **$11 per seat** | Shared workspaces |
+| **Team** | **$11** for up to 3 members, then **$11 per extra member** | Shared workspaces |
 
 Paid plans need a payment method and an active subscription. Free does not.
 
@@ -36,7 +36,7 @@ Paid plans need a payment method and an active subscription. Free does not.
 
 ### What the plan price covers
 
-The plan (or Team seats) covers platform access and the allowances listed on [brimble.io/pricing](https://brimble.io/pricing) and in the dashboard — for example included bandwidth, build minutes, and sandbox allowances where your plan has them.
+The plan (or Team charge) covers platform access and the allowances listed on [brimble.io/pricing](https://brimble.io/pricing) and in the dashboard, for example included bandwidth, build minutes, and sandbox allowances where your plan has them.
 
 **CPU and memory are not included in the plan price.** Anything you provision is metered. See [Compute pricing](/billing/compute).
 
@@ -51,15 +51,26 @@ When the first payment succeeds, the subscription becomes active immediately. If
 
 ## Team billing
 
-Team workspaces have their own subscription. The recurring Team charge is **$11 per seat per month**. You can start with any number of seats (at least one) and add seats later.
+Team workspaces have their own subscription. The Team charge is based on how many people are in the workspace:
 
-Team workspaces use the **same plan allowances as Developer** — bandwidth, build minutes, concurrent builds, sandboxes, and feature flags. The difference is shared seats and workspace billing, not a richer entitlement tier.
+- **$11/month** covers up to **3 members**, including you.
+- Each member after the third adds **$11/month**.
+- Only members who have **accepted** their invite count. Pending invites cost nothing.
 
-When you create a Team workspace, Brimble stores that seat count with the workspace. You can update seats under workspace billing as long as you do not go below the number of members already on the team.
+| Members | Team charge |
+| ------- | ----------- |
+| 1 to 3 | $11/month |
+| 4 | $22/month |
+| 5 | $33/month |
+| 6 | $44/month |
+
+The charge follows your team automatically. When someone accepts an invite, leaves, or is removed, the Team charge updates and the change is prorated for the rest of the cycle. There's no seat count to manage.
+
+Team workspaces use the **same plan allowances as Developer**, including bandwidth, build minutes, concurrent builds, sandboxes, and feature flags. The difference is shared membership and workspace billing, not a richer entitlement tier.
 
 ### Team billing ownership
 
-A Team subscription has a billing owner — the person whose payment method is charged for that team.
+A Team subscription has a billing owner: the person whose payment method is charged for that team.
 
 Billing ownership can be transferred when:
 
@@ -110,12 +121,12 @@ You get a warning before the trial ends. If it ends without a usable payment met
 
 ## What else appears on your bill
 
-Besides the plan or seats, a cycle can include:
+Besides the plan or Team charge, a cycle can include:
 
 | Category | How it's charged |
 | -------- | ---------------- |
-| **CPU** | Metered — see [Compute pricing](/billing/compute) |
-| **Memory** | Metered — see [Compute pricing](/billing/compute) |
+| **CPU** | Metered, see [Compute pricing](/billing/compute) |
+| **Memory** | Metered, see [Compute pricing](/billing/compute) |
 | **Bandwidth** | Included amount per plan; overage at **$0.25/GB** |
 | **Volume / disk storage** | Metered while attached |
 | **Object storage** | Metered |
@@ -123,27 +134,27 @@ Besides the plan or seats, a cycle can include:
 | **Database backup storage** | Metered (above plan thresholds where applicable) |
 | **Sandbox CPU / memory** | Metered above plan-included sandbox allowances |
 | **Sandbox snapshot storage** | Metered above plan-included snapshot allowance |
-| **Build minutes** | Included + optional top-ups — see [Build minutes](/billing/build-minutes) |
+| **Build minutes** | Included + optional top-ups, see [Build minutes](/billing/build-minutes) |
 | **Add-ons** | For example [static outbound IPs](/networking/static-outbound-ips) or [email forwarding](/domains/email-forwarding) |
 
 The dashboard estimate updates through the cycle so you can see where spend is coming from before the invoice closes.
 
 ## How your bill is calculated
 
-1. Start with the plan charge (or Team seats × $11).
+1. Start with the plan charge (or the Team charge for your accepted members).
 2. Add metered usage for that cycle (compute, bandwidth overage, storage, sandboxes, and so on).
 3. Add any one-off purchases in the same cycle.
 4. Apply any credit on your account balance.
 
 ### Estimate before you deploy
 
-For a full monthly estimate (plan or seats, CPU, memory, region), use the [pricing calculator](https://brimble.io/pricing-calculator). Rates and how the bill is built are covered in [Compute pricing](/billing/compute).
+For a full monthly estimate (plan or team size, CPU, memory, region), use the [pricing calculator](https://brimble.io/pricing-calculator). Rates and how the bill is built are covered in [Compute pricing](/billing/compute).
 
 Quick orientation:
 
 - **Hacker** starts at **$3**/month for the plan, plus metered compute and other usage.
 - **Developer** starts at **$11**/month, plus metered usage.
-- **Team** is **$11 × seats**, plus metered usage for that workspace.
+- **Team** starts at **$11**/month for up to 3 members, plus **$11** per extra member and metered usage for that workspace.
 - Build-minute top-ups are separate one-off charges.
 
 <Info>
@@ -161,7 +172,7 @@ Outstanding invoices can block:
 
 - Starting a new paid subscription.
 - Changing a personal plan.
-- Updating Team seat counts.
+- Updating the Team charge when members join or leave.
 - Transferring Team billing ownership.
 
 Settle open invoices first, then retry the change.
@@ -241,7 +252,7 @@ Active paid subscriptions can receive a usage report for the current window (bas
 
 ## Next steps
 
-- [Pricing calculator](https://brimble.io/pricing-calculator), estimate plan, seats, and compute before you deploy.
+- [Pricing calculator](https://brimble.io/pricing-calculator), estimate plan, team size, and compute before you deploy.
 - [Compute pricing](/billing/compute), CPU and memory rates, hourly equivalents, and regions.
 - [Build minutes](/billing/build-minutes), top-ups and monthly resets.
 - [Referrals](/billing/referrals), referral codes, domain coupons, and invoice discounts.

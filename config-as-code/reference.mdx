@@ -1,0 +1,436 @@
+---
+title: "brimble.toml reference"
+description: "Every field in brimble.toml, its format, and what changing it does."
+---
+
+This page lists every field `brimble.toml` accepts. For how the file is applied on push, approvals, environments, and previews, see [Configure projects with brimble.toml](/config-as-code/brimble-toml).
+
+## Value formats
+
+| Kind | Format | Examples |
+|---|---|---|
+| Size | String with `mb`, `gb`, or `tb` | `"512mb"`, `"1gb"`, `"20gb"` |
+| Duration | String with `s`, `m`, `h`, or `d` | `"30s"`, `"5m"`, `"1h"`, `"14d"` |
+| Rate | `"<requests>/<duration>"` | `"20/1m"`, `"1000/1h"` |
+| CPU | Number of vCPUs | `0.5`, `2` |
+| Name | Lowercase letters, numbers, and hyphens, starting with a letter | `api`, `db`, `web-app` |
+
+Sizes and durations must include a unit. `memory = 1` and `for = 300` are invalid; write `memory = "1gb"` and `for = "5m"`.
+
+Unknown fields are rejected, so a typo fails the deploy with the line number instead of being ignored.
+
+## File layout
+
+```toml
+#:schema https://brimble.io/schema/brimble.json
+
+[services.<name>]       # one table per service; <name> is the project name
+[databases.<name>]      # managed databases
+[buckets.<name>]        # object storage buckets
+[environments.<name>]   # overrides for a workspace environment
+[environments.preview]  # overrides for pull request previews
+```
+
+## Services
+
+`[services.<name>]`
+
+| Field | Type | Description | On change |
+|---|---|---|---|
+| `type` | `"web"`, `"worker"`, `"static"`, `"mcp"` | [Service type](/projects/service-types). | Needs approval |
+| `region` | String | [Region](/projects/regions) name, for example `"eu-central"`. | Needs approval. Blocked while a volume is attached |
+| `root` | Path | Root directory inside the repository, for example `"apps/api"`. | Automatic |
+
+### Build
+
+`[services.<name>.build]`
+
+| Field | Type | Description |
+|---|---|---|
+| `install` | String | Install command. |
+| `command` | String | Build command. |
+| `output` | Path | Output directory for static builds. |
+| `dockerfile` | Path | Dockerfile to build, relative to the root directory. |
+| `runtime` | Table | Runtime versions, for example `{ node = "22" }`. |
+| `watch` | List of strings | Only redeploy when changes match these paths, for example `["apps/api/**"]`. |
+| `cache` | Boolean | Use the build cache. |
+| `health_check` | Boolean | Run the build health check. |
+
+All build fields apply automatically. See [Builds](/projects/builds).
+
+### Deploy
+
+`[services.<name>.deploy]`
+
+| Field | Type | Description |
+|---|---|---|
+| `start` | String | Start command. |
+| `before_start` | String | Command run before the service starts, for example migrations. |
+| `port` | Number, 1 to 65535 | Port the service listens on. Sets the `PORT` environment variable. |
+| `health` | String starting with `/` | Health check path. |
+
+All deploy fields apply automatically.
+
+### Resources
+
+`[services.<name>.resources]`
+
+| Field | Type | Description | On change |
+|---|---|---|---|
+| `cpu` | Number, 0.2 to 8 | vCPUs. | Automatic |
+| `memory` | Size, 0.5 GB to 16 GB | Memory. | Automatic |
+| `disk` | Size | Ephemeral disk. | Automatic. Growing needs approval |
+
+CPU and memory are [metered](/billing/compute).
+
+### Scale
+
+`[services.<name>.scale]`
+
+Use either a fixed replica count or autoscaling, not both.
+
+| Field | Type | Description |
+|---|---|---|
+| `replicas` | Whole number, 1 or more | Fixed number of instances. |
+| `min` | Whole number, 1 or more | Minimum instances when autoscaling. |
+| `max` | Whole number, 1 or more | Maximum instances when autoscaling. Must be at least `min`. |
+| `cpu_target` | Number, 1 to 100 | CPU percentage that triggers scaling. |
+| `memory_target` | Number, 1 to 100 | Memory percentage that triggers scaling. |
+
+Applies automatically. Requires a plan with autoscaling. See [Scaling](/scaling/overview).
+
+### Cron
+
+`[services.<name>.cron]`, web services only.
+
+| Field | Type | Description |
+|---|---|---|
+| `schedule` | String | Cron expression, for example `"*/15 * * * *"`. |
+| `timezone` | String | IANA timezone, for example `"Africa/Lagos"`. Defaults to UTC. |
+| `command` | String | Command to run on schedule. |
+
+### Volume
+
+`[services.<name>.volume]`
+
+| Field | Type | Description | On change |
+|---|---|---|---|
+| `path` | String starting with `/` | Mount path inside the container. | Automatic |
+| `size` | Size | Volume size. | Growing needs approval. Shrinking is blocked |
+| `existing` | String | Attach an existing volume by name instead of creating one. | Changing it is blocked |
+
+Requires a plan with volumes. See [Persistent disk](/projects/persistent-disk).
+
+### Environment variables
+
+`[services.<name>.env]`
+
+```toml
+[services.api.env]
+NODE_ENV = "production"
+DATABASE_URL = "{{@db.PRIVATE_CONNECTION_STRING}}"
+S3_BUCKET = "{{@bucket:uploads.AWS_S3_BUCKET}}"
+API_HOST = "{{shared.API_HOST}}"
+```
+
+Names must start with a letter or underscore and contain only letters, numbers, and underscores. Values are strings and support [references](/environments/env-references). Referencing a database or bucket defined in the file links it to the service. Variables set only in the dashboard are left alone. Never put secret values here.
+
+### Secrets
+
+`[services.<name>.secrets]`
+
+| Field | Type | Description |
+|---|---|---|
+| `required` | List of variable names | Variables that must exist in the dashboard. The deploy is blocked until they're set. |
+
+### Files
+
+`[[services.<name>.files]]`, repeat for each file.
+
+| Field | Type | Description |
+|---|---|---|
+| `path` | String starting with `/` | Where the file is mounted in the container. |
+| `source` | Path | File in your repository, relative to the folder that contains `brimble.toml`. |
+
+The file is read from the pushed commit on each deploy. See [Files](/projects/files).
+
+### Network
+
+`[services.<name>.network]`
+
+| Field | Type | Description | On change |
+|---|---|---|---|
+| `public` | Boolean | Whether the service is reachable from the internet. | Automatic |
+| `http2` | Boolean | Serve the project over HTTP/2, for gRPC or multiplexed connections. See [HTTP](/networking/http). | Automatic |
+| `domains` | List of strings | Custom domains to attach. | Attaching a new domain needs approval |
+| `redirects` | Table | Domains that redirect elsewhere. See below. | Automatic |
+| `maintenance` | Boolean | Maintenance mode. | Automatic |
+| `previews` | Boolean | Pull request preview deployments. | Automatic |
+
+Domains are only added, never detached, when you remove them from the file. Custom domains, wildcard domains, and previews each need a plan that includes them.
+
+**Redirects**
+
+```toml
+[services.api.network.redirects]
+"www.example.com" = { to = "https://example.com", status = 301 }
+```
+
+`status` is one of `301`, `302`, `307`, or `308`. See [Redirect a domain](/domains/redirect-a-domain).
+
+**Cache, headers, and firewall**
+
+```toml
+[services.api.network]
+cache = { bypass = false, purge_on_deploy = true }
+headers = { frame = "DENY", nosniff = true, robots = "index, follow", hsts = true, markdown_for_agents = false }
+firewall = { path_blocking = true, browser_check = true, under_attack = false, wordpress = false }
+```
+
+| Field | Description |
+|---|---|
+| `cache.bypass` | Skip the edge cache. |
+| `cache.purge_on_deploy` | Purge the edge cache after each deploy. |
+| `headers.frame` | `X-Frame-Options`: `"DENY"` or `"SAMEORIGIN"`. Leave it out to turn the header off. |
+| `headers.nosniff` | Send `X-Content-Type-Options: nosniff`. |
+| `headers.robots` | `X-Robots-Tag`: `"index, follow"`, `"noindex, nofollow"`, `"noindex, follow"`, or `"index, nofollow"`. |
+| `headers.hsts` | Send `Strict-Transport-Security`. |
+| `headers.markdown_for_agents` | Serve a Markdown version of your pages to AI crawlers that request it. |
+| `firewall.path_blocking` | Block common attack paths. |
+| `firewall.browser_check` | Browser integrity check. |
+| `firewall.under_attack` | Under attack mode. |
+| `firewall.wordpress` | WordPress protection rules. |
+
+See [Networking](/networking/overview).
+
+**Rate limits**
+
+`[[services.<name>.network.rate_limits]]`, repeat for each rule.
+
+| Field | Type | Description |
+|---|---|---|
+| `name` | String | Rule name. |
+| `paths` | List of strings | Paths the rule applies to, for example `["/auth/*"]`. |
+| `methods` | List | Any of `GET`, `POST`, `PUT`, `PATCH`, `DELETE`, `HEAD`, `OPTIONS`. |
+| `limit` | Rate | Requests allowed per window, for example `"20/1m"`. |
+| `key` | `"ip"` | What requests are counted by. |
+
+Requires a plan with rate limiting. See [Rate limits](/networking/rate-limits).
+
+### Alerts
+
+`[[services.<name>.alerts]]`, repeat for each alert.
+
+| Field | Type | Description |
+|---|---|---|
+| `name` | String | Alert name. |
+| `metric` | `"cpu"`, `"memory"`, `"disk"` | Metric to watch. |
+| `above` | Number, 0 to 100 | Percentage that triggers the alert. |
+| `for` | Duration | How long the metric must stay above the threshold. |
+| `cooldown` | Duration | Minimum time between repeat alerts. |
+| `channels` | `"all"` or a list of channel IDs | Where the alert is sent. |
+
+Requires a plan with alerting. See [Notifications](/notifications/overview).
+
+### Log drains
+
+`[services.<name>.drains]`
+
+| Field | Type | Description |
+|---|---|---|
+| `subscribe` | List of drain names | Log drains in your workspace this service sends logs to. Drains not listed are unsubscribed. |
+
+Requires a plan with log drains. See [Log drains](/drains/overview).
+
+## Databases
+
+`[databases.<name>]`
+
+| Field | Type | Description | On change |
+|---|---|---|---|
+| `engine` | String | For example `"postgresql"`, `"mysql"`, `"mongodb"`, `"redis"`. `"postgres"` and `"mongo"` also work. | Blocked after creation |
+| `version` | String | Engine version, for example `"17"`. | Blocked after creation |
+| `region` | String | Region name. | Blocked after creation |
+| `cpu` | Number, 0.2 to 8 | vCPUs. | Automatic |
+| `memory` | Size, 0.5 GB to 16 GB | Memory. | Automatic |
+| `disk` | Size | Disk size. | Growing needs approval. Shrinking is blocked |
+| `public` | Boolean | Allow connections from outside Brimble. | Automatic |
+| `allow_ips` | List of strings | IP addresses or ranges allowed to connect. | Automatic |
+| `tls` | Boolean | Require TLS. | Turning on needs approval. Turning off is blocked |
+| `pgbouncer` | Boolean | Connection pooling (PostgreSQL). | Turning on needs approval. Turning off is blocked |
+| `workbench` | Boolean | Enable the database workbench. | Automatic |
+
+`engine` and `version` are required to create a database.
+
+**Backups**
+
+```toml
+[databases.db]
+backups = { schedule = "0 2 * * *", timezone = "UTC", keep = "14d" }
+```
+
+| Field | Type | Description |
+|---|---|---|
+| `schedule` | String | Cron expression for automatic backups. |
+| `timezone` | String | IANA timezone for the schedule. |
+| `keep` | Duration | How long backups are kept. |
+
+**Connection pool**
+
+`[databases.<name>.pool]`, requires `pgbouncer = true`.
+
+| Field | Range |
+|---|---|
+| `default_pool_size` | 1 to 100 |
+| `max_db_connections` | 0 to 500 |
+| `max_db_client_connections` | 0 to 5000 |
+| `max_user_connections` | 0 to 500 |
+| `max_client_conn` | 1 to 10000 |
+| `max_prepared_statements` | 0 to 10000 |
+| `server_lifetime` | Duration, 1 minute to 1 day |
+| `server_idle_timeout` | Duration, 10 seconds to 1 day |
+
+Pool settings apply automatically.
+
+**High availability**
+
+```toml
+[databases.db]
+ha = { regions = ["eu-central", "eu-north"] }
+```
+
+`regions` lists at least two regions. High availability is set when the database is created and requires a plan that includes it. See [Deploy a database](/projects/deploy-a-database).
+
+## Buckets
+
+`[buckets.<name>]`
+
+| Field | Type | Description | On change |
+|---|---|---|---|
+| `region` | String | Bucket region. | Blocked after creation |
+| `public` | Boolean | Allow public reads. | Automatic |
+| `cors` | List | CORS rules. See below. | Automatic |
+| `lifecycle` | List | Expiry rules. See below. | Automatic |
+
+```toml
+[buckets.uploads]
+public = false
+cors = [{ origins = ["https://example.com"], methods = ["GET", "PUT"], headers = ["*"], max_age = "1h" }]
+lifecycle = [{ prefix = "tmp/", expire = "7d" }]
+```
+
+| CORS field | Description |
+|---|---|
+| `origins` | Allowed origins. Required. |
+| `methods` | Allowed methods. Required. |
+| `headers` | Allowed request headers. |
+| `expose_headers` | Response headers exposed to the browser. |
+| `max_age` | Duration browsers can cache the CORS response. |
+
+| Lifecycle field | Description |
+|---|---|
+| `prefix` | Object key prefix the rule applies to. Use `""` for the whole bucket. |
+| `expire` | Duration after which matching objects are deleted. |
+
+See [Object storage](/object-storage/overview).
+
+## Environments
+
+`[environments.<name>]`, where `<name>` is the workspace environment's slug.
+
+| Field | Type | Description |
+|---|---|---|
+| `inherit_from` | String | Environment this one inherits from. Must lead back to `production`. |
+| `services.<name>` | Table | Any service field. Merged over the top-level service. |
+| `databases.<name>` | Table | Any database field. Merged over the top-level database. |
+| `buckets.<name>` | Table | Any bucket field. Merged over the top-level bucket. |
+
+Lists replace the inherited list rather than merging with it.
+
+## Pull request previews
+
+`[environments.preview.services.<name>]` accepts only these tables:
+
+| Table | Description |
+|---|---|
+| `build` | Build overrides for previews. |
+| `deploy` | Deploy overrides for previews. |
+| `env` | Preview-only environment variables. |
+
+## Full example
+
+```toml
+#:schema https://brimble.io/schema/brimble.json
+
+[services.api]
+type = "web"
+region = "eu-central"
+root = "apps/api"
+
+[services.api.build]
+install = "pnpm install --frozen-lockfile"
+command = "pnpm build"
+watch = ["apps/api/**"]
+
+[services.api.deploy]
+start = "node dist/server.js"
+before_start = "pnpm db:migrate"
+port = 3000
+health = "/healthz"
+
+[services.api.resources]
+cpu = 0.5
+memory = "1gb"
+
+[services.api.scale]
+min = 2
+max = 6
+cpu_target = 70
+
+[services.api.env]
+NODE_ENV = "production"
+DATABASE_URL = "{{@db.PRIVATE_CONNECTION_STRING}}"
+
+[services.api.secrets]
+required = ["STRIPE_SECRET_KEY"]
+
+[services.api.network]
+domains = ["api.example.com"]
+
+[[services.api.network.rate_limits]]
+name = "auth"
+paths = ["/auth/*"]
+methods = ["POST"]
+limit = "20/1m"
+key = "ip"
+
+[[services.api.alerts]]
+name = "high-cpu"
+metric = "cpu"
+above = 85
+for = "5m"
+cooldown = "30m"
+channels = "all"
+
+[databases.db]
+engine = "postgresql"
+version = "17"
+region = "eu-central"
+memory = "1gb"
+disk = "20gb"
+pgbouncer = true
+backups = { schedule = "0 2 * * *", keep = "14d" }
+
+[databases.db.pool]
+default_pool_size = 30
+
+[environments.staging]
+inherit_from = "production"
+
+[environments.staging.services.api]
+resources = { cpu = 0.2, memory = "512mb" }
+scale = { min = 1, max = 1 }
+
+[environments.preview.services.api]
+env = { LOG_LEVEL = "debug" }
+```

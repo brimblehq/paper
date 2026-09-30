@@ -3,7 +3,7 @@ title: "Create a workspace"
 description: "A workspace holds projects shared with a team."
 ---
 
-A **workspace** holds projects shared with a team. Workspaces are billed separately from your personal account and have their own seats, projects, and usage.
+A **workspace** holds projects shared with a team. Workspaces are billed separately from your personal account and have their own members, projects, and usage.
 
 This guide covers creating a paid team workspace from scratch. To invite people into an existing workspace, see [Manage teams](/workspaces-and-teams/manage-teams).
 
@@ -25,26 +25,17 @@ This guide covers creating a paid team workspace from scratch. To invite people 
   <img src="/images/workspaces-and-teams/workspace-creation-1.jpeg" alt="Workspace creation step 1 with the workspace image upload, name field, and URL slug input prefixed by the brimble.app domain" />
 </Frame>
 
-## Step 2: Seats and options
+## Step 2: Team configuration
 
-This step sets the workspace's recurring Team charge.
+There's no team size to pick. The Team charge follows the people in the workspace: **$11/month** covers up to **3 members**, including you, and each member after the third adds **$11/month**. Only members who accept their invite are billed.
 
 | Setting | Description |
 |---|---|
-| **Team size** | Number of seats. You can start with any count of **1** or more. Each seat costs **$11/month**. |
 | **Startup promo code** | Optional. If you have one, enter it and click **Verify**. Valid codes apply a discount; invalid ones show an error. |
 
-The page shows a running total based on seats × **$11**.
-
-A workspace with **3 seats** is **$33/month** for the Team subscription, before metered usage (compute, bandwidth overage, storage, and so on). See [How billing works](/billing/plans) and [Compute pricing](/billing/compute).
-
-You can change seat count later under **Workspace settings → Billing**, but you can't go below the seats currently in use without removing members first.
+See [How billing works](/billing/plans) and [Compute pricing](/billing/compute) for metered usage (compute, bandwidth overage, storage, and so on).
 
 Click **Continue**.
-
-<Frame caption="Step 2: pick team size, with the running monthly total.">
-  <img src="/images/workspaces-and-teams/workspace-creation-2.jpeg" alt="Workspace creation step 2 with team-size selector, optional startup promo code field, and the running monthly cost summary" />
-</Frame>
 
 ## Step 3: Invite members
 
@@ -55,23 +46,20 @@ Invite the people who'll be in the workspace. For each row:
 
 Click **Add another** to invite more. You can leave this step empty and invite people later.
 
-The page shows a billing summary for seats. If you've added more invites than your team size, a warning appears: "You've invited N members but only have M seats, additional seats will be charged."
+The billing summary shows what you're charged now, which is the Team plan for you alone. Invitees are added to the bill only when they accept. If you've added invites, the summary also shows what the plan will cost once everyone joins.
 
 You can't invite yourself, Brimble blocks the email matching your account.
 
-<Frame caption="Step 3: invite teammates by email and assign each a role, with the billing summary.">
-  <img src="/images/workspaces-and-teams/workspace-creation-3.jpeg" alt="Workspace creation step 3 with rows of email and role inputs, an Add another button, and the seats billing summary" />
-</Frame>
-
 ## Step 4: Create
 
-Click **Create workspace**. The card on file is charged immediately for the first month's Team seats.
+Click **Create workspace**. Your card (or [wallet](/billing/wallet)) is charged for the first month of the Team plan for you alone.
 
 After creation:
 
 - The workspace appears in the workspace switcher in the top-left.
 - Pending invites send out as emails.
 - You become the **Creator** of the workspace.
+- When an invitee accepts, the Team charge updates automatically and the change is prorated for the rest of the cycle.
 
 ## After creation
 
@@ -80,7 +68,6 @@ Things you'll typically do next:
 - **Create a project** under the workspace. Switch into the workspace via the switcher and click **New project**.
 - **Set up webhooks** for the workspace under **Settings → Webhooks**.
 - **Configure 2FA** on your account if you haven't, required for ownership transfer.
-- **Adjust seats.** Adding seats is one click in **Settings → Billing**.
 
 ## Switching between workspaces
 
@@ -104,7 +91,7 @@ Switching context filters the project list, the dashboard home, and most setting
 
 **"Card declined" on creation.** The card on file failed when Brimble tried to charge for the first month. Add a different card under **Billing → Payment methods** and try again. The workspace doesn't get created until payment goes through.
 
-**Asked to add funds on creation.** You have no card saved and your personal wallet doesn't cover the first month. Top up your personal wallet or add a card, then create the workspace again with the same name. Nothing was charged and no workspace was created.
+**Asked to add funds on creation.** You have no card saved and your personal wallet doesn't cover the first month of the Team plan. Top up your personal wallet or add a card, then create the workspace again with the same name. Nothing was charged and no workspace was created.
 
 **Promo code says "invalid."** Codes are case-sensitive and time-limited. Re-check exactly as provided. If it's still rejected, contact whoever gave you the code, promo codes can be revoked or expire without warning.
 
@@ -114,6 +101,6 @@ Switching context filters the project list, the dashboard home, and most setting
 
 - [Manage teams](/workspaces-and-teams/manage-teams), invite people, change roles, transfer ownership.
 - [Roles and permissions](/workspaces-and-teams/roles-and-permissions), what each role can do and how custom roles work.
-- [How billing works](/billing/plans), plans, seats, and metered usage.
+- [How billing works](/billing/plans), plans, Team pricing, and metered usage.
 - [Compute pricing](/billing/compute), CPU and memory rates.
 - [Two-factor authentication](/security/two-factor-authentication), required for ownership transfer.
