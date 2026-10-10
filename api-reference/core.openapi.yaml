@@ -54,6 +54,10 @@ info:
     ## Streaming
 
     Command execution endpoints can stream output as Server-Sent Events (`text/event-stream`). Each event is `data: <json>` where the JSON has a `type` of `stdout`, `stderr`, `done` or `error`.
+
+    ## Webhooks
+
+    To receive events instead of polling, configure a webhook with `PATCH /v1/webhooks`. See the [Webhooks guide](/webhooks/overview) and the [Webhook events reference](/webhooks/events) for every payload.
   contact:
     name: Brimble
     url: https://brimble.io
@@ -70,11 +74,13 @@ tags:
     description: Deployment history, build logs and request logs.
   - name: Environments
     description: Project environments (production, staging, previews) and their variables.
-  - name: Environment Variables
-    description: Environment variables scoped to a single project.
+  - name: Secrets
+    description: Secrets (environment variables) set on a single project. Not to be confused with Environments, which group projects into production, staging and preview.
   - name: Webhooks
     description: |-
       Receive events from Brimble at your own endpoint (or a Discord or Slack channel). Configure the destination and events with `PATCH /v1/webhooks`; use `*` to receive every event.
+
+      See the [Webhooks guide](/webhooks/overview) for setup, and the [Webhook events reference](/webhooks/events) for the payload each event delivers.
 
       | Event | Sent when |
       | --- | --- |
@@ -382,6 +388,71 @@ paths:
           $ref: '#/components/responses/Forbidden'
         '404':
           $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/ServerError'
+  /v1/decrypt:
+    post:
+      tags:
+        - Secrets
+      summary: Decrypt secrets
+      operationId: decryptSecrets
+      description: |-
+        Secret values returned by the list endpoints are encrypted. Send them here to get the plain values back. Each item is returned with its `value` decrypted.
+
+        **API key scope:** `env.read`
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                environments:
+                  type: array
+                  minItems: 1
+                  items:
+                    type: object
+                    required:
+                      - name
+                      - value
+                    properties:
+                      name:
+                        type: string
+                      value:
+                        type: string
+                        description: Encrypted value, exactly as returned by the API.
+              required:
+                - environments
+      responses:
+        '200':
+          description: Envs decrypted successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - message
+                  - data
+                properties:
+                  message:
+                    type: string
+                    example: Envs decrypted successfully
+                  data:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        name:
+                          type: string
+                        value:
+                          type: string
+                          description: Plain value.
+        '400':
+          $ref: '#/components/responses/ValidationError'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
         '500':
           $ref: '#/components/responses/ServerError'
   /v1/domains:
@@ -806,6 +877,81 @@ paths:
                       - createdAt
                       - updatedAt
                       - isExpired
+        '400':
+          $ref: '#/components/responses/ValidationError'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/ServerError'
+  /v1/domains/{domainId}/wildcard:
+    patch:
+      tags:
+        - Domains
+      summary: Enable or disable a wildcard domain
+      operationId: enableOrDisableWildcardDomain
+      description: |-
+        Turns `*.yourdomain.com` on or off for a custom domain. The domain must be an apex domain (not a Brimble subdomain), attached to a project, on a plan that includes wildcard domains. For domains whose DNS Brimble manages, the wildcard is verified straight away; otherwise add the wildcard DNS record and check `wildcard_verified` on the domain.
+
+        **API key scope:** `domain.update`
+
+        **Team role permission:** `domain.update`
+      parameters:
+        - name: domainId
+          in: path
+          required: true
+          schema:
+            type: string
+        - $ref: '#/components/parameters/TeamId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                enabled:
+                  type: boolean
+                  description: Turn the wildcard on or off.
+                teamId:
+                  type: string
+                  pattern: ^[a-fA-F0-9]{24}$
+                  description: Team to act in. Omit for your personal workspace.
+              required:
+                - enabled
+      responses:
+        '200':
+          description: Domain wildcard updated successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - message
+                  - data
+                properties:
+                  message:
+                    type: string
+                    example: Domain wildcard updated successfully
+                  data:
+                    type: object
+                    properties:
+                      id:
+                        type: string
+                      name:
+                        type: string
+                      wildcard_enabled:
+                        type: boolean
+                      wildcard_verified:
+                        type: boolean
+                    required:
+                      - id
+                      - name
+                      - wildcard_enabled
+                      - wildcard_verified
         '400':
           $ref: '#/components/responses/ValidationError'
         '401':
@@ -2326,10 +2472,12 @@ paths:
   /v1/envs/{projectId}:
     post:
       tags:
-        - Environment Variables
-      summary: Create project environment variables
-      operationId: createProjectEnvironmentVariables
+        - Secrets
+      summary: Create secrets
+      operationId: createSecrets
       description: |-
+        Adds or updates secrets on the project. Send `?editor=true` to replace the whole set: secrets not in the request are deleted.
+
         **API key scope:** `env.write`
 
         **Team role permission:** `env.write`
@@ -2345,6 +2493,10 @@ paths:
           required: false
           schema:
             type: string
+            enum:
+              - 'true'
+              - 'false'
+          description: Replace all secrets with the ones in the request.
       requestBody:
         required: true
         content:
@@ -2355,7 +2507,7 @@ paths:
                 environments:
                   type: array
                   items:
-                    $ref: '#/components/schemas/EnvironmentVariableInput'
+                    $ref: '#/components/schemas/SecretInput'
               required:
                 - environments
       responses:
@@ -2430,10 +2582,12 @@ paths:
           $ref: '#/components/responses/ServerError'
     get:
       tags:
-        - Environment Variables
-      summary: List project environment variables
-      operationId: listProjectEnvironmentVariables
+        - Secrets
+      summary: List secrets
+      operationId: listSecrets
       description: |-
+        Values are returned encrypted. Use `POST /v1/decrypt` to read them.
+
         **API key scope:** `env.read`
 
         **Team role permission:** `env.read`
@@ -2596,9 +2750,9 @@ paths:
   /v1/envs/{projectId}/{envId}:
     delete:
       tags:
-        - Environment Variables
-      summary: Delete a project environment variable
-      operationId: deleteProjectEnvironmentVariable
+        - Secrets
+      summary: Delete a secret
+      operationId: deleteSecret
       description: |-
         **API key scope:** `env.delete`
 
@@ -2629,7 +2783,7 @@ paths:
                     type: string
                     example: Env deleted successfully
                   data:
-                    $ref: '#/components/schemas/IEnv'
+                    $ref: '#/components/schemas/Secret'
         '401':
           $ref: '#/components/responses/Unauthorized'
         '403':
@@ -2640,9 +2794,9 @@ paths:
           $ref: '#/components/responses/ServerError'
     patch:
       tags:
-        - Environment Variables
-      summary: Update a project environment variable
-      operationId: updateProjectEnvironmentVariable
+        - Secrets
+      summary: Update a secret
+      operationId: updateSecret
       description: |-
         **API key scope:** `env.write`
 
@@ -2668,7 +2822,7 @@ paths:
               type: object
               properties:
                 environment:
-                  $ref: '#/components/schemas/EnvironmentVariableInput'
+                  $ref: '#/components/schemas/SecretInput'
               required:
                 - environment
       responses:
@@ -2686,7 +2840,7 @@ paths:
                     type: string
                     example: Env updated successfully
                   data:
-                    $ref: '#/components/schemas/IEnv'
+                    $ref: '#/components/schemas/Secret'
         '400':
           $ref: '#/components/responses/ValidationError'
         '401':
@@ -2700,10 +2854,12 @@ paths:
   /v1/envs/{projectId}/{environment}:
     post:
       tags:
-        - Environment Variables
-      summary: Create project environment variables
-      operationId: createProjectEnvironmentVariablesForEnvironment
+        - Secrets
+      summary: Create secrets
+      operationId: createSecretsForEnvironment
       description: |-
+        Adds or updates secrets on the project. Send `?editor=true` to replace the whole set: secrets not in the request are deleted.
+
         **API key scope:** `env.write`
 
         **Team role permission:** `env.write`
@@ -2719,11 +2875,19 @@ paths:
           required: true
           schema:
             type: string
+            enum:
+              - PRODUCTION
+              - PREVIEW
+          description: '`PREVIEW` for secrets used by preview deployments; any other value means production. Use the path without this segment for production.'
         - name: editor
           in: query
           required: false
           schema:
             type: string
+            enum:
+              - 'true'
+              - 'false'
+          description: Replace all secrets with the ones in the request.
       requestBody:
         required: true
         content:
@@ -2734,7 +2898,7 @@ paths:
                 environments:
                   type: array
                   items:
-                    $ref: '#/components/schemas/EnvironmentVariableInput'
+                    $ref: '#/components/schemas/SecretInput'
               required:
                 - environments
       responses:
@@ -2809,10 +2973,12 @@ paths:
           $ref: '#/components/responses/ServerError'
     get:
       tags:
-        - Environment Variables
-      summary: List project environment variables
-      operationId: listProjectEnvironmentVariablesForEnvironment
+        - Secrets
+      summary: List secrets
+      operationId: listSecretsForEnvironment
       description: |-
+        Values are returned encrypted. Use `POST /v1/decrypt` to read them.
+
         **API key scope:** `env.read`
 
         **Team role permission:** `env.read`
@@ -2828,6 +2994,10 @@ paths:
           required: true
           schema:
             type: string
+            enum:
+              - PRODUCTION
+              - PREVIEW
+          description: '`PREVIEW` for secrets used by preview deployments; any other value means production. Use the path without this segment for production.'
         - name: includeEnvironment
           in: query
           required: false
@@ -4408,7 +4578,7 @@ paths:
                 environments:
                   type: array
                   items:
-                    $ref: '#/components/schemas/EnvironmentVariableInput'
+                    $ref: '#/components/schemas/SecretInput'
                 installationId:
                   oneOf:
                     - type: string
@@ -9223,7 +9393,7 @@ paths:
       summary: Update webhook settings
       operationId: updateWebhookSettings
       description: |-
-        Sets where events are delivered and which events to send. Use `["*"]` to receive every event. See the Webhooks section for the list of events.
+        Sets where events are delivered and which events to send. Use `["*"]` to receive every event. See the [Webhooks guide](/webhooks/overview) for setup and the [Webhook events reference](/webhooks/events) for each payload.
 
         **API key scope:** `webhook.update`
 
@@ -10061,20 +10231,6 @@ components:
         - updatedAt
         - user
         - avatar
-    EnvironmentVariableInput:
-      type: object
-      required:
-        - name
-        - value
-      properties:
-        name:
-          type: string
-          pattern: ^[A-Za-z_][A-Za-z0-9_]*$
-          example: DATABASE_URL
-          description: Must start with a letter or underscore and contain only letters, numbers and underscores.
-        value:
-          type: string
-          example: postgres://…
     ErrorResponse:
       type: object
       required:
@@ -10712,39 +10868,6 @@ components:
         - createdAt
         - updatedAt
         - _id
-    IEnv:
-      type: object
-      properties:
-        name:
-          type: string
-        value:
-          type: string
-        project:
-          $ref: '#/components/schemas/IProject'
-        user:
-          $ref: '#/components/schemas/IUser'
-        environment:
-          type: string
-        is_system:
-          type: boolean
-          nullable: true
-        createdAt:
-          type: string
-          format: date-time
-        updatedAt:
-          type: string
-          format: date-time
-        _id:
-          $ref: '#/components/schemas/ObjectId'
-      required:
-        - name
-        - value
-        - project
-        - user
-        - environment
-        - createdAt
-        - updatedAt
-        - _id
     IFollowing:
       type: object
       properties:
@@ -11279,7 +11402,7 @@ components:
         environments:
           type: array
           items:
-            $ref: '#/components/schemas/IEnv'
+            $ref: '#/components/schemas/Secret'
         uuid:
           type: number
         pid:
@@ -13852,6 +13975,53 @@ components:
         - branches
         - query
         - limit
+    Secret:
+      type: object
+      properties:
+        name:
+          type: string
+        value:
+          type: string
+        project:
+          $ref: '#/components/schemas/IProject'
+        user:
+          $ref: '#/components/schemas/IUser'
+        environment:
+          type: string
+        is_system:
+          type: boolean
+          nullable: true
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+        _id:
+          $ref: '#/components/schemas/ObjectId'
+      required:
+        - name
+        - value
+        - project
+        - user
+        - environment
+        - createdAt
+        - updatedAt
+        - _id
+    SecretInput:
+      type: object
+      required:
+        - name
+        - value
+      properties:
+        name:
+          type: string
+          pattern: ^[A-Za-z_][A-Za-z0-9_]*$
+          example: DATABASE_URL
+          description: Must start with a letter or underscore and contain only letters, numbers and underscores.
+        value:
+          type: string
+          example: postgres://…
     SnapshotResponse:
       type: object
       properties:

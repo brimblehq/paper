@@ -313,7 +313,7 @@
             ]
           },
           {
-            "group": "Environment Variables",
+            "group": "Secrets",
             "icon": "key",
             "pages": [
               "POST /v1/envs/{projectId}",
@@ -321,7 +321,8 @@
               "DELETE /v1/envs/{projectId}/{envId}",
               "PATCH /v1/envs/{projectId}/{envId}",
               "POST /v1/envs/{projectId}/{environment}",
-              "GET /v1/envs/{projectId}/{environment}"
+              "GET /v1/envs/{projectId}/{environment}",
+              "POST /v1/decrypt"
             ]
           },
           {
@@ -356,6 +357,7 @@
               "POST /v1/domains/sale/search",
               "DELETE /v1/domains/{domainId}",
               "PATCH /v1/domains/{domainId}",
+              "PATCH /v1/domains/{domainId}/wildcard",
               "DELETE /v1/domains/{domainId}/{projectId}",
               "GET /v1/domains/{domain}",
               "POST /v1/domains/{domain}/records",
