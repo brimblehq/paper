@@ -99,7 +99,7 @@ troubleshooting/           Symptom-indexed debugging
 glossary.mdx               Term reference
 ```
 
-The nav has **multiple tabs**: `docs.json` → `navigation.tabs[]` carries the **Documentation** tab (everything above) plus a **Sandbox API** tab driven by the OpenAPI spec at `api-reference/sandboxes.openapi.yaml`. Add new pages to the right area, then register them under the right `group` in the **Documentation** tab's `groups[]`. New API specs go in `api-reference/` and get their own tab entry.
+The nav has **multiple tabs**: `docs.json` → `navigation.tabs[]` carries the **Documentation** tab (everything above) plus a **Core API** tab driven by `api-reference/core.openapi.yaml` (a copy of `core/docs/swagger.yaml`; re-copy it when core's spec changes, and add any new endpoints to the tab's groups as `"METHOD /path"` entries) and a **Sandbox API** tab driven by the OpenAPI spec at `api-reference/sandboxes.openapi.yaml`. Add new pages to the right area, then register them under the right `group` in the **Documentation** tab's `groups[]`. New API specs go in `api-reference/` and get their own tab entry.
 
 ---
 

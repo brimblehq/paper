@@ -1,0 +1,139 @@
+---
+title: "Introduction"
+description: "Authenticate against the Brimble Core API, scope requests to a team, and handle responses, errors, rate limits, and streaming."
+---
+
+The Brimble Core API manages everything you can do on Brimble: projects and deployments, environments and variables, domains and DNS, databases, sandboxes, object storage, log drains, webhooks, scaling, and teams. Every endpoint in this tab is generated from the same OpenAPI spec the API is built against.
+
+<Info>
+  Looking for direct sandbox runtime access? The [Sandbox API](/api-reference/sandboxes/create) tab covers the dedicated sandbox host at `https://sandbox.brimble.io`. The Core API also exposes sandbox endpoints under `/v1/sandboxes`, authenticated with the same API key.
+</Info>
+
+## Base URL
+
+All endpoints are relative to:
+
+```text
+https://api.brimble.io/core
+```
+
+For example, listing your projects is `GET https://api.brimble.io/core/v1/projects`.
+
+## Authentication
+
+Create an API key in the dashboard (see [API keys](/security/api-keys)) and send it in the `x-brimble-key` header on every request:
+
+```bash
+curl https://api.brimble.io/core/v1/projects \
+  -H "x-brimble-key: $BRIMBLE_API_KEY"
+```
+
+### Permission scopes
+
+Each API key carries permission scopes such as `project.read` or `project.deploy`. Every endpoint in this reference lists the scope it needs. A key without that scope gets `403`:
+
+```json
+{ "message": "API key lacks required permission(s): project.deploy" }
+```
+
+API keys can't manage other API keys. Creating, rotating, and revoking keys is only possible from the dashboard.
+
+### Session tokens
+
+Dashboard session tokens (`Authorization: Bearer <token>`) are also accepted. Use an API key for scripts, CI, and integrations.
+
+## Teams
+
+Requests act on your personal workspace unless you target a team:
+
+- Pass `teamId` as a query parameter on reads, or in the request body on writes.
+- An API key created inside a team workspace already acts in that team.
+
+Inside a team, your [team role](/workspaces-and-teams/roles-and-permissions) must also allow the action. Each endpoint lists the team permission it checks, in addition to the API key scope.
+
+## Responses
+
+Successful responses are JSON with a `message` and a `data` payload:
+
+```json
+{ "message": "Projects fetched", "data": { } }
+```
+
+## Errors
+
+Errors return a non-2xx status and a human-readable `message`:
+
+```json
+{ "message": "Project not found", "data": {} }
+```
+
+Requests that fail validation return `400` with every invalid field:
+
+```json
+{
+  "errors": [
+    {
+      "type": "field",
+      "msg": "Project name should be provided",
+      "path": "name",
+      "location": "body"
+    }
+  ]
+}
+```
+
+| Status | Meaning |
+|--------|---------|
+| `400` | The request failed validation. Check the `errors` array. |
+| `401` | The API key is missing, invalid, or was reset. |
+| `403` | The key lacks a required scope, or your team role doesn't allow the action. |
+| `404` | The resource doesn't exist or isn't visible to this key. |
+| `429` | You've hit the rate limit for this key. |
+
+## Rate limits
+
+Requests made with an API key are rate limited. Every response carries these headers:
+
+| Header | Description |
+|--------|-------------|
+| `X-RateLimit-Limit` | Requests allowed in the current window. |
+| `X-RateLimit-Remaining` | Requests left in the current window. |
+| `X-RateLimit-Reset` | When the window resets. |
+| `X-RateLimit-Bucket` | Which bucket the request counted against. |
+
+Command execution (`/exec`, `/code`) and file transfer (`/files`) endpoints count against their own buckets, so heavy sandbox runtime traffic doesn't starve the rest of your integration. On `429`, wait for the reset before retrying.
+
+## Idempotency
+
+Object storage write endpoints (creating, updating, and deleting buckets and credentials) accept an `Idempotency-Key` header. Retrying with the same key and body returns the original result instead of repeating the operation. Send a unique value (a UUID works) per logical operation, and reuse it on retries.
+
+```bash
+curl -X POST https://api.brimble.io/core/v1/storage/buckets \
+  -H "x-brimble-key: $BRIMBLE_API_KEY" \
+  -H "Idempotency-Key: 6f1c2e0a-8f4d-4b7e-9d1a-2a7c3b5e9f10" \
+  -H "Content-Type: application/json" \
+  -d '{ "name": "user-uploads", "region": "auto" }'
+```
+
+## Streaming
+
+Sandbox command execution (`/exec`, `/code`) returns one JSON response when the command finishes. Send `"stream": true` in the body to receive output as Server-Sent Events (`text/event-stream`) while it runs. Each event is a `data:` line carrying JSON with a `type`:
+
+| `type` | Fields |
+|--------|--------|
+| `stdout` | `data`: a chunk of standard output. |
+| `stderr` | `data`: a chunk of standard error. |
+| `done` | `exit_code`, `duration_ms`. Always the last event on success. |
+| `error` | `message`. The command could not run. |
+
+```text
+data: {"type":"stdout","data":"hello\n"}
+
+data: {"type":"done","exit_code":0,"duration_ms":42}
+```
+
+Lines starting with `:` (`: open`, `: ping`) are keep-alives. Ignore them.
+
+## Webhooks
+
+To receive events from Brimble instead of polling, configure a webhook destination with `PATCH /v1/webhooks` or from the dashboard. See [Webhooks](/webhooks/overview) for setup and [Webhook events](/webhooks/events) for every payload.

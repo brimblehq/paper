@@ -253,6 +253,215 @@
         ]
       },
       {
+        "tab": "Core API",
+        "openapi": "/api-reference/core.openapi.yaml",
+        "groups": [
+          {
+            "group": "Getting started",
+            "icon": "rocket",
+            "pages": [
+              "api-reference/core/introduction"
+            ]
+          },
+          {
+            "group": "Projects",
+            "icon": "cube",
+            "pages": [
+              "GET /v1/projects",
+              "POST /v1/projects",
+              "POST /v1/projects/cancel/{projectId}/{logId}",
+              "POST /v1/projects/drop",
+              "PUT /v1/projects/maintenance/{projectId}",
+              "PUT /v1/projects/password-protect/{projectId}",
+              "PUT /v1/projects/preview-deployments/{projectId}",
+              "GET /v1/projects/stats/{projectId}",
+              "POST /v1/projects/transfer/{projectId}",
+              "POST /v1/projects/validate-image",
+              "GET /v1/projects/{name}",
+              "DELETE /v1/projects/{projectId}",
+              "POST /v1/projects/{projectId}/drop",
+              "POST /v1/projects/{projectId}/redeploy",
+              "POST /v1/projects/{projectId}/start",
+              "POST /v1/projects/{projectId}/stop"
+            ]
+          },
+          {
+            "group": "Deployments and Logs",
+            "icon": "scroll",
+            "pages": [
+              "GET /v1/logs/download/{projectId}/{logId}",
+              "GET /v1/logs/requests/{projectId}",
+              "GET /v1/logs/search/{projectId}",
+              "GET /v1/logs/{projectId}"
+            ]
+          },
+          {
+            "group": "Environments",
+            "icon": "layer-group",
+            "pages": [
+              "POST /v1/environments",
+              "GET /v1/environments",
+              "DELETE /v1/environments/{environmentId}",
+              "PATCH /v1/environments/{environmentId}",
+              "GET /v1/environments/{environmentId}",
+              "PATCH /v1/environments/{environmentId}/default",
+              "POST /v1/environments/{environmentId}/variables",
+              "GET /v1/environments/{environmentId}/variables",
+              "DELETE /v1/environments/{environmentId}/variables/{varId}",
+              "PATCH /v1/environments/{environmentId}/variables/{varId}",
+              "POST /v1/environments/{sourceEnvironmentId}/clone"
+            ]
+          },
+          {
+            "group": "Environment Variables",
+            "icon": "key",
+            "pages": [
+              "POST /v1/envs/{projectId}",
+              "GET /v1/envs/{projectId}",
+              "DELETE /v1/envs/{projectId}/{envId}",
+              "PATCH /v1/envs/{projectId}/{envId}",
+              "POST /v1/envs/{projectId}/{environment}",
+              "GET /v1/envs/{projectId}/{environment}"
+            ]
+          },
+          {
+            "group": "Webhooks",
+            "icon": "bolt",
+            "pages": [
+              "PATCH /v1/webhooks",
+              "GET /v1/webhooks",
+              "POST /v1/webhooks/test"
+            ]
+          },
+          {
+            "group": "Git Providers",
+            "icon": "code-branch",
+            "pages": [
+              "GET /v1/accounts/{git}",
+              "POST /v1/projects/link/{projectId}",
+              "POST /v1/projects/unlink/{projectId}",
+              "GET /v1/projects/{projectId}/git-connection",
+              "GET /v1/repos/{git}",
+              "GET /v1/repos/{git}/branches",
+              "GET /v1/repos/{git}/connection"
+            ]
+          },
+          {
+            "group": "Domains",
+            "icon": "globe",
+            "pages": [
+              "GET /v1/domains",
+              "POST /v1/domains",
+              "POST /v1/domains/sale/purchase",
+              "POST /v1/domains/sale/search",
+              "DELETE /v1/domains/{domainId}",
+              "PATCH /v1/domains/{domainId}",
+              "DELETE /v1/domains/{domainId}/{projectId}",
+              "GET /v1/domains/{domain}",
+              "POST /v1/domains/{domain}/records",
+              "PATCH /v1/domains/{domain}/records/{recordId}",
+              "DELETE /v1/domains/{domain}/records/{recordId}",
+              "GET /v1/domains/{domain}/status",
+              "POST /v1/domains/{projectId}"
+            ]
+          },
+          {
+            "group": "Databases",
+            "icon": "database",
+            "pages": [
+              "GET /v1/projects/available-databases",
+              "POST /v1/projects/database",
+              "POST /v1/projects/database/backup",
+              "POST /v1/projects/database/{databaseId}/users",
+              "GET /v1/projects/database/{databaseId}/users",
+              "PUT /v1/projects/database/{projectId}",
+              "GET /v1/projects/database/{projectId}/backups",
+              "POST /v1/projects/database/{projectId}/backups/{backupId}/restore",
+              "POST /v1/projects/database/{projectId}/link-projects"
+            ]
+          },
+          {
+            "group": "Log Drains",
+            "icon": "file-export",
+            "pages": [
+              "POST /v1/drains",
+              "GET /v1/drains",
+              "DELETE /v1/drains/{drainId}",
+              "PATCH /v1/drains/{drainId}",
+              "GET /v1/drains/{drainId}",
+              "POST /v1/drains/{drainId}/test"
+            ]
+          },
+          {
+            "group": "Sandboxes",
+            "icon": "box",
+            "pages": [
+              "GET /v1/sandboxes",
+              "POST /v1/sandboxes",
+              "DELETE /v1/sandboxes/{id}",
+              "GET /v1/sandboxes/{id}",
+              "POST /v1/sandboxes/{id}/code",
+              "POST /v1/sandboxes/{id}/exec",
+              "GET /v1/sandboxes/{id}/files/{filepath}",
+              "PUT /v1/sandboxes/{id}/files/{filepath}",
+              "POST /v1/sandboxes/{id}/pause",
+              "POST /v1/sandboxes/{id}/resume",
+              "POST /v1/sandboxes/{id}/snapshots",
+              "GET /v1/sandboxes/{id}/wait"
+            ]
+          },
+          {
+            "group": "Object Storage",
+            "icon": "bucket",
+            "pages": [
+              "POST /v1/storage/buckets",
+              "GET /v1/storage/buckets",
+              "DELETE /v1/storage/buckets/{bucketId}",
+              "GET /v1/storage/buckets/{bucketId}",
+              "POST /v1/storage/buckets/{bucketId}/credentials",
+              "GET /v1/storage/buckets/{bucketId}/user-objects",
+              "POST /v1/storage/buckets/{bucketId}/user-presign-download",
+              "POST /v1/storage/buckets/{bucketId}/user-presign-upload"
+            ]
+          },
+          {
+            "group": "Scaling and Networking",
+            "icon": "network-wired",
+            "pages": [
+              "POST /v1/autoscaling",
+              "GET /v1/autoscaling",
+              "PUT /v1/autoscaling/{id}",
+              "PATCH /v1/networking/{projectId}",
+              "GET /v1/networking/{projectId}",
+              "POST /v1/networking/{projectId}/purge-cache",
+              "PATCH /v1/ratelimits/{projectId}",
+              "GET /v1/ratelimits/{projectId}"
+            ]
+          },
+          {
+            "group": "Teams",
+            "icon": "users",
+            "pages": [
+              "GET /v1/teams",
+              "GET /v1/teams/{name}/members",
+              "POST /v1/teams/{teamId}/invite",
+              "POST /v1/teams/{teamId}/members/{memberId}/remove",
+              "PUT /v1/teams/{teamId}/members/{memberId}/role"
+            ]
+          },
+          {
+            "group": "Catalog",
+            "icon": "book-open",
+            "pages": [
+              "GET /v1/frameworks",
+              "POST /v1/frameworks",
+              "GET /v1/plans",
+              "GET /v1/regions"
+            ]
+          }
+        ]
+      },
+      {
         "tab": "Sandbox API",
         "openapi": "/api-reference/sandboxes.openapi.yaml",
         "groups": [
