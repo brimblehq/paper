@@ -1,0 +1,106 @@
+---
+title: "Configure projects with brimble.toml"
+description: "Keep service, database, and bucket settings in a versioned TOML file."
+---
+
+Use `brimble.toml` to describe your Brimble resources alongside your application code. When you deploy a commit, Brimble reads the file from that commit, compares it with the current settings, and shows the resulting plan under your project's **Configuration → Config as code** section.
+
+## Get started
+
+1. Open your project in the dashboard and go to **Configuration → Config as code**.
+2. Select **Generate brimble.toml** to get a file based on the project's current settings. The generated file does not contain secret values.
+3. Add the file to your repository. Put it in the project's root directory if you set one, or at the repository root.
+4. Commit and push it. Check **Config as code** for the plan and approve any changes that need your review.
+
+You can also select **Preview a brimble.toml** in the dashboard, paste your file, and inspect a plan before committing it. Previewing does not apply the changes.
+
+<Tip>
+  Start with the generated file for an existing project. It uses the resource names and settings Brimble already knows about.
+</Tip>
+
+## Write a service configuration
+
+Each entry under `services` has a name. Use your existing project's name when you want to configure that project. This example configures a web service named `my-app`:
+
+```toml
+[services.my-app]
+type = "web"
+root = "."
+
+[services.my-app.build]
+install = "npm ci"
+command = "npm run build"
+
+[services.my-app.deploy]
+start = "npm start"
+port = 3000
+health = "/health"
+
+[services.my-app.env]
+NODE_ENV = "production"
+```
+
+Set only the fields you need to manage in the file. For example, omit `build.install` if you want Brimble to keep the current install command. Paths such as `root`, `build.output`, and `build.dockerfile` must stay inside the repository.
+
+| Section | Common settings |
+| --- | --- |
+| `services.<name>` | `type` (`web`, `worker`, `static`, or `mcp`), `region`, `root` |
+| `services.<name>.build` | `install`, `command`, `output`, `dockerfile`, `watch`, `cache` |
+| `services.<name>.deploy` | `start`, `before_start`, `port`, `health` |
+| `services.<name>.resources` | `cpu`, `memory`, `disk` |
+| `services.<name>.scale` | `replicas`, or autoscaling `min`, `max`, and targets |
+| `services.<name>.network` | `public`, `domains`, `previews`, `maintenance`, and other network settings |
+
+Use either `scale.replicas` or autoscaling settings for a service. You cannot combine them. See [Scaling](/scaling/overview) for how scaling works.
+
+### Keep secrets out of the file
+
+Values in `services.<name>.env` are part of your repository. For credentials, add the variable in the project's **Environment** tab and declare its name as required:
+
+```toml
+[services.my-app.secrets]
+required = ["DATABASE_URL", "API_TOKEN"]
+```
+
+If a required variable is missing, the config plan blocks the change until you add it in the dashboard. See [Environment variables](/environments/overview) for managing values.
+
+## Add databases and buckets
+
+You can describe other resources in the same file. This example updates a database named `app-db` and a bucket named `uploads`:
+
+```toml
+[databases.app-db]
+public = false
+
+[buckets.uploads]
+public = false
+```
+
+New resources appear in the plan for approval before they are created. To create a database, include its `engine` and `version` using values available in the dashboard. Check the plan before approving a new resource, since resource creation can affect your bill. An existing resource that is absent from the file is shown separately in the plan; leaving it out does not delete it.
+
+## Set environment-specific values
+
+Top-level settings apply as the base. Add an `environments` table to override settings for a named environment. The names must match your environment slugs.
+
+```toml
+[services.my-app.env]
+LOG_LEVEL = "info"
+
+[environments.staging.services.my-app.env]
+LOG_LEVEL = "debug"
+
+[environments.preview.services.my-app.build]
+command = "npm run build:preview"
+```
+
+Environment overrides merge with the base settings. Arrays in an override replace the base array. A named environment can also use `inherit_from` to inherit another named environment or `production`; inheritance cycles are invalid. Preview overrides are limited to service `build`, `deploy`, and `env` settings.
+
+## Review and apply changes
+
+After a push, Brimble compares the file with the current settings. Routine changes apply automatically. New resources and changes that require confirmation pause the deployment until you approve them in **Configuration → Config as code**. You can reject the plan there instead.
+
+The plan explains any blocked change. For example, a setting may be unavailable on your plan, a required secret may be missing, or a resource property may be create-only. Fix the file or the project setting, then push a new commit. Invalid TOML and unsupported fields produce validation errors with a line number.
+
+<Note>
+  Storage sizes use values such as `512mb`, `10gb`, or `1tb`. Durations use `s`, `m`, `h`, or `d`, for example `30s` or `7d`. TOML strings need quotes, while numbers and booleans do not.
+</Note>
