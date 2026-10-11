@@ -85,6 +85,20 @@ DATABASE_URL={{@acme-pg-prod.CONNECTION_STRING}}
 
 See [Reference shared and cross-project variables](/environments/env-references) for the full syntax, scoping rules, and chaining behavior.
 
+## Read variables through the API
+
+Variables are encrypted at rest. When you list them with the API ([`GET /v1/envs/{projectId}`](/api-reference/secrets/list-secrets)), each `value` comes back **encrypted**. To get the plain values, send the `name` and `value` pairs you need to [`POST /v1/decrypt`](/api-reference/secrets/decrypt-secrets):
+
+```json
+{
+  "environments": [
+    { "name": "DATABASE_URL", "value": "<encrypted value from the list response>" }
+  ]
+}
+```
+
+The response returns the same names with `value` decrypted. Treat it as sensitive: don't log it or store it in plain text.
+
 ## Build-time vs runtime
 
 <Warning>

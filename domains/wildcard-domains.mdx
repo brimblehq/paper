@@ -1,0 +1,115 @@
+---
+title: "Wildcard domains"
+description: "Serve every subdomain of your domain, such as customer.example.com, from one project."
+---
+
+A wildcard domain sends every subdomain of a domain to one project. Once `*.example.com` is on, `acme.example.com`, `beta.example.com` and any other subdomain reach your app without adding each one separately. Your app reads the `Host` header to tell them apart.
+
+Useful for:
+
+- Multi-tenant apps where each customer gets their own subdomain.
+- Per-branch or per-feature URLs you create on the fly.
+- Catch-all landing pages.
+
+## Prerequisites
+
+- A plan that includes wildcard domains. See [Plans](/billing/plans).
+- An apex domain (`example.com`, not `app.example.com`) added to Brimble and attached to a project. See [Custom domains](/domains/custom-domains).
+
+Wildcards aren't available on `*.brimble.app` subdomains.
+
+## Turn on the wildcard
+
+Turn on the wildcard for the apex domain in the dashboard, or call the API:
+
+```http
+PATCH /v1/domains/{domainId}/wildcard
+x-brimble-key: <your API key>
+Content-Type: application/json
+
+{ "enabled": true }
+```
+
+What happens next depends on where your DNS is hosted.
+
+**Domain bought on Brimble.** Brimble creates the records below for you and the wildcard is active straight away. You can skip the next section.
+
+**Any other domain** (DNS at Cloudflare, Namecheap, Route 53, and so on). Add the records below where your DNS is hosted. The wildcard stays pending until Brimble sees them.
+
+## DNS records to add
+
+For `example.com`:
+
+| Type | Name | Value | Purpose |
+|---|---|---|---|
+| CNAME | `*` | `gateway.brimble.app` | Sends every subdomain to Brimble. |
+| CNAME | `_acme-challenge` | `example-com.acme.brimble.io` | Lets Brimble issue and renew the `*.example.com` certificate. |
+| CNAME | `brimble-wc` | `gateway.brimble.app` | Proves the wildcard points at Brimble. **Cloudflare DNS only.** |
+
+The `_acme-challenge` value is your domain with dots replaced by dashes, followed by `.acme.brimble.io`. For `my-shop.co.uk` it's `my-shop-co-uk.acme.brimble.io`. Very long domains use a different value. Always copy it from the dashboard or from the API (see below) rather than typing it by hand.
+
+<Note>
+  On Cloudflare, set all three records to **DNS only** (grey cloud). A proxied `*` record answers with Cloudflare's own IPs, so Brimble can't confirm it points here. That's why Cloudflare needs the extra `brimble-wc` record. At other providers, the `*` record already covers `brimble-wc.example.com`, so you don't need to add it.
+</Note>
+
+Keep the normal record for `example.com` itself, as set up in [Custom domains](/domains/custom-domains). The wildcard only covers subdomains.
+
+### Get the exact records from the API
+
+`GET /v1/domains/{domain}` returns the records to create for the domain in `settings.records`, including the wildcard ones once the wildcard is on:
+
+```json
+{
+  "settings": {
+    "records": [
+      { "type": "CNAME", "name": "@", "value": "gateway.brimble.app", "isRecommended": true },
+      { "type": "CNAME", "name": "*", "value": "gateway.brimble.app", "isRecommended": true },
+      { "type": "CNAME", "name": "_acme-challenge", "value": "example-com.acme.brimble.io", "isRecommended": true }
+    ]
+  }
+}
+```
+
+## Check that it's active
+
+Brimble re-checks pending wildcards every 2 minutes. The wildcard is active when the domain shows `wildcard_verified: true` (from `GET /v1/domains/{domain}`). The `*.example.com` certificate is issued right after that, which can take a few more minutes.
+
+To check your records yourself:
+
+```bash
+dig _acme-challenge.example.com CNAME +short
+# example-com.acme.brimble.io.
+
+dig anything.example.com CNAME +short
+# gateway.brimble.app.
+```
+
+## How routing works
+
+- **One level deep.** `*.example.com` covers `acme.example.com` but not `eu.acme.example.com`. This is how wildcard DNS and certificates work.
+- **Specific subdomains win.** If you add `api.example.com` as its own domain on another project, requests to `api.example.com` go to that project. Every other subdomain goes to the project that owns `example.com`.
+- **The apex is separate.** `example.com` keeps its own record and settings. The wildcard doesn't change it.
+
+## Turn off the wildcard
+
+Send `{ "enabled": false }` to the same endpoint. For domains bought on Brimble, the `*` and `_acme-challenge` records are removed for you. For other domains, delete them where your DNS is hosted.
+
+## Troubleshooting
+
+**`wildcard_verified` stays `false`.** Both checks must pass:
+
+- `_acme-challenge.example.com` is a **CNAME** (not a TXT record) to the exact value above.
+- `brimble-wc.example.com` resolves to Brimble. At most providers the `*` record handles this. On Cloudflare, add `brimble-wc` as its own record and make sure it isn't proxied.
+
+**"Wildcard domains are not supported on your current plan."** Upgrade to a plan that includes wildcard domains.
+
+**"Wildcard is only supported on apex domains."** Turn the wildcard on for `example.com`, not for a subdomain such as `app.example.com`.
+
+**"Domain must be attached to a project to enable wildcard."** Attach the apex domain to a project first.
+
+**Certificate error on a subdomain.** Check that `_acme-challenge` is still in place. Brimble needs it every time it renews the certificate, so don't delete it while the wildcard is on.
+
+## Next steps
+
+- [Custom domains](/domains/custom-domains): connect the apex domain first.
+- [DNS troubleshooting](/troubleshooting/dns): when DNS itself is the problem.

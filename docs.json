@@ -156,6 +156,7 @@
               "domains/transfer-a-domain",
               "domains/manage-dns-records",
               "domains/redirect-a-domain",
+              "domains/wildcard-domains",
               "domains/dns-records",
               "domains/email-forwarding"
             ]
@@ -416,6 +417,7 @@
             "group": "Object Storage",
             "icon": "bucket",
             "pages": [
+              "GET /v1/storage/regions",
               "POST /v1/storage/buckets",
               "GET /v1/storage/buckets",
               "DELETE /v1/storage/buckets/{bucketId}",

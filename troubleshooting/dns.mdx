@@ -60,7 +60,7 @@ If you see a CAA record that doesn't include `letsencrypt.org`, Let's Encrypt wo
 @   CAA   0 issue "letsencrypt.org"
 ```
 
-**Step 3: Check for a wildcard mismatch.** Wildcard certs (`*.example.com`) require a `_acme-challenge` TXT record for DNS-01 validation. Brimble handles this automatically for managed domains; if you're using external DNS, the dashboard provides the exact TXT record to add.
+**Step 3: Check for a wildcard mismatch.** Wildcard certs (`*.example.com`) need a `_acme-challenge` **CNAME** record pointing to `<your-domain-with-dashes>.acme.brimble.io`, for example `example-com.acme.brimble.io`. A TXT record won't work. Brimble adds it for you on domains bought through Brimble; for other domains, add it where your DNS is hosted. See [Wildcard domains](/domains/wildcard-domains).
 
 **Step 4: Wait.** Let's Encrypt has rate limits. If multiple cert requests fail in succession, retries may be backed off for an hour. After that, Brimble retries automatically.
 

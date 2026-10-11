@@ -30,6 +30,39 @@ Once created, the bucket detail page shows the **endpoint URL** and **region** y
   <img src="/images/object-storage/bucket-details.jpg" alt="Bucket detail page with endpoint URL, region, object count, total size, and tabs for Objects, Credentials, CORS, Migrations, and Settings" />
 </Frame>
 
+### From the API
+
+```http
+POST /v1/storage/buckets
+x-brimble-key: <your API key>
+Content-Type: application/json
+
+{ "name": "uploads", "region": "fra" }
+```
+
+Omit `region` to use `global`. See [Create a bucket](/api-reference/object-storage/create-a-bucket) for every field.
+
+## Regions
+
+| ID | Location |
+|---|---|
+| `global` | Global. Data is distributed and follows access patterns. **Default.** |
+| `sjc` | San Jose, California, USA |
+| `ord` | Chicago, Illinois, USA |
+| `iad` | Ashburn, Virginia, USA |
+| `ams` | Amsterdam, Netherlands |
+| `fra` | Frankfurt, Germany |
+| `lhr` | London, United Kingdom |
+| `sin` | Singapore |
+| `nrt` | Tokyo, Japan |
+| `los` | Lagos, Nigeria |
+
+Pick the region closest to the services that read and write the data, or `global` if your users are spread out. To get the current list programmatically, call [`GET /v1/storage/regions`](/api-reference/object-storage/list-storage-regions).
+
+<Note>
+  Buckets in `los` (Lagos) support CORS, public access and custom domains, but not lifecycle rules or versioning.
+</Note>
+
 ## List buckets
 
 The **Buckets** tab lists every bucket in the current workspace with its region, object count, and total size. Click a bucket to open its detail page.
