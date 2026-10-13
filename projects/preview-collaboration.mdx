@@ -1,0 +1,116 @@
+---
+title: "Preview collaboration"
+description: "Let your team and reviewers comment directly on pull request previews, powered by Quality."
+---
+
+<Frame>
+  <img src="/images/projects/preview-collaboration-banner.png" alt="Quality and Brimble logos side by side over a sketch of hot air balloons" />
+</Frame>
+
+Preview collaboration puts a commenting toolbar on your project's pull request previews. Reviewers open a preview, click the element they want to talk about, and leave a comment pinned to it, with a screenshot, a short recording of what they did, and the browser's console and network logs attached.
+
+The toolbar is powered by [Quality](https://usequality.app). Brimble sets Quality up for you: there's no Quality account to create, no workspace to configure, and no script to add to your code. Turn it on for a project and the toolbar shows up on its next preview.
+
+## How it works
+
+- **Previews only.** The toolbar loads on the project's pull request previews. It never appears on your production domain, so your users don't see it.
+- **Nothing to install.** Brimble's edge adds the Quality script to the HTML of each preview as it's served. Your code and your builds stay the same.
+- **Your team is already in.** Everyone in your Brimble workspace can comment. Brimble keeps your Quality workspace in sync with your team, so people who join get access and people who leave lose it.
+- **Comments follow the page, not the PR.** Comments are tied to the project and the page path. A comment left on `/checkout` in PR #41 also shows on `/checkout` in PR #42, labelled **PR #41**. Use the **This PR** filter to see only the current preview's comments.
+- **Comments outlive the preview.** When a PR is closed or merged, its preview is torn down and the toolbar stops loading there, but its comments stay in your Quality workspace.
+
+## Before you start
+
+Preview collaboration needs:
+
+- **A plan that includes it.** If your plan doesn't, the toggle is greyed out with an upgrade prompt. See [How billing works](/billing/plans).
+- **A project connected to a Git repository.** Previews are built from pull requests, so the setting only shows on projects deployed from Git. See [Git integrations](/projects/git-integrations).
+- **Preview deployments turned on and saved** for the project. Preview collaboration adds comments to previews, so previews have to exist first.
+
+## Turn on preview collaboration
+
+1. Open the project.
+2. Go to **Settings → Configuration**.
+3. Find **Pull request previews**. If **Preview deployment** is off, turn it on and save.
+4. Turn on **Preview collaboration**.
+5. Review the pricing in the confirmation and click **Turn on**.
+
+Brimble creates your Quality workspace (if this is your first project with collaboration), adds your team, and registers the project's existing previews. Every preview deployed from then on gets the toolbar automatically.
+
+<Note>
+  If the **Preview collaboration** toggle is greyed out, hover it to see why: preview deployments are off, preview deployments haven't been saved yet, or your plan doesn't include it.
+</Note>
+
+## Review a preview
+
+1. Open the preview. From the dashboard, go to the project's deployments, open the menu on a preview deployment, and click **View application**. You can also follow a preview link from the pull request or from a teammate.
+2. The Quality logo appears in the bottom-right corner of the page. Click it to open the toolbar.
+3. Click an element on the page to pin a comment to it, write your comment, and post it.
+
+Each comment is labelled with its pull request, so reviewers can tell PRs apart. Teammates are notified in Quality, and in Slack, Jira, or Linear if your Quality workspace is connected to them.
+
+The toolbar runs in its own isolated frame. It doesn't restyle your page, its errors don't show up in your site's error tracking, and its single-key shortcuts are off so they don't clash with your app's.
+
+## Signing in
+
+Members of your Brimble workspace don't sign in to Quality separately. Brimble signs them in with their Brimble account.
+
+- **From the dashboard.** **View application** on a preview deployment opens the preview already signed in.
+- **From a shared link.** A preview link from a pull request, chat, or a teammate also signs you in, as long as you're logged in to the Brimble dashboard in the same browser. If the toolbar asks you to sign in, open the [Brimble dashboard](https://brimble.io) once, then reload the preview.
+
+Sharing a preview link doesn't share access to comments. Anyone who opens it can see the preview, but only workspace members and [external collaborators](#external-collaborators) can read and post comments.
+
+## External collaborators
+
+To get feedback from people outside your Brimble workspace, such as clients, designers, or QA contractors, add them as external collaborators. They don't need a Brimble account.
+
+1. Open the project and go to **Settings → Configuration**.
+2. Under **Preview collaboration**, expand **External collaborators**.
+3. Type an email address and press **Enter**. Add as many as you need.
+
+To remove someone, click the **×** next to their email. They lose access right away.
+
+External collaborators sign in to the toolbar with a one-time code sent to their email, so use an address they check.
+
+<Warning>
+  External collaborators are added to your whole Quality workspace, not only the project you add them on. They can comment on the previews of every project in your Brimble workspace that has preview collaboration turned on.
+</Warning>
+
+## Turn off preview collaboration
+
+1. Open the project and go to **Settings → Configuration**.
+2. Turn off **Preview collaboration** and confirm.
+
+The toolbar stops loading on the project's previews. Existing comments stay in your Quality workspace and come back if you turn collaboration on again later.
+
+Preview collaboration also turns off on its own when:
+
+- **Preview deployments are turned off** for the project. Existing previews are removed along with the toolbar.
+- **The project is deleted.**
+- **Your subscription ends or moves to a plan without preview collaboration.** It turns off for every project in the workspace.
+
+## Pricing
+
+Preview collaboration is billed per project, per month. Your plan includes a number of projects for free. Once you've used those free slots, each additional project with collaboration turned on costs **$6 per month**. The settings page and the confirmation shown when you turn it on list how many free projects your plan includes.
+
+Only projects with collaboration turned on count. Turning it off on a project frees that slot right away. Team members and external collaborators are not billed per seat.
+
+See [How billing works](/billing/plans) for plan details.
+
+## Troubleshooting
+
+**The Quality logo doesn't appear on the preview.** Check that preview collaboration is on for the project, and that you're on a pull request preview rather than the production domain, where the toolbar never loads. Previews that existed before you turned collaboration on are registered when you turn it on. If a brand-new preview has no logo, wait for its deployment to finish, then reload.
+
+**The toolbar asks me to sign in.** You're not logged in to the Brimble dashboard in this browser, or you're not a member of the workspace that owns the project. Log in to the [dashboard](https://brimble.io), then reload the preview, or open it from the project's deployments with **View application**.
+
+**An external collaborator can't sign in.** Confirm their email is listed under **External collaborators**, spelled exactly as the address they're using. The one-time code goes to that address.
+
+**I can't turn on preview collaboration.** Hover the toggle for the reason. Turn on and save **Preview deployment** first, or upgrade to a plan that includes preview collaboration. Only members who can edit the project's settings can change it.
+
+**A comment from an older PR shows on this preview.** That's expected: comments follow the page path across PRs and carry the label of the PR they were left on. Use **This PR** to filter to the current preview.
+
+## Next steps
+
+- [Git integrations](/projects/git-integrations), how pull requests trigger preview deployments.
+- [Site password protection](/projects/password-protect), put a shared password in front of a project.
+- [Manage teams](/workspaces-and-teams/manage-teams), add teammates who should be able to comment.

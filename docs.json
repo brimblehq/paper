@@ -100,7 +100,8 @@
               "projects/persistent-disk",
               "projects/files",
               "projects/rollback-a-deployment",
-              "projects/password-protect"
+              "projects/password-protect",
+              "projects/preview-collaboration"
             ]
           },
           {
