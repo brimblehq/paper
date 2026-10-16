@@ -1,6 +1,6 @@
 ---
 title: "Networking and the edge"
-description: "Every request to a Brimble-hosted project hits the edge first."
+description: "Every request to a Brimble project goes through the edge: routing, TLS, injected and stripped headers, WebSockets and gRPC, rate limits, and body size."
 ---
 
 Every request to a Brimble-hosted project hits the **edge** first. The edge terminates TLS, routes to the right service, and adds a few headers your app can use. This page covers what happens between your users' browsers and your code.

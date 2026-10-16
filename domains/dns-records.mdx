@@ -1,5 +1,6 @@
 ---
-title: "DNS record types"
+title: "Supported DNS record types"
+sidebarTitle: "DNS record types"
 description: "The record types Brimble's authoritative DNS supports for managed domains."
 ---
 
@@ -125,3 +126,9 @@ If the answer doesn't match what's in the dashboard, propagation is in flight, w
 - A domain can hold many records, but a single host can only have one of each type (except `MX`, `NS`, and `TXT`, which support multiple).
 - Record names must follow DNS label rules: lowercase letters, digits, dashes; max 63 characters per label, 253 for the full name.
 - Proxied records must be `A` or `CNAME`. Other types can't be proxied.
+
+## Next steps
+
+- [Manage DNS records](/domains/manage-dns-records), add, edit, and delete records in the dashboard.
+- [Email forwarding](/domains/email-forwarding), forward mail on your domain with the right MX records.
+- [DNS troubleshooting](../troubleshooting/dns), when a record doesn't resolve the way you expect.

@@ -1,6 +1,7 @@
 ---
-title: "Rate limits"
-description: "The hard limits Brimble's edge enforces on incoming traffic."
+title: "Rate limits for traffic and builds"
+sidebarTitle: "Rate limits"
+description: "The limits Brimble enforces on public and internal traffic, build minutes, webhook delivery, and sensitive operations, and how to get higher limits."
 ---
 
 The hard limits Brimble's edge enforces on incoming traffic. These protect your service from abusive single-source traffic and don't depend on your project's compute capacity.
@@ -73,3 +74,9 @@ The 2FA prompt allows 5 wrong attempts per challenge, then locks for a cooling-o
 ## Higher limits
 
 For workloads that need more headroom than the default public-traffic posture (high-traffic public APIs, large file ingest, and similar), contact support. Custom Cloudflare rules and custom body size limits are available on Developer and Team plans, those go through support or a plan upgrade.
+
+## Next steps
+
+- [Networking and the edge](/networking/overview), how the edge routes and protects traffic.
+- [Build minutes](../billing/build-minutes), how build time is counted and topped up.
+- [Webhooks](../webhooks/overview), the events Brimble delivers and how delivery works.

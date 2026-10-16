@@ -1,6 +1,7 @@
 ---
-title: "Internal networking"
-description: "Every Brimble workspace gets a private, encrypted network connecting its services. This page covers how to use it, how it's built, and what it does and doesn't allow."
+title: "Internal networking between services"
+sidebarTitle: "Internal networking"
+description: "A private, encrypted network connects every service in a Brimble workspace. Use internal hostnames to reach databases and other services privately."
 ---
 
 Every Brimble workspace gets a **private, encrypted network** connecting its services. A web service can call its database, a worker can pull from a Redis queue, and one HTTP service can call another, all without leaving Brimble's infrastructure, going through Cloudflare, or appearing on the public internet. It's faster, doesn't count against bandwidth, and stays inside the trust boundary you already established when you signed in.
