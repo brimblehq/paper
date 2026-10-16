@@ -39,6 +39,18 @@ Check the install:
 brimble --version
 ```
 
+## Upgrade
+
+```bash
+brimble upgrade
+brimble upgrade --check          # only report whether a newer version exists
+brimble upgrade --version v0.3.0 # install a specific release
+```
+
+`upgrade` uses the method you installed with. A Homebrew install is upgraded with `brew upgrade --cask brimble`, and a `go install` build with `go install`. An install from the install script or a downloaded archive is replaced in place, after the download is checked against the release checksums. It asks before it runs. Pass `-y` to skip the question.
+
+If you see a permission error, the CLI is installed in a directory you can't write to. Re-run with `sudo`, or reinstall with the install script.
+
 ## Log in
 
 Create an API key at [Settings → API keys](https://app.brimble.io/settings/api-keys), then:
