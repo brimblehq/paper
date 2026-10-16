@@ -11,6 +11,21 @@ Inside a linked directory, commands default to that project, so `brimble deploy`
 ## Install
 
 <Tabs>
+  <Tab title="Install script">
+    On macOS or Linux:
+
+    ```bash
+    curl -fsSL https://brimble-cli.t3.tigrisfiles.io/install.sh | sh
+    ```
+
+    The script downloads the latest release for your system, checks it against the release checksums, and installs `brimble` to `/usr/local/bin`, or to `~/.local/bin` when `/usr/local/bin` isn't writable. If that directory isn't on your `PATH`, the script prints the line to add.
+
+    To pin a version or choose the directory:
+
+    ```bash
+    curl -fsSL https://brimble-cli.t3.tigrisfiles.io/install.sh | BRIMBLE_VERSION=v0.1.0 BRIMBLE_INSTALL_DIR=~/bin sh
+    ```
+  </Tab>
   <Tab title="Homebrew">
     On macOS or Linux:
 
