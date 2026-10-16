@@ -67,6 +67,8 @@ brimble upgrade --version v0.3.0 # install a specific release
 
 If you see a permission error, the CLI is installed in a directory you can't write to. Re-run with `sudo`, or reinstall with the install script.
 
+When a newer version is out, the CLI tells you after a command finishes, with the command to run. It checks at most once a day, and stays quiet in CI, in scripts, and with `-o json`. Set `BRIMBLE_NO_UPDATE_NOTIFIER=1` to turn the notice off.
+
 ## Log in
 
 Create an API key at [Settings → API keys](https://app.brimble.io/settings/api-keys), then:
