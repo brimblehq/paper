@@ -93,7 +93,7 @@ The container started but isn't responding to health checks.
 
 **"Application failed to respond."** Your service isn't listening on `$PORT`, isn't listening on `0.0.0.0`, or takes longer than the health check timeout to respond. This is the most common deploy failure — see [Application failed to respond](/troubleshooting/application-failed-to-respond) for per-framework start commands (Astro, Vite, Next, Express, Flask, Django, Rails).
 
-**Health check returns non-2xx.** Your `healthCheckPath` (default `/`) returns an error. Either fix the route, or set `healthCheckPath` to a working endpoint under **Settings → Configuration**.
+**Health check returns non-2xx.** Your health check path (default `/`) returns an error. Either fix the route, or point the health check at a working endpoint under **Settings → Configuration** or with `health` under `[services.<name>.deploy]` in [`brimble.toml`](/config-as-code/reference#deploy).
 
 **Database connection times out at startup.** Your app boots, tries to connect to the database, and hangs. Verify `DATABASE_URL` is set and the database is in the same region.
 

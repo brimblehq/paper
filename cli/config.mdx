@@ -1,0 +1,52 @@
+---
+title: "Config as code"
+description: "Generate, validate, and preview brimble.toml from the CLI, and approve changes a deploy is waiting on."
+---
+
+A project's settings live in [`brimble.toml`](/config-as-code/brimble-toml) in your repository. Brimble applies the file on every push. The `brimble config` commands help you write that file and act on what it changes. They don't replace pushing it.
+
+## Generate the file
+
+```bash
+brimble config pull
+brimble config pull my-api -f apps/api/brimble.toml
+brimble config pull -f -          # print to stdout
+```
+
+`pull` writes `brimble.toml` from the project's current settings, the same as **Generate brimble.toml** in the dashboard. Environment variable values are left out. Without `-f`, it writes to the linked directory. It asks before overwriting a file. Pass `-y` to skip the question.
+
+Commit the file unchanged and the next push changes nothing. Edit it and push to change the project.
+
+## Check the file
+
+```bash
+brimble config validate
+brimble config validate apps/api/brimble.toml
+```
+
+`validate` reports syntax errors, unknown fields, and out-of-range values with their line numbers, and exits non-zero when the file is invalid. Run it before you commit, or as a CI step.
+
+## Preview a change
+
+```bash
+brimble config plan
+brimble config plan my-api -f apps/api/brimble.toml
+```
+
+`plan` compares the file with what's running and shows what would change, grouped the same way as the dashboard's review: **Blocked**, **Needs approval**, and **Applies automatically**, with each field's old and new value. Resources that exist but aren't in the file are listed and left as they are.
+
+Nothing changes unless you approve. In a terminal, `plan` asks whether to apply the changes. Pass `-y` to apply without asking. If you apply from here, commit the same file, or your next push applies whatever is in the repository.
+
+## Approve changes a deploy is waiting on
+
+When a push adds resources or makes a risky change, the deploy pauses at **Needs approval**. `brimble deploy` and `brimble logs build` notice the pause, show the plan, and ask what to do: approve and continue, reject and cancel the deploy, or decide later.
+
+To act on it later or from a script:
+
+```bash
+brimble config show my-api       # the latest plan and its status
+brimble config approve my-api    # apply it; the deploy resumes and the CLI follows it
+brimble config reject my-api     # cancel the waiting deploy
+```
+
+`approve` and `reject` ask first. Pass `-y` to skip the question.

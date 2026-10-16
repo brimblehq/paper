@@ -1,0 +1,77 @@
+---
+title: "Environment variables from the CLI"
+description: "List, set, delete, pull, and push a project's environment variables with the Brimble CLI."
+---
+
+`brimble env` manages a project's variables. Values are encrypted at rest. A running deployment keeps the previous values until you deploy again.
+
+```bash
+brimble deploy
+```
+
+`envs` and `secrets` are aliases of `env`. Commands use the [linked project](/cli/overview) when you omit the name.
+
+## Scope
+
+`-e` / `--environment` is `production` (also `prod`) or `preview`. The default is production. Preview variables apply to preview deployments.
+
+```bash
+brimble env list -e preview
+brimble env set -e preview API_URL=https://staging.example.com
+```
+
+## List
+
+```bash
+brimble env list
+brimble env list my-api --reveal
+```
+
+Names are shown by default. `--reveal` prints decrypted values. Do not use `--reveal` on a shared screen or in CI logs.
+
+`-o json` omits values unless you also pass `--reveal`.
+
+## Set
+
+```bash
+brimble env set API_URL=https://api.example.com DEBUG=false
+brimble env set STRIPE_KEY
+brimble env set --name API_URL --value https://api.example.com
+brimble env set --file .env.production
+```
+
+Each `KEY=VALUE` argument is created or updated. A bare name such as `STRIPE_KEY` prompts for the value with hidden input. In a script, pass `KEY=VALUE`, or `--name` and `--value`.
+
+`--file` / `-f` reads a `.env` file. Existing names are updated. Names that are not in the file are left alone. The CLI asks before uploading a file. Pass `-y` to skip that question.
+
+Quotes, `export`, and comments in the file are handled. Blank values are kept.
+
+After a successful write, the CLI reminds you to run `brimble deploy`.
+
+## Delete
+
+```bash
+brimble env delete OLD_TOKEN
+brimble env delete API_URL DEBUG
+brimble env delete --yes OLD_TOKEN
+```
+
+With no names in a terminal, you pick variables from a list. The command asks before deleting. `-y` is required in a script.
+
+## Pull and push
+
+```bash
+brimble env pull
+brimble env pull my-api -f .env.production
+brimble env pull -f -                 # print to stdout
+brimble env push -f .env.production
+brimble env push -f .env.production -y
+```
+
+`pull` decrypts variables and writes a `.env` file (mode `0600`). The default path is `.env`. It asks before overwriting an existing file. `-f -` writes to stdout and is the option to use when another program should read the values.
+
+With no `-e`, `pull` writes production variables. Pass `-e preview` for the preview scope.
+
+`push` creates or updates every variable in the file and leaves other variables on the project unchanged. It asks before uploading unless you pass `-y`.
+
+Keep pulled files out of version control.

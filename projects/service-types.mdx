@@ -7,11 +7,11 @@ Every Brimble project has a service type. The type determines build behavior, ru
 
 | Service type | Build source | Runtime | Public URL | Health check | Use for |
 |---|---|---|---|---|---|
-| **Web service** | Git repo (Railpack / `Dockerfile`) **or** pre-built Docker image | Container, listens on `$PORT` | Yes | HTTP GET on `healthCheckPath` | Express, Django, Rails, FastAPI, Spring Boot, Phoenix, any HTTP server |
+| **Web service** | Git repo (Railpack / `Dockerfile`) **or** pre-built Docker image | Container, listens on `$PORT` | Yes | HTTP GET on the health check path | Express, Django, Rails, FastAPI, Spring Boot, Phoenix, any HTTP server |
 | **Static site** | Git repo (frontend builder) | None, assets served from edge | Yes | None | Next.js (export), Vite, Astro, Hugo, plain HTML/JS |
 | **Worker** | Git repo (Railpack / `Dockerfile`) **or** pre-built Docker image | Container, no port | No | Process liveness | Queue consumers, schedulers, background jobs |
 | **Database** | Managed image | Engine-specific | No (private endpoint) and Yes (public endpoint) | Engine readiness probe | Postgres, MySQL, MariaDB, MongoDB, Redis, Valkey, RabbitMQ, Neo4j, ClickHouse |
-| **MCP server** | Git repo (Railpack / `Dockerfile`) **or** pre-built Docker image | Container, listens on `$PORT` | Yes | HTTP GET on `healthCheckPath` | Remote MCP servers for AI clients |
+| **MCP server** | Git repo (Railpack / `Dockerfile`) **or** pre-built Docker image | Container, listens on `$PORT` | Yes | HTTP GET on the health check path | Remote MCP servers for AI clients |
 
 ## Web service
 

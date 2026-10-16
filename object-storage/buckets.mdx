@@ -103,35 +103,28 @@ If you need lifecycle rules or server-side copy, create the bucket in a region t
 
 If you upload to or read from a bucket directly from a browser (presigned URLs in a single-page app, file-picker uploads, direct video playback), the browser will check the bucket's CORS configuration before issuing requests from your domain.
 
-Open **Object storage → Buckets → \<bucket\> → CORS** and add rules. Each rule is a list of allowed origins, methods, headers, and an optional `maxAgeSeconds` for the browser preflight cache.
+Open **Object storage → Buckets → \<bucket\> → CORS** and add rules, or set them in [`brimble.toml`](/config-as-code/reference#buckets). Each rule is a list of allowed origins, methods, headers, and an optional max age for the browser preflight cache.
 
 <Frame caption="The CORS configuration panel with a rule editor.">
   <img src="/images/object-storage/bucket-cors-configuration.jpg" alt="CORS configuration panel with allowed origins, allowed methods checkboxes, allowed headers, expose headers, and max-age seconds inputs" />
 </Frame>
 
-```json
-{
-  "corsRules": [
-    {
-      "allowedOrigins": ["https://app.example.com", "https://staging.example.com"],
-      "allowedMethods": ["GET", "HEAD", "PUT", "POST", "DELETE"],
-      "allowedHeaders": ["*"],
-      "exposeHeaders": ["ETag"],
-      "maxAgeSeconds": 3600
-    }
-  ]
-}
+```toml brimble.toml
+[buckets.uploads]
+cors = [
+  { origins = ["https://app.example.com", "https://staging.example.com"], methods = ["GET", "HEAD", "PUT", "POST", "DELETE"], headers = ["*"], expose_headers = ["ETag"], max_age = "1h" },
+]
 ```
 
-- **`allowedOrigins`** is required and must contain at least one origin. Use the exact origin (`https://app.example.com`), not a hostname or wildcard host.
-- **`allowedMethods`** must be a non-empty subset of `GET`, `HEAD`, `PUT`, `POST`, `DELETE`.
-- **`allowedHeaders`** and **`exposeHeaders`** are optional. Use `["*"]` on `allowedHeaders` if your client sends custom headers and you don't want to enumerate them.
-- **`maxAgeSeconds`** caches the preflight result in the browser. 3600 (one hour) is a reasonable default.
+- **`origins`** is required and must contain at least one origin. Use the exact origin (`https://app.example.com`), not a hostname or wildcard host.
+- **`methods`** must be a non-empty subset of `GET`, `HEAD`, `PUT`, `POST`, `DELETE`.
+- **`headers`** and **`expose_headers`** are optional. Use `["*"]` on `headers` if your client sends custom headers and you don't want to enumerate them.
+- **`max_age`** caches the preflight result in the browser, as a duration such as `"1h"`. One hour is a reasonable default.
 
 You can configure up to 100 rules per bucket. Rules are evaluated top-down; the first matching rule wins.
 
 <Warning>
-  **`allowedOrigins: ["*"]` opens the bucket to any browser-driven script on any domain.** Useful for public download buckets; risky for anything that holds user-scoped data. Prefer an explicit list of origins.
+  **`origins = ["*"]` opens the bucket to any browser-driven script on any domain.** Useful for public download buckets; risky for anything that holds user-scoped data. Prefer an explicit list of origins.
 </Warning>
 
 ## Delete a bucket

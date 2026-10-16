@@ -83,6 +83,7 @@ api-reference/             OpenAPI YAML specs (rendered as their own tab in the 
 getting-started/           First-deploy flow
 projects/                  Project lifecycle, builds, deployments, service types, scaling
 mcp/                       Official Brimble MCP (overview, connect agents)
+cli/                       Brimble CLI (install, deploy, projects, logs, env, CI)
 sandboxes/                 Brimble Sandboxes (overview, quickstart, snapshots, internals)
 domains/                   Custom domains, buying, transfer, DNS
 environments/              Environments, env vars, references

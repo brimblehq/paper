@@ -81,12 +81,27 @@ html.dark,
 }
 
 /* Code blocks */
+.dark .code-block,
+[data-theme="dark"] .code-block {
+  border-color: #454545;
+}
+
+html.dark .code-block [data-component-part="code-block-root"],
+html.dark .code-block pre.shiki,
+html.dark .code-block pre code,
 .dark pre,
 .dark pre code,
+[data-theme="dark"] .code-block [data-component-part="code-block-root"],
 [data-theme="dark"] pre,
 [data-theme="dark"] pre code {
-  background-color: #1a1c1e !important;
-  border: 0.5px solid #454545;
+  background-color: #202022 !important;
+  border: 0;
+  box-shadow: none;
+}
+
+.dark .code-block-fade-overlay,
+[data-theme="dark"] .code-block-fade-overlay {
+  --fade-color-dark: #202022 !important;
 }
 
 /* Tables */

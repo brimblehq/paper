@@ -1,0 +1,80 @@
+---
+title: "Logs from the CLI"
+description: "Stream live application logs, follow a build, list deployments, and inspect HTTP requests."
+---
+
+`brimble logs` streams live application logs for the linked project, or for the project you name.
+
+```bash
+brimble logs
+brimble logs my-api
+brimble logs --since 1h
+brimble logs -q error --since 15m
+```
+
+Ctrl+C stops the stream. Lines that do not contain `--query` / `-q` are hidden. `--since` defaults to 15 minutes. `--limit` is the maximum number of lines in each batch (default 150).
+
+`brimble logs stream` is the same command.
+
+## Build logs
+
+```bash
+brimble logs build
+brimble logs build my-api
+brimble logs build my-api <deployment-id>
+brimble logs build --no-logs
+```
+
+With no deployment ID, this follows the latest deployment when that deployment is still running (a Git push, for example). Otherwise it asks you to pick one, or errors in a script.
+
+The command prints build lines until the deployment finishes, then reports the result. `--no-logs` waits for that result without printing the lines. On failure it still prints the tail of the build log.
+
+`brimble deploy` follows a build the same way. Use `logs build` when the deployment was started somewhere else.
+
+## Deployment history
+
+```bash
+brimble logs list
+brimble logs list --status FAILED
+brimble logs list -e preview
+brimble logs list --watch
+brimble logs search -q "fix login"
+```
+
+`list` (aliases `ls`, `deployments`) shows deployment history, 15 per page by default. `--page` selects a page. `--status` filters by deployment status, for example `FAILED` or `ACTIVE`. `-e` / `--environment` is `production` or `preview`.
+
+`--watch` refreshes the table. `--interval` defaults to 5 seconds.
+
+`search` matches commit message, branch, or author. `-q` / `--query` is the search text.
+
+## Download a build log
+
+```bash
+brimble logs download
+brimble logs download my-api <deployment-id>
+brimble logs download my-api <deployment-id> --out build.log
+```
+
+Prints the stored build log. `--out` / `-O` writes a file instead of stdout. With no deployment ID, a terminal asks you to pick one.
+
+## HTTP requests
+
+```bash
+brimble logs requests
+brimble logs requests --status 500
+brimble logs requests --status 404,500 --method POST
+brimble logs requests -q /api/checkout --limit 100
+```
+
+These are runtime HTTP requests, not build lines. `--limit` defaults to 50. `--status` is one status code or a comma-separated list. `--method` filters by HTTP method. `-q` matches text in the URL or message.
+
+## Status and the live URL
+
+```bash
+brimble status
+brimble open
+```
+
+`status` prints the project summary and the five most recent deployments. `open` opens the public URL in a browser, or prints it when it cannot.
+
+`brimble project stats` is CPU, memory, traffic, and latency. See [Projects](/cli/projects).

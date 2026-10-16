@@ -1,0 +1,143 @@
+---
+title: "Brimble CLI"
+description: "Install the Brimble CLI, log in with an API key, and link a directory so later commands know which project you mean."
+---
+
+The Brimble CLI deploys projects and manages them from your terminal. It uses the same API key as the dashboard.
+
+Inside a linked directory, commands default to that project, so `brimble deploy`, `brimble logs`, and `brimble env list` need no project name.
+
+## Install
+
+<Tabs>
+  <Tab title="Homebrew">
+    On macOS or Linux:
+
+    ```bash
+    brew install brimblehq/tap/brimble
+    ```
+
+    Homebrew also installs shell completions for bash, zsh, and fish.
+  </Tab>
+  <Tab title="GitHub release">
+    Download the archive for your operating system and architecture from the [releases page](https://github.com/brimblehq/anarchy/releases), unpack it, and put `brimble` on your `PATH`.
+
+    Windows builds are zip files on the same page. macOS and Linux builds are `.tar.gz`. Each archive includes completion scripts under `completions/`.
+  </Tab>
+  <Tab title="From source">
+    With Go installed:
+
+    ```bash
+    go install github.com/brimblehq/anarchy/cmd/brimble@latest
+    ```
+  </Tab>
+</Tabs>
+
+Check the install:
+
+```bash
+brimble --version
+```
+
+## Log in
+
+Create an API key at [Settings → API keys](https://app.brimble.io/settings/api-keys), then:
+
+```bash
+brimble login
+```
+
+The command offers to open that page, asks you to paste the key (the input is hidden), checks the key, and saves it. If you belong to teams, it asks which workspace later commands should use. Change that later with `brimble team switch`.
+
+```bash
+brimble login --api-key br_... --team acme
+brimble whoami
+brimble logout
+```
+
+`--api-key` and `BRIMBLE_API_KEY` override the saved key for one command. `--skip-validate` saves a key without checking it. `brimble logout` removes the saved key and the default team. If `BRIMBLE_API_KEY` is still set in the environment, the CLI tells you.
+
+The key is stored in `brimble/config.json` under your user config directory. The file is not a git config and should not be committed.
+
+## Link a directory
+
+```bash
+cd my-app
+brimble link
+```
+
+This writes `.brimble/project.json` in the current directory. The file holds the project ID, project name, and team ID. It does not hold your API key.
+
+Commands run in that directory, or in a folder below it, use the linked project when you omit the project argument. `brimble unlink` removes the file.
+
+```bash
+brimble link my-api --team acme
+brimble link --yes          # replace an existing link without asking
+```
+
+<Note>
+  Add `.brimble/` to `.gitignore` if you do not want the link file in the repository. It contains IDs, not secrets, and it is safe to commit when a repo should always deploy one project.
+</Note>
+
+## Which project a command uses
+
+1. The project name or ID you passed.
+2. Otherwise, the project linked to this directory.
+3. Otherwise, a picker, when you are in a terminal.
+
+In a script, with no argument and no link, the command exits with an error instead of prompting.
+
+`--team` accepts a team ID, name, or slug. Resolution order:
+
+1. `--team`
+2. `BRIMBLE_TEAM_ID`
+3. The team on the linked project
+4. The workspace saved by `brimble team switch` or `brimble login`
+
+`personal` (or an empty team) is your personal workspace.
+
+## Output
+
+Human-readable output is the default. Pass `-o json` for JSON on stdout. Progress, warnings, and errors go to stderr, so you can pipe stdout.
+
+```bash
+brimble project list -o json
+```
+
+`-o` accepts `table` or `json`.
+
+## Global flags
+
+| Flag | Environment variable | Default |
+| --- | --- | --- |
+| `--api-key` | `BRIMBLE_API_KEY` | Saved key |
+| `--team` | `BRIMBLE_TEAM_ID` | Linked project, then saved workspace |
+| `--base-url` | `BRIMBLE_CORE_BASE_URL` | Brimble API |
+| `--auth-url` | `BRIMBLE_AUTH_BASE_URL` | Brimble auth API |
+| `-o, --output` | | `table` |
+| `--timeout` | | `30s` |
+
+Destructive commands ask before they act. In a non-interactive shell they refuse unless you pass `-y` / `--yes`.
+
+## Where to go next
+
+<CardGroup cols={2}>
+  <Card title="Deploy" href="/cli/deploy">
+    Ship a project and follow the build.
+  </Card>
+  <Card title="Projects" href="/cli/projects">
+    List, inspect, and change project settings.
+  </Card>
+  <Card title="Logs" href="/cli/logs">
+    Stream application logs and read build output.
+  </Card>
+  <Card title="Environment variables" href="/cli/environment-variables">
+    Set, pull, and push secrets.
+  </Card>
+  <Card title="Domains and teams" href="/cli/domains-and-teams">
+    Domains, environments, and team members.
+  </Card>
+  <Card title="CI" href="/cli/ci">
+    Run the CLI in a pipeline.
+  </Card>
+</CardGroup>

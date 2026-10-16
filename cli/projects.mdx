@@ -1,0 +1,98 @@
+---
+title: "Manage projects from the CLI"
+description: "List and inspect projects, change maintenance and previews, connect a repository, transfer a project, and delete one."
+---
+
+Project commands accept a project name or ID. When you omit it, the CLI uses the [linked directory](/cli/overview), or a picker in a terminal.
+
+```bash
+brimble project list
+brimble project get
+brimble project get my-api
+```
+
+`get` is also available as `view` and `show`. `list` is also available as `ls`. The top-level command accepts `projects` and `p` as aliases.
+
+## List
+
+```bash
+brimble project list
+brimble project list --type web-service --status FAILED
+brimble project list --environment staging
+brimble project list --watch
+```
+
+| Flag | Meaning |
+| --- | --- |
+| `--type` | `web-service`, `static`, `worker`, `mcp`, or `database` |
+| `--status` | Latest deployment status, for example `ACTIVE` or `FAILED` |
+| `-e, --environment` | Only projects in this environment (name or ID) |
+| `--sort` | `updatedAt` (default) or `createdAt`, newest first |
+| `--page`, `--limit` | Page through the list. `--limit` defaults to 50 |
+| `-w, --watch` | Refresh the list. `--interval` defaults to `5s` |
+
+`get` and `stats` accept `--watch` and `--interval` as well.
+
+## Stats
+
+```bash
+brimble project stats
+brimble project stats my-api --watch
+```
+
+Prints CPU, memory, disk, network, request rate, error rate, and latency for the project. Worker projects also show execution counts. `-o json` prints the same numbers as JSON.
+
+## Maintenance, password, previews
+
+```bash
+brimble project maintenance on
+brimble project password on --password 's3cret'
+brimble project password off
+brimble project previews on
+```
+
+The state is the last argument: `on` or `off` (`enable` / `disable` and `true` / `false` also work). Put the project name first when you pass one:
+
+```bash
+brimble project maintenance my-api off
+```
+
+Turning password protection on in a terminal prompts for the password when `--password` is omitted. In a script, `--password` is required.
+
+## Connect a Git repository
+
+```bash
+brimble project connect-repo
+brimble project connect-repo my-api --repo acme/api --branch main
+brimble project disconnect-repo
+```
+
+`connect-repo` asks for the Git provider, account, repository, and branch, then connects that repo so pushes deploy the project. In a script, pass `--repo` (and `--git` for GitLab or Bitbucket). This is not `brimble link`. Link only records which project this directory refers to.
+
+`disconnect-repo` removes the Git connection. Pushes stop deploying the project until you connect a repo again. It asks first. Pass `-y` to skip the question.
+
+`brimble project link` and `brimble project unlink` still run, and print a notice to use `connect-repo` and `disconnect-repo`.
+
+## Transfer
+
+```bash
+brimble project transfer my-api --to acme
+brimble project transfer --to acme --yes
+```
+
+Moves the project to another team. `--to` is a team ID, name, or slug. If this directory is linked to the project, link it again with the new team:
+
+```bash
+brimble link my-api --team acme
+```
+
+## Delete
+
+```bash
+brimble project delete my-api
+brimble project delete my-api --yes --delete-volume
+```
+
+In a terminal you must type the project name. `--yes` skips that check and is required in a script. `--delete-volume` also deletes the attached persistent volume.
+
+If the directory is still linked to the deleted project, the CLI tells you to run `brimble unlink`.

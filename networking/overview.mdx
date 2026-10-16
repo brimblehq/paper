@@ -99,7 +99,7 @@ For larger uploads (file uploads, large data ingest), upload directly to object 
 
 Brimble probes your service after deployment to decide whether traffic should flow to the new version:
 
-- **Web services.** A GET request to `healthCheckPath` (default `/`). Anything in the 2xx or 3xx range counts as healthy.
+- **Web services.** A GET request to the health check path (default `/`). Anything in the 2xx or 3xx range counts as healthy.
 - **Workers.** Process liveness only, if the process is alive, the worker is healthy.
 - **Static sites.** No probe; the artifact is served directly.
 

@@ -1,0 +1,70 @@
+---
+title: "Connect coding agents"
+description: "Use brimble mcp to add Brimble's MCP server to Claude Code, Cursor, Codex, and other coding agents on your machine."
+---
+
+`brimble mcp` writes Brimble's MCP server into the coding agents installed on this machine. After that, you can ask the agent to deploy, read logs, or manage projects.
+
+The server itself is documented in [Brimble MCP](/mcp/overview). This page is the CLI that configures clients for you. You can still [connect a client by hand](/mcp/connect).
+
+```bash
+brimble mcp
+brimble mcp cursor claude-code
+brimble mcp --all --auth api-key --yes
+brimble mcp status
+brimble mcp disconnect cursor
+```
+
+You do not need `brimble login` for browser sign-in. API-key sign-in uses the key this CLI already has.
+
+## What it configures
+
+| Agent | How |
+| --- | --- |
+| Claude Code | `claude mcp add`, user scope |
+| Cursor | `~/.cursor/mcp.json` |
+| VS Code (Copilot) | VS Code user `mcp.json` |
+| Windsurf | Windsurf `mcp_config.json` |
+| Codex | `config.toml` under your Codex home |
+| Gemini CLI | `~/.gemini/settings.json` |
+| opencode | opencode user config |
+| Zed | Zed `settings.json` |
+| Claude Desktop | Instructions only. Finish in the app |
+| Grok Build | Instructions only. Finish in the app |
+
+Names and aliases work: `claude`, `code`, `copilot`, `Cursor`, `gemini-cli`.
+
+The CLI only changes the `brimble` server entry. Other servers, settings, and key order stay as they were. If a JSON config contains comments, it is left untouched and the CLI prints a snippet to paste yourself.
+
+## Sign-in
+
+```bash
+brimble mcp cursor --auth browser
+brimble mcp cursor --auth api-key
+```
+
+**Browser** is the default when you are asked, and when you pass `--yes` without `--auth api-key`. The config stores the server URL only. The agent asks you to approve Brimble the first time you use it. No API key is written.
+
+**api-key** checks the CLI's saved key, then writes it into that agent's config so the agent can call Brimble immediately. Treat those config files like a password store.
+
+Zed cannot use browser sign-in. Connect it with `--auth api-key`, or pick API key when prompted. If you chose browser for a mixed selection, Zed falls back to the API key when you are logged in, and is skipped when you are not.
+
+`--all` connects every detected agent. With no arguments in a terminal, detected agents are listed first and pre-selected, except ones that already have Brimble.
+
+## Status and disconnect
+
+```bash
+brimble mcp status
+brimble mcp disconnect
+brimble mcp disconnect cursor codex --yes
+```
+
+`status` (aliases `list`, `ls`) shows which agents are on this machine, whether Brimble is connected, and whether that connection uses an API key. `-o json` prints the same rows.
+
+`disconnect` (aliases `remove`, `rm`) deletes the Brimble entry. With no names in a terminal, you pick from agents that are connected. It asks first. Agents that are set up inside the app print where to remove the connector.
+
+## After connecting
+
+The CLI prints the next step for each agent, for example `/mcp` in Claude Code, **Settings → MCP** in Cursor, or `codex mcp login brimble`. When Codex is installed and you used browser sign-in, it can run that login for you.
+
+If a team workspace was included, agents act in that team. After `brimble team switch`, run `brimble mcp` again so the configs pick up the new team.

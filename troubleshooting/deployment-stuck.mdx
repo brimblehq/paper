@@ -113,10 +113,11 @@ Your code listens on a hardcoded port, or binds to `127.0.0.1` instead of all in
 
 The default health check is `GET /`. If your `/` returns 404, 500, or anything outside 2xx/3xx, the check fails.
 
-**Fix:** Either add a `/` route, or set the health check path to a working endpoint under **Settings → Configuration**:
+**Fix:** Either add a `/` route, or set the health check path to a working endpoint under **Settings → Configuration**, or in [`brimble.toml`](/config-as-code/reference#deploy):
 
-```yaml
-healthCheckPath: /healthz
+```toml brimble.toml
+[services.api.deploy]
+health = "/healthz"
 ```
 
 A common pattern:

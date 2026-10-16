@@ -42,7 +42,7 @@ Each in-progress deployment streams logs through these phases:
 4. **Build.** Your build command runs. Compilation, bundling, asset generation, container image creation.
 5. **Push.** The artifact is pushed to Brimble's internal registry.
 6. **Deploy.** The container is scheduled in the target region.
-7. **Health check.** Brimble probes the start command and, for web services, your `healthCheckPath` (defaults to `/`). When the check passes, traffic flips to the new deployment.
+7. **Health check.** Brimble probes the start command and, for web services, your health check path (defaults to `/`). When the check passes, traffic flips to the new deployment.
 
 Logs for each phase stream into the dashboard in real time. You can also view them after the fact under **Deployment history**.
 

@@ -1,0 +1,78 @@
+---
+title: "Use the CLI in CI"
+description: "Authenticate the Brimble CLI in a pipeline, deploy without prompts, and fail the job when a deployment fails."
+---
+
+In CI, set an API key and pass the project name. The CLI does not prompt when stdin is not a terminal. Commands that would ask a question exit with an error telling you which flag to pass.
+
+## Authenticate
+
+Store a Brimble API key in the pipeline's secret store and export it as `BRIMBLE_API_KEY`. Do not run `brimble login` in CI, and do not write the key into the repo.
+
+```bash
+export BRIMBLE_API_KEY=br_...
+```
+
+For a team workspace, set `BRIMBLE_TEAM_ID` to the team ID, name, or slug, or pass `--team`:
+
+```bash
+export BRIMBLE_TEAM_ID=acme
+brimble deploy my-api --team acme
+```
+
+A linked `.brimble/project.json` in the checkout supplies the project and its team when you omit both.
+
+## Deploy
+
+```bash
+brimble deploy my-api
+```
+
+The command waits until the deployment finishes and exits non-zero when it fails. That fails the job.
+
+```bash
+brimble deploy my-api --detach -o json
+```
+
+`--detach` starts the deployment and exits. With `-o json`, stdout is a JSON object with `projectId`, `project`, and `logId`. Status text stays on stderr.
+
+```bash
+brimble deploy my-api --no-logs
+```
+
+Waits for the result without streaming the build log. On failure, the last lines of the log are printed to stderr.
+
+`--restart` restarts without a rebuild. It is not valid for a static upload project.
+
+## Static sites
+
+```bash
+brimble deploy my-site --dir ./dist
+```
+
+`--dir` uploads that folder. Use it only for a project that has no Git repository. The upload skips `.env` files. In CI the confirmation prompt is skipped for this upload because it is not a destructive action.
+
+## Variables
+
+```bash
+brimble env set my-api RELEASE="$GIT_SHA"
+brimble env push my-api -f .env.production --yes
+```
+
+`env set` with `KEY=VALUE` does not prompt. `env push` and `env delete` modify or remove secrets, so pass `--yes`.
+
+Do not pass `--reveal`, and do not `env pull -f -`, unless the job is supposed to print secret values into the log.
+
+Variable changes apply on the next deployment. Set them before `brimble deploy` when the build needs them.
+
+## Other commands that need `--yes`
+
+Any command that deletes, stops, rolls back, transfers, or disconnects asks in a terminal and refuses in CI without `-y` / `--yes`:
+
+```bash
+brimble project stop my-api --yes
+brimble project rollback my-api <deployment-id> --yes
+brimble project delete my-api --yes
+```
+
+`brimble mcp --all --auth api-key --yes` connects every detected agent with the pipeline's API key and does not ask. That writes the key into agent config files on that machine. Use it for a developer machine or a dotfiles setup, not for a shared CI runner.

@@ -78,6 +78,21 @@
             ]
           },
           {
+            "group": "CLI",
+            "icon": "terminal",
+            "pages": [
+              "cli/overview",
+              "cli/deploy",
+              "cli/projects",
+              "cli/config",
+              "cli/logs",
+              "cli/environment-variables",
+              "cli/domains-and-teams",
+              "cli/agents",
+              "cli/ci"
+            ]
+          },
+          {
             "group": "Projects",
             "icon": "cube",
             "pages": [

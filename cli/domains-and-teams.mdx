@@ -1,0 +1,86 @@
+---
+title: "Domains, environments, and teams"
+description: "Add domains, manage environments, switch workspaces, and invite team members from the Brimble CLI."
+---
+
+These commands act on the workspace selected by [login, link, or `--team`](/cli/overview).
+
+## Domains
+
+```bash
+brimble domain list
+brimble domain add app.example.com
+brimble domain add api.example.com --project my-api
+brimble domain add example.com --workspace
+brimble domain status app.example.com
+brimble domain remove app.example.com
+```
+
+`add` attaches the domain to the linked project, or to `--project`. `--workspace` adds it to the workspace without attaching it to a project. The name is lowercased, and a leading `https://` is stripped.
+
+After adding a domain, point DNS at Brimble, then check progress:
+
+```bash
+brimble domain status app.example.com
+```
+
+`remove` (aliases `rm`, `delete`) detaches the domain from its project, or deletes it from the workspace when it is not attached. It asks first. Pass `-y` in a script.
+
+`list` shows each domain, the project it is on, whether DNS is active, and whether it is the primary domain.
+
+Buying a domain, editing DNS records, and wildcard setup stay in the dashboard. See [Custom domains](/domains/custom-domains).
+
+## Environments
+
+An environment groups projects (production, staging, and so on). It is not the same thing as a project's variables. Variables are [`brimble env`](/cli/environment-variables).
+
+```bash
+brimble environment list
+brimble environment create staging
+brimble environment create staging --inherit-from production
+brimble environment default staging
+brimble environment delete staging --move-to production
+```
+
+`create` can copy shared variables from another environment with `--inherit-from`.
+
+`default` makes an environment the default for new projects.
+
+`delete` (`rm`) requires `--move-to`. Projects in the deleted environment move there. The destination has to be a different environment. The command asks first. Pass `-y` to skip the question. In a script, `--move-to` is required.
+
+`brimble project list --environment staging` lists projects in one environment.
+
+## Teams
+
+```bash
+brimble team list
+brimble team switch acme
+brimble team switch personal
+brimble whoami
+```
+
+`switch` sets the default workspace for later commands. `personal` clears it and returns you to your personal workspace. A linked directory still uses the team stored in `.brimble/project.json`. `--team` and `BRIMBLE_TEAM_ID` override both for a single command.
+
+```bash
+brimble team get acme
+brimble team members
+brimble team members acme
+brimble team invite ada@example.com grace@example.com --role MEMBER
+brimble team invite ada@example.com --to acme --role ADMINISTRATOR
+brimble team remove ada@example.com
+brimble team remove ada@example.com --from acme --yes
+```
+
+`--role` is `ADMINISTRATOR`, `MEMBER`, or `VIEWER`. The default is `MEMBER`.
+
+`invite` sends to the current team unless you pass `--to`. `remove` uses the current team unless you pass `--from`. You can match a member by email, username, or ID. Removal asks for confirmation.
+
+## Regions, plans, and frameworks
+
+```bash
+brimble meta regions
+brimble meta plans
+brimble meta frameworks
+```
+
+`regions` lists datacenters, including which ones your plan can use. `frameworks` prints framework slugs, one per line. `plans` prints plan data. All three accept `-o json`.

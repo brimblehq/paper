@@ -83,11 +83,11 @@ The builder hands the artifact off to the orchestration layer, which schedules t
 2. Pulls the image.
 3. **If you've set a pre-start command, runs it first** in a small Alpine task with your project's environment variables. The main task only starts if pre-start exits cleanly. See [Pre-start command](#pre-start-command) for the full behavior.
 4. Starts the main container with your start command and the runtime environment variables.
-5. Registers the service in Consul with health checks defined by your `healthCheckPath`.
+5. Registers the service in Consul with health checks defined by your health check path.
 
 ### 8. Health check
 
-For web services and MCP servers, Brimble sends a GET to your `healthCheckPath` (default `/`). For workers, the check is process liveness. For static sites, there's no probe, the artifact is served directly from the edge as soon as the upload completes.
+For web services and MCP servers, Brimble sends a GET to your health check path (default `/`). For workers, the check is process liveness. For static sites, there's no probe, the artifact is served directly from the edge as soon as the upload completes.
 
 Once the check passes, the edge flips traffic to the new deployment. The previous deployment continues running for a short drain window so in-flight requests finish, then it's stopped.
 

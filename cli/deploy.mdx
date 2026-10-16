@@ -1,0 +1,114 @@
+---
+title: "Deploy from the CLI"
+description: "Deploy a linked project, upload a static site, create a project, and follow the build until it is live."
+---
+
+`brimble deploy` starts a deployment and follows the build until it finishes. The process exits with a non-zero status when the deployment fails, so a pipeline can rely on it.
+
+```bash
+brimble deploy
+brimble deploy my-api
+brimble deploy my-api --detach
+brimble deploy my-site --dir ./dist
+brimble deploy --restart
+```
+
+## What gets deployed
+
+For a Git or Docker project, deploy rebuilds the latest commit of the production branch, or the current image tag. It does not upload your working tree.
+
+For a static upload project (one with no Git repository), deploy zips a folder and uploads it. The default folder is the current directory. Pass `--dir` to upload somewhere else, usually your build output:
+
+```bash
+brimble deploy my-site --dir ./dist
+```
+
+`--dir` is only for static upload projects. On a Git project it fails and tells you the project deploys from its repository.
+
+The zip skips `.git`, `node_modules`, `.brimble`, VCS metadata, `.DS_Store`, and `.env` files. A single file larger than 100 MB is rejected. If the folder has a `package.json` and no `index.html`, the CLI warns you to upload build output instead.
+
+## Follow, detach, or restart
+
+By default the CLI prints new build lines until the deployment reaches a final status, then prints the live URL when the project has one.
+
+| Flag | Behavior |
+| --- | --- |
+| `--detach`, `-d` | Start the deployment and exit. Follow it later with `brimble logs list <project> --watch`. |
+| `--no-logs` | Wait for the result without printing build output. On failure, the last lines of the build log are still printed. |
+| `--restart` | Restart the running deployment without rebuilding. Not available for static uploads. |
+
+Ctrl+C stops following. The deployment keeps running on Brimble. Check it with `brimble logs list <project>`.
+
+`--detach -o json` prints the project and deployment IDs and does not wait:
+
+```bash
+brimble deploy my-api --detach -o json
+```
+
+## An unlinked directory
+
+In a terminal, `brimble deploy` with no link and no project name asks whether to deploy an existing project or create a new one. Choosing an existing project offers to write `.brimble/project.json` in the current directory.
+
+In a script, pass the project name:
+
+```bash
+brimble deploy my-api
+```
+
+## Create a project
+
+```bash
+brimble project create
+```
+
+In a terminal this walks through the same choices as the dashboard: GitHub, GitLab, Bitbucket, a Docker image, or a local folder uploaded as a static site. You pick the service type, repository or image, framework, region, and compute size, then the first deployment starts and the CLI follows it.
+
+```bash
+brimble project create --detach
+brimble project create --no-logs
+brimble project create --repo acme/web --branch main --region eu-central
+brimble project create --image nginx:1.27 --name edge
+brimble project create --dir ./dist --name docs-site
+```
+
+Pass `--repo`, `--image`, or `--dir` to create without prompts, for scripts. `--git` picks the provider for `--repo` (GitHub by default), `--type` the service type, and `--no-deploy` creates the project without starting a deployment. After an interactive create, the CLI offers to link the current directory.
+
+Build commands, start command, resources, and the rest of a project's settings belong in [`brimble.toml`](/config-as-code/brimble-toml) in your repository, which Brimble applies on every deploy. If the current directory has a `brimble.toml`, the interactive create skips the build questions.
+
+## Redeploy, roll back, restart, cancel
+
+```bash
+brimble project redeploy
+brimble project rollback
+brimble project restart
+brimble project cancel
+```
+
+`redeploy` rebuilds the latest commit. To change build or runtime settings, edit `brimble.toml` and push. See [Config as code](/cli/config) to preview a change first.
+
+`rollback` redeploys the commit of an earlier successful deployment. Pass a deployment ID, or pick one in a terminal. It asks before it runs. Pass `-y` to skip the question.
+
+`restart` restarts the running deployment without a rebuild. `cancel` stops a deployment that is still in progress.
+
+`redeploy`, `rollback`, and `restart` accept `--detach`. `redeploy` also accepts `--no-logs`.
+
+## Start and stop
+
+```bash
+brimble project start
+brimble project stop
+brimble project stop my-api --yes
+```
+
+`stop` takes the project off the public URL. It asks for confirmation unless you pass `-y`.
+
+## Open the site
+
+```bash
+brimble open
+brimble status
+```
+
+`open` launches the project's public URL in your browser. If no browser can be opened, it prints the URL. `status` prints project details and the five most recent deployments.
+
+See [Logs](/cli/logs) for build output and live application logs.

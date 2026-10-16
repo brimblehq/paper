@@ -109,7 +109,7 @@ Terms you'll see across Brimble docs and the dashboard, in alphabetical order.
 
 ## H
 
-**Health check.** A probe Brimble runs against a new deployment to decide whether to flip traffic to it. For web services and MCP servers, an HTTP GET against `healthCheckPath` (default `/`); for workers, process liveness.
+**Health check.** A probe Brimble runs against a new deployment to decide whether to flip traffic to it. For web services and MCP servers, an HTTP GET against the health check path (default `/`); for workers, process liveness.
 
 **Hostname.** The DNS name a request comes in on. Brimble's edge matches the hostname against a domain table to find the right project.
 
